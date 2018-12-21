@@ -1,0 +1,229 @@
+package com.google.audioworker.functions.controllers;
+
+import android.content.Context;
+import android.media.AudioManager;
+import android.media.MediaRecorder;
+import android.util.Log;
+
+import com.google.audioworker.functions.audio.playback.PlaybackFunction;
+import com.google.audioworker.functions.audio.playback.PlaybackStartFunction;
+import com.google.audioworker.functions.audio.playback.PlaybackStopFunction;
+import com.google.audioworker.functions.audio.record.RecordStartFunction;
+import com.google.audioworker.functions.audio.record.RecordStopFunction;
+import com.google.audioworker.functions.audio.voip.VoIPConfigFunction;
+import com.google.audioworker.functions.audio.voip.VoIPFunction;
+import com.google.audioworker.functions.audio.voip.VoIPStartFunction;
+import com.google.audioworker.functions.audio.voip.VoIPStopFunction;
+import com.google.audioworker.functions.common.WorkerFunction;
+import com.google.audioworker.utils.Constants;
+
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+public class VoIPController extends ControllerBase {
+    private final static String TAG = Constants.packageTag("VoIPController");
+
+    private WeakReference<Context> mContextRef;
+
+    private ThreadPoolExecutor mPoolExecuter;
+    private PlaybackController.PlaybackRunnable mRxRunnable;
+    private RecordController.RecordRunnable mTxRunnable;
+
+    @Override
+    public void activate(Context ctx) {
+        mContextRef = new WeakReference<>(ctx);
+        mPoolExecuter = new ThreadPoolExecutor(
+                Constants.Controllers.Config.Common.MAX_THREAD_COUNT,
+                Constants.Controllers.Config.Common.MAX_THREAD_COUNT,
+                Constants.Controllers.Config.Common.KEEP_ALIVE_TIME_SECONDS,
+                TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
+
+        String name = "VoIPController";
+        if (createFolder(name))
+            _dataPath = Constants.externalDirectory(name);
+        else
+            _dataPath = Constants.EnvironmentPaths.SDCARD_PATH;
+
+        Log.i(TAG, "create data folder: " + _dataPath);
+
+        if (mContextRef.get() != null) {
+            ((AudioManager) mContextRef.get().getSystemService(Context.AUDIO_SERVICE)).setMode(AudioManager.MODE_NORMAL);
+        }
+    }
+
+    @Override
+    public void destroy() {
+        mPoolExecuter.shutdown();
+        mPoolExecuter = null;
+    }
+
+    @Override
+    public void execute(WorkerFunction function, WorkerFunction.WorkerFunctionListener l) {
+        if (function instanceof VoIPFunction && function.isValid()) {
+            if (function instanceof VoIPStartFunction) {
+                if (mRxRunnable != null && !mRxRunnable.hasDone()) {
+                    PlaybackStopFunction rxStopFunction = new PlaybackStopFunction();
+                    initRxStopFunction(function, rxStopFunction);
+                    mRxRunnable.tryStop(rxStopFunction);
+                    mRxRunnable = null;
+                }
+                if (mTxRunnable != null && !mTxRunnable.hasDone()) {
+                    RecordStopFunction txStopFunction = new RecordStopFunction();
+                    initTxStopFunction(function, txStopFunction);
+                    mTxRunnable.tryStop(txStopFunction);
+                    mTxRunnable = null;
+                }
+
+                PlaybackStartFunction rxStartFunction = new PlaybackStartFunction();
+                RecordStartFunction txStartFunction = new RecordStartFunction();
+
+                initRxStartFunction((VoIPStartFunction) function, rxStartFunction);
+                initTxStartFunction((VoIPStartFunction) function, txStartFunction);
+
+                ProxyListener listener = new ProxyListener(function, l);
+                mRxRunnable = new PlaybackController.PlaybackRunnable(rxStartFunction, listener, this);
+                mTxRunnable = new RecordController.RecordRunnable(txStartFunction, listener);
+                mTxRunnable.setRecordRunner(new RecordController.RecordInternalRunnable(mTxRunnable, MediaRecorder.AudioSource.VOICE_COMMUNICATION));
+                if (mContextRef.get() != null) {
+                    ((AudioManager) mContextRef.get().getSystemService(Context.AUDIO_SERVICE)).setMode(AudioManager.MODE_IN_COMMUNICATION);
+                }
+                mPoolExecuter.execute(mRxRunnable);
+                mPoolExecuter.execute(mTxRunnable);
+                mPoolExecuter.execute(mTxRunnable.getSlave());
+            } else if (function instanceof VoIPStopFunction) {
+                PlaybackStopFunction rxStopFunction = new PlaybackStopFunction();
+                RecordStopFunction txStopFunction = new RecordStopFunction();
+
+                initRxStopFunction(function, rxStopFunction);
+                initTxStopFunction(function, txStopFunction);
+                if (mRxRunnable != null && !mRxRunnable.hasDone()) {
+                    mRxRunnable.tryStop(rxStopFunction);
+                    mRxRunnable = null;
+                }
+                if (mTxRunnable != null && !mTxRunnable.hasDone()) {
+                    mTxRunnable.tryStop(txStopFunction);
+                    mTxRunnable = null;
+                }
+                if (mContextRef.get() != null) {
+                    ((AudioManager) mContextRef.get().getSystemService(Context.AUDIO_SERVICE)).setMode(AudioManager.MODE_NORMAL);
+                }
+            } else if (function instanceof VoIPConfigFunction) {
+                WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
+                if (mRxRunnable != null && !mRxRunnable.hasDone()) {
+                    WorkerFunction f = mRxRunnable.setSignalConfig(((VoIPConfigFunction) function).getRxAmplitude(), ((VoIPConfigFunction) function).getTargetFrequency());
+                    ArrayList<Object> returns = new ArrayList<>();
+                    returns.add(f.toString());
+
+                    ack.setReturnCode(0);
+                    ack.setDescription("VoIP config sent");
+                    ack.setReturns(returns);
+                } else {
+                    ack.setReturnCode(-1);
+                    ack.setDescription("VoIP is not running");
+                }
+
+                if (l != null) {
+                    l.onAckReceived(ack);
+                }
+            }
+        } else {
+            if (function.isValid())
+                Log.e(TAG, "The function: " + function + " is not VoIP function");
+            else
+                Log.e(TAG, "The function: " + function + " is invalid");
+            if (l != null) {
+                WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
+                ack.setDescription("invalid argument");
+                ack.setReturnCode(-1);
+                l.onAckReceived(ack);
+            }
+        }
+    }
+
+    private void initRxStartFunction(VoIPStartFunction function, PlaybackStartFunction rxFunction) {
+        rxFunction.setCommandId(function.getCommandId() + "p-start");
+        rxFunction.setAmplitude(function.getRxAmplitude());
+        rxFunction.setBitWidth(function.getRxBitWidth());
+        rxFunction.setNumChannels(function.getRxNumChannels());
+        rxFunction.setPlaybackId(0);
+        rxFunction.setPlaybackType(PlaybackFunction.TASK_NONOFFLOAD);
+        rxFunction.setSamplingFreq(function.getRxSamplingFreq());
+        rxFunction.setTargetFrequency(function.getTargetFrequency());
+    }
+
+    private void initTxStartFunction(VoIPStartFunction function, RecordStartFunction txFunction) {
+        txFunction.setCommandId(function.getCommandId() + "c-start");
+        txFunction.setBitWidth(function.getTxBitWidth());
+        txFunction.setNumChannels(function.getTxNumChannels());
+        txFunction.setSamplingFreq(function.getTxSamplingFreq());
+    }
+
+    private void initRxStopFunction(WorkerFunction function, PlaybackStopFunction rxFunction) {
+        rxFunction.setCommandId(function.getCommandId() + "p-stop");
+        rxFunction.setPlaybackId(0);
+        rxFunction.setPlaybackType(PlaybackFunction.TASK_NONOFFLOAD);
+    }
+
+    private void initTxStopFunction(WorkerFunction function, RecordStopFunction txFunction) {
+        txFunction.setCommandId(function.getCommandId() + "c-stop");
+    }
+
+    class ProxyListener implements WorkerFunction.WorkerFunctionListener {
+        private WorkerFunction.WorkerFunctionListener mListener;
+        private WorkerFunction mFunction;
+
+        private boolean isRxRunning;
+        private boolean isTxRunning;
+
+        ProxyListener(WorkerFunction function, WorkerFunction.WorkerFunctionListener l) {
+            mFunction = function;
+            mListener = l;
+            isRxRunning = false;
+            isTxRunning = false;
+        }
+
+        @Override
+        public void onAckReceived(WorkerFunction.Ack ack) {
+            Log.d(TAG, "onAckReceived(" + ack + ")");
+            if (ack.getTarget().endsWith("p-start") && ack.getReturnCode() >= 0) {
+                isRxRunning = true;
+            } else if (ack.getTarget().endsWith("p-stop") && ack.getReturnCode() >= 0) {
+                isRxRunning = false;
+            } else if (ack.getTarget().endsWith("p-start") || ack.getTarget().endsWith("p-stop")) {
+                isRxRunning = ack.getReturnCode() >= 0;
+            }
+            if (ack.getTarget().endsWith("c-start") && ack.getReturnCode() >= 0) {
+                isTxRunning = true;
+            } else if (ack.getTarget().endsWith("c-stop") && ack.getReturnCode() >= 0) {
+                isTxRunning = false;
+            } else if (ack.getTarget().endsWith("c-start") || ack.getTarget().endsWith("c-stop")) {
+                isTxRunning = ack.getReturnCode() >= 0;
+            }
+
+            if (isRxRunning && isTxRunning && mListener != null) {
+                WorkerFunction.Ack oack = WorkerFunction.Ack.ackToFunction(mFunction);
+                oack.setReturnCode(0);
+                oack.setDescription("VoIP starts");
+                mListener.onAckReceived(oack);
+            } else if (!isRxRunning && !isTxRunning && mListener != null) {
+                WorkerFunction function = new VoIPStopFunction();
+                String cmdId = ack.getTarget();
+                String[] tags = {"p-start", "p-stop", "c-start", "c-stop"};
+                for (String tag : tags) {
+                    cmdId = cmdId.replace(tag, "");
+                }
+                function.setCommandId(cmdId);
+                WorkerFunction.Ack oack = WorkerFunction.Ack.ackToFunction(function);
+                oack.setReturnCode(ack.getReturnCode());
+                if (ack.getReturnCode() >= 0)
+                    oack.setDescription("VoIP terminated");
+                else
+                    oack.setDescription("VoIP unexpected failed");
+                mListener.onAckReceived(oack);
+            }
+        }
+    }
+}
