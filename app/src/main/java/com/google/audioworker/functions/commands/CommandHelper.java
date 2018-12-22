@@ -21,6 +21,7 @@ import com.google.audioworker.functions.audio.record.RecordStartFunction;
 import com.google.audioworker.functions.audio.record.RecordStopFunction;
 import com.google.audioworker.functions.audio.voip.VoIPConfigFunction;
 import com.google.audioworker.functions.audio.voip.VoIPDetectFunction;
+import com.google.audioworker.functions.audio.voip.VoIPEventFunction;
 import com.google.audioworker.functions.audio.voip.VoIPFunction;
 import com.google.audioworker.functions.audio.voip.VoIPInfoFunction;
 import com.google.audioworker.functions.audio.voip.VoIPStartFunction;
@@ -200,6 +201,9 @@ public class CommandHelper {
             case Constants.MasterInterface.INTENT_RECORD_DETECT_UNREGISTER:
                 function = new RecordDetectFunction(RecordDetectFunction.OP_UNREGISTER);
                 break;
+            case Constants.MasterInterface.INTENT_RECORD_DETECT_SETPARAMS:
+                function = new RecordDetectFunction(RecordDetectFunction.OP_SETPARAMS);
+                break;
             case Constants.SlaveInterface.INTENT_RECORD_EVENT:
                 function = new RecordEventFunction();
                 break;
@@ -234,8 +238,14 @@ public class CommandHelper {
             case Constants.MasterInterface.INTENT_VOIP_DETECT_REGISTER:
                 function = new VoIPDetectFunction(RecordDetectFunction.OP_REGISTER);
                 break;
-            case Constants.SlaveInterface.INTENT_VOIP_EVENT:
+            case Constants.MasterInterface.INTENT_VOIP_DETECT_UNREGISTER:
                 function = new VoIPDetectFunction(RecordDetectFunction.OP_UNREGISTER);
+                break;
+            case Constants.MasterInterface.INTENT_VOIP_DETECT_SETPARAMS:
+                function = new VoIPDetectFunction(RecordDetectFunction.OP_SETPARAMS);
+                break;
+            case Constants.SlaveInterface.INTENT_VOIP_EVENT:
+                function = new VoIPEventFunction();
                 break;
 
             default:
@@ -291,44 +301,22 @@ public class CommandHelper {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            switch (Objects.requireNonNull(intent.getAction())) {
-                case Constants.MasterInterface.INTENT_PLAYBACK_INFO:
-                case Constants.MasterInterface.INTENT_PLAYBACK_START:
-                case Constants.MasterInterface.INTENT_PLAYBACK_STOP:
-                    if (mListener != null) {
-                        mListener.onFunctionReceived(CommandHelper.getPlaybackFunction(intent));
-                    }
-                    break;
+            if (mListener == null)
+                return;
 
-                case Constants.MasterInterface.INTENT_RECORD_INFO:
-                case Constants.MasterInterface.INTENT_RECORD_START:
-                case Constants.MasterInterface.INTENT_RECORD_STOP:
-                case Constants.MasterInterface.INTENT_RECORD_DETECT_REGISTER:
-                case Constants.MasterInterface.INTENT_RECORD_DETECT_UNREGISTER:
-                case Constants.SlaveInterface.INTENT_RECORD_EVENT:
-                    if (mListener != null) {
-                        mListener.onFunctionReceived(CommandHelper.getRecordFunction(intent));
-                    }
+            switch (Constants.getIntentOwner(intent)) {
+                case Constants.INTENT_OWNER_PLAYBACK:
+                    mListener.onFunctionReceived(CommandHelper.getPlaybackFunction(intent));
                     break;
-
-                case Constants.MasterInterface.INTENT_VOIP_CONFIG:
-                case Constants.MasterInterface.INTENT_VOIP_INFO:
-                case Constants.MasterInterface.INTENT_VOIP_START:
-                case Constants.MasterInterface.INTENT_VOIP_STOP:
-                case Constants.MasterInterface.INTENT_VOIP_DETECT_REGISTER:
-                case Constants.SlaveInterface.INTENT_VOIP_EVENT:
-                    if (mListener != null) {
-                        mListener.onFunctionReceived(CommandHelper.getVoIPFunction(intent));
-                    }
+                case Constants.INTENT_OWNER_RECORD:
+                    mListener.onFunctionReceived(CommandHelper.getRecordFunction(intent));
                     break;
-
-                case Constants.DebugInterface.INTENT_JSON_TO_FUNCTION:
-                    if (mListener != null) {
-                        mListener.onFunctionReceived(CommandHelper.getFunction(intent));
-                    }
+                case Constants.INTENT_OWNER_VOIP:
+                    mListener.onFunctionReceived(CommandHelper.getVoIPFunction(intent));
                     break;
 
                 default:
+                    Log.w(TAG, "no handler for intent: " + intent.getAction());
                     break;
             }
         }

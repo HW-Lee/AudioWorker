@@ -15,6 +15,13 @@ public class RecordDetectFunction extends RecordFunction {
 
     public final static String OP_REGISTER = "register";
     public final static String OP_UNREGISTER = "unregister";
+    public final static String OP_SETPARAMS = "setparams";
+
+    private final static String[] OPS = {
+            OP_REGISTER,
+            OP_UNREGISTER,
+            OP_SETPARAMS
+    };
 
     private final static String[] ATTRS = {
             ATTR_TYPE,
@@ -25,7 +32,7 @@ public class RecordDetectFunction extends RecordFunction {
 
     private Parameter<String> PARAM_TYPE = new Parameter<>(ATTR_TYPE, true, null);
     private Parameter<String> PARAM_CLASS_NAME = new Parameter<>(ATTR_CLASS_NAME, true, null);
-    private Parameter<String> PARAM_CLASS_HANDLE = new Parameter<>(ATTR_CLASS_HANDLE, false, null);
+    private Parameter<String> PARAM_CLASS_HANDLE = new Parameter<>(ATTR_CLASS_HANDLE, true, null);
     private Parameter<String> PARAM_TPARAMS = new Parameter<>(ATTR_PARAMS, false, null);
     private Parameter[] PARAMS = {
             PARAM_TYPE,
@@ -37,18 +44,16 @@ public class RecordDetectFunction extends RecordFunction {
     public RecordDetectFunction(String type) {
         super();
         setType(type);
+
+        if (!checkType(type))
+            return;
+
+        PARAM_CLASS_NAME.setRequired(type.equals(OP_REGISTER));
+        PARAM_CLASS_HANDLE.setRequired(type.equals(OP_UNREGISTER) || type.equals(OP_SETPARAMS));
     }
 
     public void setType(String type) {
-        switch (type) {
-            case OP_REGISTER:
-            case OP_UNREGISTER:
-                setParameter(ATTR_TYPE, type);
-                break;
-
-            default:
-                break;
-        }
+        setParameter(ATTR_TYPE, type);
     }
 
     @Override
@@ -109,7 +114,11 @@ public class RecordDetectFunction extends RecordFunction {
     }
 
     private boolean checkType(String type) {
-        return OP_REGISTER.equals(type) || OP_UNREGISTER.equals(type);
+        for (String op : OPS)
+            if (op.equals(type))
+                return true;
+
+        return false;
     }
 
     public String getOperationType() {

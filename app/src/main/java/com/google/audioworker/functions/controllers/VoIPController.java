@@ -4,21 +4,31 @@ import android.content.Context;
 import android.media.AudioManager;
 import android.media.MediaRecorder;
 import android.util.Log;
+import android.util.SparseArray;
 
 import com.google.audioworker.functions.audio.playback.PlaybackFunction;
 import com.google.audioworker.functions.audio.playback.PlaybackStartFunction;
 import com.google.audioworker.functions.audio.playback.PlaybackStopFunction;
+import com.google.audioworker.functions.audio.record.RecordDetectFunction;
 import com.google.audioworker.functions.audio.record.RecordStartFunction;
 import com.google.audioworker.functions.audio.record.RecordStopFunction;
+import com.google.audioworker.functions.audio.record.detectors.DetectorBase;
 import com.google.audioworker.functions.audio.voip.VoIPConfigFunction;
+import com.google.audioworker.functions.audio.voip.VoIPDetectFunction;
 import com.google.audioworker.functions.audio.voip.VoIPFunction;
+import com.google.audioworker.functions.audio.voip.VoIPInfoFunction;
 import com.google.audioworker.functions.audio.voip.VoIPStartFunction;
 import com.google.audioworker.functions.audio.voip.VoIPStopFunction;
 import com.google.audioworker.functions.common.WorkerFunction;
 import com.google.audioworker.utils.Constants;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.lang.ref.WeakReference;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -28,12 +38,15 @@ public class VoIPController extends ControllerBase {
 
     private WeakReference<Context> mContextRef;
 
+    private HashMap<String, DetectorBase> mDetectors;
+
     private ThreadPoolExecutor mPoolExecuter;
     private PlaybackController.PlaybackRunnable mRxRunnable;
     private RecordController.RecordRunnable mTxRunnable;
 
     @Override
     public void activate(Context ctx) {
+        mDetectors = new HashMap<>();
         mContextRef = new WeakReference<>(ctx);
         mPoolExecuter = new ThreadPoolExecutor(
                 Constants.Controllers.Config.Common.MAX_THREAD_COUNT,
@@ -61,7 +74,7 @@ public class VoIPController extends ControllerBase {
     }
 
     @Override
-    public void execute(WorkerFunction function, WorkerFunction.WorkerFunctionListener l) {
+    public void execute(final WorkerFunction function, WorkerFunction.WorkerFunctionListener l) {
         if (function instanceof VoIPFunction && function.isValid()) {
             if (function instanceof VoIPStartFunction) {
                 if (mRxRunnable != null && !mRxRunnable.hasDone()) {
@@ -110,6 +123,7 @@ public class VoIPController extends ControllerBase {
                 if (mContextRef.get() != null) {
                     ((AudioManager) mContextRef.get().getSystemService(Context.AUDIO_SERVICE)).setMode(AudioManager.MODE_NORMAL);
                 }
+                mDetectors.clear();
             } else if (function instanceof VoIPConfigFunction) {
                 WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
                 if (mRxRunnable != null && !mRxRunnable.hasDone()) {
@@ -128,6 +142,129 @@ public class VoIPController extends ControllerBase {
                 if (l != null) {
                     l.onAckReceived(ack);
                 }
+            } else if (function instanceof VoIPDetectFunction) {
+                WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
+                if (mTxRunnable == null || mTxRunnable.hasDone()) {
+                    if (l != null) {
+                        ack.setReturnCode(-1);
+                        ack.setDescription("no recording process running");
+                        l.onAckReceived(ack);
+                    }
+                    return;
+                }
+
+                switch (((VoIPDetectFunction) function).getOperationType()) {
+                    case RecordDetectFunction.OP_REGISTER: {
+                        String className = ((VoIPDetectFunction) function).getDetectorClassName();
+                        DetectorBase detector = null;
+                        try {
+                            Class[] types = {DetectorBase.DetectionListener.class, String.class};
+                            Object c;
+                            String params = RecordController.processDetectorParams(mTxRunnable, className, ((VoIPDetectFunction) function).getDetectorParams());
+
+                            c = Class.forName(className).getConstructor(types).newInstance(new DetectorBase.DetectionListener() {
+                                @Override
+                                public void onTargetDetected(SparseArray<? extends DetectorBase.Target> targets) {
+                                    VoIPController.this.onTargetDetected(function.getCommandId(), targets);
+                                }
+                            }, params);
+                            if (c instanceof DetectorBase)
+                                detector = (DetectorBase) c;
+                        } catch (ClassNotFoundException | NoSuchMethodException |
+                                IllegalAccessException | InstantiationException | InvocationTargetException e) {
+                            e.printStackTrace();
+                            return;
+                        }
+
+                        if (detector == null) {
+                            if (l != null) {
+                                ack.setReturnCode(-1);
+                                ack.setDescription("invalid detector class name");
+                                l.onAckReceived(ack);
+                            }
+                            return;
+                        }
+
+                        mDetectors.put(detector.getHandle(), detector);
+                        Log.d(TAG, "register the detector " + detector.getHandle());
+                        mTxRunnable.registerDetector(detector);
+                        if (l != null) {
+                            ArrayList<Object> returns = new ArrayList<>();
+                            returns.add(detector.getHandle());
+                            ack.setReturnCode(0);
+                            ack.setDescription("detector has been registered");
+                            ack.setReturns(returns);
+                            l.onAckReceived(ack);
+                        }
+                    }
+                        break;
+                    case RecordDetectFunction.OP_UNREGISTER: {
+                        if (mDetectors.containsKey(((VoIPDetectFunction) function).getClassHandle())) {
+                            mTxRunnable.unregisterDetector(mDetectors.get(((VoIPDetectFunction) function).getClassHandle()));
+                            mDetectors.remove(((VoIPDetectFunction) function).getClassHandle());
+                            if (l != null) {
+                                ack.setReturnCode(0);
+                                ack.setDescription("detector has been unregistered");
+                                l.onAckReceived(ack);
+                            }
+                        } else if (l != null) {
+                            ack.setReturnCode(-1);
+                            ack.setDescription("invalid class handle");
+                            l.onAckReceived(ack);
+                        }
+                    }
+                        break;
+                    case RecordDetectFunction.OP_SETPARAMS: {
+                        if (mDetectors.containsKey(((VoIPDetectFunction) function).getClassHandle())) {
+                            DetectorBase detector = mDetectors.get(((VoIPDetectFunction) function).getClassHandle());
+                            boolean success = true;
+                            if (detector != null && ((VoIPDetectFunction) function).getDetectorParams() != null)
+                                success = detector.setParameters(((VoIPDetectFunction) function).getDetectorParams());
+
+                            if (l != null) {
+                                ack.setReturnCode(success ? 0 : -1);
+                                ack.setDescription(success ? "set parameters successfully" : "set parameters failed");
+                                l.onAckReceived(ack);
+                            }
+                        } else if (l != null) {
+                            ack.setReturnCode(-1);
+                            ack.setDescription("invalid class handle");
+                            l.onAckReceived(ack);
+                        }
+                    }
+                        break;
+                    default:
+                        break;
+                }
+            } else if (function instanceof VoIPInfoFunction) {
+                if (l == null)
+                    return;
+                WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
+                if (mTxRunnable != null && !mTxRunnable.hasDone() &&
+                        mRxRunnable != null && !mRxRunnable.hasDone()) {
+                    ArrayList<Object> returns = new ArrayList<>();
+                    JSONObject detectionInfo = new JSONObject();
+
+                    for (String handle : mDetectors.keySet()) {
+                        DetectorBase detector = mDetectors.get(handle);
+                        if (detector == null)
+                            continue;
+
+                        try {
+                            detectionInfo.put(handle, detector.getInfo());
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    returns.add(mRxRunnable.getStartFunction().toString());
+                    returns.add(mTxRunnable.getStartFunction().toString());
+                    returns.add(detectionInfo.toString());
+                    ack.setReturns(returns);
+                }
+                ack.setReturnCode(0);
+                ack.setDescription("info returned");
+                l.onAckReceived(ack);
             }
         } else {
             if (function.isValid())
@@ -169,6 +306,9 @@ public class VoIPController extends ControllerBase {
 
     private void initTxStopFunction(WorkerFunction function, RecordStopFunction txFunction) {
         txFunction.setCommandId(function.getCommandId() + "c-stop");
+    }
+
+    public void onTargetDetected(final String commandId, SparseArray<? extends DetectorBase.Target> targets) {
     }
 
     class ProxyListener implements WorkerFunction.WorkerFunctionListener {

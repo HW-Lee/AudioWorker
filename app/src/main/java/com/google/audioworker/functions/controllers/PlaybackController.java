@@ -173,6 +173,10 @@ public class PlaybackController extends ControllerBase {
             return mStartFunction;
         }
 
+        public PlaybackStartFunction getStartFunction() {
+            return mStartFunction;
+        }
+
         public boolean hasDone() {
             return exitPending;
         }

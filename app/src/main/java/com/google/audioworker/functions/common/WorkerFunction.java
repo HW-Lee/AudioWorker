@@ -211,6 +211,10 @@ public abstract class WorkerFunction {
             this.value = defaultValue;
         }
 
+        public void setRequired(boolean required) {
+            this.required = required;
+        }
+
         public String getAttribute() {
             return attr;
         }

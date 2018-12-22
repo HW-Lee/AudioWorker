@@ -5,18 +5,27 @@ import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.util.Log;
+import android.util.SparseArray;
 
+import com.google.audioworker.functions.audio.record.RecordDetectFunction;
 import com.google.audioworker.functions.audio.record.RecordFunction;
 import com.google.audioworker.functions.audio.record.RecordInfoFunction;
 import com.google.audioworker.functions.audio.record.RecordStartFunction;
 import com.google.audioworker.functions.audio.record.RecordStopFunction;
+import com.google.audioworker.functions.audio.record.detectors.DetectorBase;
+import com.google.audioworker.functions.audio.record.detectors.ToneDetector;
 import com.google.audioworker.functions.common.WorkerFunction;
 import com.google.audioworker.utils.Constants;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -24,11 +33,13 @@ import java.util.concurrent.TimeUnit;
 public class RecordController extends ControllerBase {
     private final static String TAG = Constants.packageTag("RecordController");
 
+    private HashMap<String, DetectorBase> mDetectors;
     private RecordRunnable mMainRunningTask;
     private ThreadPoolExecutor mPoolExecuter;
 
     @Override
     public void activate(Context ctx) {
+        mDetectors = new HashMap<>();
         mPoolExecuter = new ThreadPoolExecutor(
                 Constants.Controllers.Config.Common.MAX_THREAD_COUNT,
                 Constants.Controllers.Config.Common.MAX_THREAD_COUNT,
@@ -55,7 +66,7 @@ public class RecordController extends ControllerBase {
     }
 
     @Override
-    public void execute(WorkerFunction function, WorkerFunction.WorkerFunctionListener l) {
+    public void execute(final WorkerFunction function, WorkerFunction.WorkerFunctionListener l) {
         if (function instanceof RecordFunction && function.isValid()) {
             if (function instanceof RecordStartFunction) {
                 if (mMainRunningTask != null && !mMainRunningTask.hasDone()) {
@@ -72,18 +83,128 @@ public class RecordController extends ControllerBase {
                     mMainRunningTask.tryStop((RecordStopFunction) function);
                     mMainRunningTask = null;
                 }
+                mDetectors.clear();
             } else if (function instanceof RecordInfoFunction) {
                 if (l == null)
                     return;
                 WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
                 if (mMainRunningTask != null && !mMainRunningTask.hasDone()) {
                     ArrayList<Object> returns = new ArrayList<>();
+                    JSONObject detectionInfo = new JSONObject();
+
+                    for (String handle : mDetectors.keySet()) {
+                        DetectorBase detector = mDetectors.get(handle);
+                        if (detector == null)
+                            continue;
+
+                        try {
+                            detectionInfo.put(handle, detector.getInfo());
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
                     returns.add(mMainRunningTask.mStartFunction.toString());
+                    returns.add(detectionInfo.toString());
                     ack.setReturns(returns);
                 }
                 ack.setReturnCode(0);
                 ack.setDescription("info returned");
                 l.onAckReceived(ack);
+            } else if (function instanceof RecordDetectFunction) {
+                WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
+                if (mMainRunningTask == null || mMainRunningTask.hasDone()) {
+                    if (l != null) {
+                        ack.setReturnCode(-1);
+                        ack.setDescription("no recording process running");
+                        l.onAckReceived(ack);
+                    }
+                    return;
+                }
+
+                switch (((RecordDetectFunction) function).getOperationType()) {
+                    case RecordDetectFunction.OP_REGISTER: {
+                        String className = ((RecordDetectFunction) function).getDetectorClassName();
+                        DetectorBase detector = null;
+                        try {
+                            Class[] types = {DetectorBase.DetectionListener.class, String.class};
+                            Object c;
+                            String params = processDetectorParams(mMainRunningTask, className, ((RecordDetectFunction) function).getDetectorParams());
+
+                            c = Class.forName(className).getConstructor(types).newInstance(new DetectorBase.DetectionListener() {
+                                @Override
+                                public void onTargetDetected(SparseArray<? extends DetectorBase.Target> targets) {
+                                    RecordController.this.onTargetDetected(function.getCommandId(), targets);
+                                }
+                            }, params);
+                            if (c instanceof DetectorBase)
+                                detector = (DetectorBase) c;
+                        } catch (ClassNotFoundException | NoSuchMethodException |
+                                IllegalAccessException | InstantiationException | InvocationTargetException e) {
+                            e.printStackTrace();
+                            return;
+                        }
+
+                        if (detector == null) {
+                            if (l != null) {
+                                ack.setReturnCode(-1);
+                                ack.setDescription("invalid detector class name");
+                                l.onAckReceived(ack);
+                            }
+                            return;
+                        }
+
+                        mDetectors.put(detector.getHandle(), detector);
+                        Log.d(TAG, "register the detector " + detector.getHandle());
+                        mMainRunningTask.registerDetector(detector);
+                        if (l != null) {
+                            ArrayList<Object> returns = new ArrayList<>();
+                            returns.add(detector.getHandle());
+                            ack.setReturnCode(0);
+                            ack.setDescription("detector has been registered");
+                            ack.setReturns(returns);
+                            l.onAckReceived(ack);
+                        }
+                    }
+                        break;
+                    case RecordDetectFunction.OP_UNREGISTER: {
+                        if (mDetectors.containsKey(((RecordDetectFunction) function).getClassHandle())) {
+                            mMainRunningTask.unregisterDetector(mDetectors.get(((RecordDetectFunction) function).getClassHandle()));
+                            mDetectors.remove(((RecordDetectFunction) function).getClassHandle());
+                            if (l != null) {
+                                ack.setReturnCode(0);
+                                ack.setDescription("detector has been unregistered");
+                                l.onAckReceived(ack);
+                            }
+                        } else if (l != null) {
+                            ack.setReturnCode(-1);
+                            ack.setDescription("invalid class handle");
+                            l.onAckReceived(ack);
+                        }
+                    }
+                        break;
+                    case RecordDetectFunction.OP_SETPARAMS: {
+                        if (mDetectors.containsKey(((RecordDetectFunction) function).getClassHandle())) {
+                            DetectorBase detector = mDetectors.get(((RecordDetectFunction) function).getClassHandle());
+                            boolean success = true;
+                            if (detector != null && ((RecordDetectFunction) function).getDetectorParams() != null)
+                                success = detector.setParameters(((RecordDetectFunction) function).getDetectorParams());
+
+                            if (l != null) {
+                                ack.setReturnCode(success ? 0 : -1);
+                                ack.setDescription(success ? "set parameters successfully" : "set parameters failed");
+                                l.onAckReceived(ack);
+                            }
+                        } else if (l != null) {
+                            ack.setReturnCode(-1);
+                            ack.setDescription("invalid class handle");
+                            l.onAckReceived(ack);
+                        }
+                    }
+                        break;
+                    default:
+                        break;
+                }
             }
         } else {
             if (function.isValid())
@@ -97,6 +218,25 @@ public class RecordController extends ControllerBase {
                 l.onAckReceived(ack);
             }
         }
+    }
+
+    static public String processDetectorParams(RecordRunnable runnable, String className, String params) {
+        if (params == null)
+            params = "{}";
+        if (className.equals(ToneDetector.class.getName())) {
+            try {
+                JSONObject obj = new JSONObject(params);
+                obj.put(Constants.DetectorConfig.ToneDetector.PARAM_FS, runnable.mStartFunction.getSamplingFreq());
+                params = obj.toString();
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return params;
+    }
+
+    public void onTargetDetected(final String commandId, SparseArray<? extends DetectorBase.Target> targets) {
     }
 
     public static class RecordSharedBuffer {
@@ -135,6 +275,8 @@ public class RecordController extends ControllerBase {
         private final RecordSharedBuffer sharedBuffer;
         private RecordInternalRunnable slave;
 
+        private final ArrayList<DetectorBase> mDetectors;
+
         private boolean exitPending;
 
         RecordRunnable(RecordStartFunction function, WorkerFunction.WorkerFunctionListener l) {
@@ -144,6 +286,11 @@ public class RecordController extends ControllerBase {
             int minBuffsize = AudioRecord.getMinBufferSize(
                     mStartFunction.getSamplingFreq(), parseChannelMask(mStartFunction.getNumChannels()), parseEncodingFormat(mStartFunction.getBitWidth()));
             sharedBuffer = new RecordSharedBuffer(minBuffsize);
+            mDetectors = new ArrayList<>();
+        }
+
+        public RecordStartFunction getStartFunction() {
+            return mStartFunction;
         }
 
         public RecordInternalRunnable getSlave() {
@@ -187,6 +334,18 @@ public class RecordController extends ControllerBase {
 
         public void setRecordRunner(RecordInternalRunnable runner) {
             slave = runner;
+        }
+
+        public void registerDetector(DetectorBase detector) {
+            synchronized (mDetectors) {
+                mDetectors.add(detector);
+            }
+        }
+
+        public void unregisterDetector(DetectorBase detector) {
+            synchronized (mDetectors) {
+                mDetectors.remove(detector);
+            }
         }
 
         private void returnAck(RecordFunction function, int ret) {
@@ -237,9 +396,14 @@ public class RecordController extends ControllerBase {
 
                 short[] frame = new short[buffer.length / 2];
                 ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(frame);
-                double[] values = new double[frame.length];
-                for (int i = 0; i < values.length; i++)
-                    values[i] = frame[i] * 1.0 / (1 << 15);
+                ArrayList<Double> values = new ArrayList<>(frame.length);
+                for (short v : frame)
+                    values.add(v * 1.0 / (1 << 15));
+
+                synchronized (mDetectors) {
+                    for (DetectorBase detector : mDetectors)
+                        detector.feed(values);
+                }
             }
             if (mStopFunction != null) {
                 returnAck(mStopFunction, 0);
