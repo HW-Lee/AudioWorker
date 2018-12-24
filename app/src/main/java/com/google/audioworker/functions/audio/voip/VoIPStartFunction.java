@@ -5,7 +5,7 @@ import com.google.audioworker.utils.Constants;
 public class VoIPStartFunction extends VoIPFunction {
     private final static String TAG = Constants.packageTag("VoIPStartFunction");
 
-    private final static String ATTR_TARGET_FREQ = "target-freq";
+    private final static String ATTR_TARGET_FREQ = "rx-target-freq";
     private final static String ATTR_RX_AMP = "rx-amplitude";
     private final static String ATTR_RX_FS = "rx-sampling-freq";
     private final static String ATTR_RX_NCH = "rx-num-channels";
@@ -13,6 +13,7 @@ public class VoIPStartFunction extends VoIPFunction {
     private final static String ATTR_TX_FS = "tx-sampling-freq";
     private final static String ATTR_TX_NCH = "tx-num-channels";
     private final static String ATTR_TX_BPS = "tx-pcm-bit-width";
+    private final static String ATTR_TX_DUMP_BUFFER_SIZE_MS = "tx-dump-buffer-ms";
 
     private final static String[] ATTRS = {
             ATTR_TARGET_FREQ,
@@ -22,7 +23,8 @@ public class VoIPStartFunction extends VoIPFunction {
             ATTR_RX_BPS,
             ATTR_TX_FS,
             ATTR_TX_NCH,
-            ATTR_TX_BPS
+            ATTR_TX_BPS,
+            ATTR_TX_DUMP_BUFFER_SIZE_MS
     };
 
     private Parameter<Float> PARAM_TARGET_FREQ = new Parameter<>(ATTR_TARGET_FREQ, true, null);
@@ -33,6 +35,7 @@ public class VoIPStartFunction extends VoIPFunction {
     private Parameter<Integer> PARAM_TX_FS = new Parameter<>(ATTR_TX_FS, false, Constants.VoIPDefaultConfig.Tx.SAMPLINGFREQ);
     private Parameter<Integer> PARAM_TX_NCH = new Parameter<>(ATTR_TX_NCH, false, Constants.VoIPDefaultConfig.Tx.NUMCHANNELS);
     private Parameter<Integer> PARAM_TX_BPS = new Parameter<>(ATTR_TX_BPS, false, Constants.VoIPDefaultConfig.Tx.BITPERSAMPLE);
+    private Parameter<Integer> PARAM_TX_DUMP_BUFFER_SIZE_MS = new Parameter<>(ATTR_TX_DUMP_BUFFER_SIZE_MS, false, Constants.VoIPDefaultConfig.Tx.BUFFERSIZEMILLIS);
     private Parameter[] PARAMS = {
             PARAM_TARGET_FREQ,
             PARAM_RX_AMP,
@@ -41,7 +44,8 @@ public class VoIPStartFunction extends VoIPFunction {
             PARAM_RX_BPS,
             PARAM_TX_FS,
             PARAM_TX_NCH,
-            PARAM_TX_BPS
+            PARAM_TX_BPS,
+            PARAM_TX_DUMP_BUFFER_SIZE_MS
     };
 
     @Override
@@ -66,6 +70,8 @@ public class VoIPStartFunction extends VoIPFunction {
                 case ATTR_RX_BPS:
                 case ATTR_TX_BPS:
                     return checkBitPerSample((int) value);
+                case ATTR_TX_DUMP_BUFFER_SIZE_MS:
+                    return (int) value >= 0;
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -162,5 +168,9 @@ public class VoIPStartFunction extends VoIPFunction {
 
     public int getTxBitWidth() {
         return PARAM_TX_BPS.getValue();
+    }
+
+    public int getTxDumpBufferSizeMs() {
+        return PARAM_TX_DUMP_BUFFER_SIZE_MS.getValue();
     }
 }

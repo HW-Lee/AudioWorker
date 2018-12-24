@@ -296,6 +296,7 @@ public class VoIPController extends ControllerBase {
         txFunction.setBitWidth(function.getTxBitWidth());
         txFunction.setNumChannels(function.getTxNumChannels());
         txFunction.setSamplingFreq(function.getTxSamplingFreq());
+        txFunction.setDumpBufferSizeMs(function.getTxDumpBufferSizeMs());
     }
 
     private void initRxStopFunction(WorkerFunction function, PlaybackStopFunction rxFunction) {

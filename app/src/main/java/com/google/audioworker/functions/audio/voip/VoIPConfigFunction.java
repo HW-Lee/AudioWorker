@@ -5,7 +5,7 @@ import com.google.audioworker.utils.Constants;
 public class VoIPConfigFunction extends VoIPFunction {
     private final static String TAG = Constants.packageTag("VoIPConfigFunction");
 
-    private final static String ATTR_TARGET_FREQ = "target-freq";
+    private final static String ATTR_TARGET_FREQ = "rx-target-freq";
     private final static String ATTR_RX_AMP = "rx-amplitude";
 
     private final static String[] ATTRS = {

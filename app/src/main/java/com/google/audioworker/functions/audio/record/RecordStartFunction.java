@@ -8,20 +8,24 @@ public class RecordStartFunction extends RecordFunction {
     private final static String ATTR_FS = "sampling-freq";
     private final static String ATTR_NCH = "num-channels";
     private final static String ATTR_BPS = "pcm-bit-width";
+    private final static String ATTR_DUMP_BUFFER_SIZE_MS = "dump-buffer-ms";
 
     private final static String[] ATTRS = {
             ATTR_FS,
             ATTR_NCH,
-            ATTR_BPS
+            ATTR_BPS,
+            ATTR_DUMP_BUFFER_SIZE_MS
     };
 
     private Parameter<Integer> PARAM_FS = new Parameter<>(ATTR_FS, false, Constants.RecordDefaultConfig.SAMPLINGFREQ);
     private Parameter<Integer> PARAM_NCH = new Parameter<>(ATTR_NCH, false, Constants.RecordDefaultConfig.NUMCHANNELS);
     private Parameter<Integer> PARAM_BPS = new Parameter<>(ATTR_BPS, false, Constants.RecordDefaultConfig.BITPERSAMPLE);
+    private Parameter<Integer> PARAM_DUMP_BUFFER_SIZE_MS = new Parameter<>(ATTR_DUMP_BUFFER_SIZE_MS, false, Constants.RecordDefaultConfig.BUFFERSIZEMILLIS);
     private Parameter[] PARAMS = {
             PARAM_FS,
             PARAM_NCH,
-            PARAM_BPS
+            PARAM_BPS,
+            PARAM_DUMP_BUFFER_SIZE_MS
     };
 
     @Override
@@ -39,6 +43,8 @@ public class RecordStartFunction extends RecordFunction {
                     return checkNumChannels((int) value);
                 case ATTR_BPS:
                     return checkBitPerSample((int) value);
+                case ATTR_DUMP_BUFFER_SIZE_MS:
+                    return (int) value >= 0;
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -109,6 +115,10 @@ public class RecordStartFunction extends RecordFunction {
         return PARAM_BPS.getValue();
     }
 
+    public int getDumpBufferSizeMs() {
+        return PARAM_DUMP_BUFFER_SIZE_MS.getValue();
+    }
+
     public void setSamplingFreq(int freq) {
         setParameter(ATTR_FS, freq);
     }
@@ -119,5 +129,9 @@ public class RecordStartFunction extends RecordFunction {
 
     public void setBitWidth(int bps) {
         setParameter(ATTR_BPS, bps);
+    }
+
+    public void setDumpBufferSizeMs(int ms) {
+        setParameter(ATTR_DUMP_BUFFER_SIZE_MS, ms);
     }
 }
