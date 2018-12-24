@@ -192,9 +192,12 @@ public class WifiCommunicator extends BroadcastReceiver implements
                 ArrayList<Communicator.PeerInfo> peerInfo = new ArrayList<>(10);
                 for (String name : mPeers.keySet()) {
                     Communicator.PeerInfo info = new Communicator.PeerInfo();
+                    WifiP2pDevice device = mPeers.get(name);
+                    if (device == null)
+                        continue;
                     info.name = name;
-                    info.status = getStatus(mPeers.get(name).status);
-                    if (mPeers.get(name).status == WifiP2pDevice.CONNECTED && !isConnected(info.name)) {
+                    info.status = getStatus(device.status);
+                    if (device.status == WifiP2pDevice.CONNECTED && !isConnected(info.name)) {
                         info.status = getStatus(WifiP2pDevice.FAILED);
                     }
                     peerInfo.add(info);
