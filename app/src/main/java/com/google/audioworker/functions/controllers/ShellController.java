@@ -3,6 +3,7 @@ package com.google.audioworker.functions.controllers;
 import android.content.Context;
 import android.util.Log;
 
+import com.google.audioworker.functions.commands.CommandHelper;
 import com.google.audioworker.functions.common.WorkerFunction;
 import com.google.audioworker.functions.shell.ShellFunction;
 import com.google.audioworker.utils.Constants;
@@ -11,6 +12,7 @@ import com.google.audioworker.utils.Constants;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -19,10 +21,12 @@ import java.util.concurrent.TimeUnit;
 public class ShellController extends ControllerBase {
     private final static String TAG = Constants.packageTag("ShellController");
 
+    private WeakReference<Context> mContextRef;
     private ThreadPoolExecutor mPoolExecuter;
 
     @Override
     public void activate(Context ctx) {
+        mContextRef = new WeakReference<>(ctx);
         mPoolExecuter = new ThreadPoolExecutor(
                 Constants.Controllers.Config.Common.MAX_THREAD_COUNT,
                 Constants.Controllers.Config.Common.MAX_THREAD_COUNT,
@@ -62,6 +66,38 @@ public class ShellController extends ControllerBase {
 
         @Override
         public void run() {
+            if (mFunction.isBroadcastFunction()) {
+                run_broadcast();
+                return;
+            }
+            run_legacy();
+        }
+
+        private void run_broadcast() {
+            WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(mFunction);
+            ArrayList<Object> returns = new ArrayList<>(2);
+
+            if (mContextRef.get() == null) {
+                if (mListener != null) {
+                    ack.setReturnCode(-1);
+                    ack.setDescription("No context to send broadcast");
+                    mListener.onAckReceived(ack);
+                }
+                return;
+            }
+
+            mContextRef.get().sendBroadcast(mFunction.getBroadcastIntent());
+            if (mListener != null) {
+                returns.add(mFunction.getCommand());
+                returns.add("" + CommandHelper.getFunction(mFunction.getBroadcastIntent()));
+                ack.setReturnCode(0);
+                ack.setDescription("send broadcast successfully");
+                ack.setReturns(returns);
+                mListener.onAckReceived(ack);
+            }
+        }
+
+        private void run_legacy() {
             WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(mFunction);
             ArrayList<Object> returns = new ArrayList<>(2);
             try {

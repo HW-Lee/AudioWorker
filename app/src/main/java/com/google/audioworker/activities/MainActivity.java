@@ -1,6 +1,5 @@
 package com.google.audioworker.activities;
 
-import android.content.BroadcastReceiver;
 import android.content.pm.PackageManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -55,7 +54,7 @@ public class MainActivity extends AppCompatActivity
     private String mSelectedReceiver;
 
     private MainController mMainController;
-    private BroadcastReceiver mBroadcastReceiver;
+    private CommandHelper.BroadcastHandler mBroadcastReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -174,6 +173,7 @@ public class MainActivity extends AppCompatActivity
     private void initControllers() {
         mCommunicator = new WifiCommunicator(this, this);
         mBroadcastReceiver = CommandHelper.BroadcastHandler.registerReceiver(this, this);
+        mBroadcastReceiver.registerCommuncator(mCommunicator);
         mMainController = new MainController();
         mMainController.activate(this);
     }

@@ -29,8 +29,8 @@ import com.google.audioworker.functions.audio.voip.VoIPStopFunction;
 import com.google.audioworker.functions.common.WorkerFunction;
 import com.google.audioworker.functions.shell.ShellFunction;
 import com.google.audioworker.utils.Constants;
+import com.google.audioworker.utils.communicate.base.Communicable;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -73,11 +73,26 @@ public class CommandHelper {
         }
     }
 
-    static private WorkerFunction getFunction(Intent intent) {
+    static public WorkerFunction getFunction(Intent intent) {
+        switch (Constants.getIntentOwner(intent)) {
+            case Constants.INTENT_OWNER_PLAYBACK:
+                return getPlaybackFunction(intent);
+            case Constants.INTENT_OWNER_RECORD:
+                return getRecordFunction(intent);
+            case Constants.INTENT_OWNER_VOIP:
+                return getVoIPFunction(intent);
+
+            default:
+                break;
+        }
+
         switch (Objects.requireNonNull(intent.getAction())) {
-            case Constants.DebugInterface.INTENT_JSON_TO_FUNCTION:
-                String cmd = intent.getStringExtra(Constants.DebugInterface.INTENT_JSON_TO_FUNCTION_KEY);
+            case Constants.DebugInterface.INTENT_RECEIVE_FUNCTION:
+                String cmd = intent.getStringExtra(Constants.DebugInterface.INTENT_KEY_FUNCTION_CONTENT);
                 return getFunction(cmd);
+
+            default:
+                break;
         }
         return null;
     }
@@ -98,22 +113,7 @@ public class CommandHelper {
         }
 
         if (obj.has(Constants.MessageSpecification.COMMAND_BROADCAST_INTENT)) {
-            StringBuilder intent = new StringBuilder("am broadcast -a");
-            intent.append(" ").append(obj.getString(Constants.MessageSpecification.COMMAND_BROADCAST_INTENT));
-            if (!obj.has(Constants.MessageSpecification.COMMAND_BROADCAST_PARAMS)) {
-                function = new ShellFunction(intent.toString());
-            } else {
-                JSONArray params = obj.getJSONArray(Constants.MessageSpecification.COMMAND_BROADCAST_PARAMS);
-                for (int i = 0; i < params.length(); i++) {
-                    JSONArray kvpair = params.getJSONArray(i);
-                    if (kvpair.length() < 2)
-                        continue;
-
-                    intent.append(" ").append(getParamString(kvpair.getString(0), kvpair.get(1)));
-                }
-
-                function = new ShellFunction(intent.toString());
-            }
+            function = new ShellFunction(obj);
         }
 
         if (obj.has(Constants.MessageSpecification.COMMAND_ID) && obj.getString(Constants.MessageSpecification.COMMAND_ID) != null && function != null) {
@@ -121,23 +121,6 @@ public class CommandHelper {
         }
 
         return function;
-    }
-
-    static private String getParamString(String key, Object value) {
-        if (value instanceof Integer)
-            return "--ei \"" + key + "\" " + Integer.valueOf(value.toString());
-
-        if (value instanceof Double || value instanceof Float)
-            return "--ef \"" + key + "\" " + Float.valueOf(value.toString());
-
-        if (value instanceof String)
-            return "--es \"" + key + "\" \"" + value + "\"";
-
-        return "";
-    }
-
-    static private PlaybackFunction getPlaybackFunction(JSONObject cmd) {
-        return null;
     }
 
     static private void checkParameters(WorkerFunction function, Intent intent) {
@@ -179,10 +162,6 @@ public class CommandHelper {
         return function;
     }
 
-    static private RecordFunction getRecordFunction(String cmd) {
-        return null;
-    }
-
     static private RecordFunction getRecordFunction(Intent intent) {
         RecordFunction function;
         switch (Objects.requireNonNull(intent.getAction())) {
@@ -214,10 +193,6 @@ public class CommandHelper {
 
         checkParameters(function, intent);
         return function;
-    }
-
-    static private VoIPFunction getVoIPFunction(String cmd) {
-        return null;
     }
 
     static private VoIPFunction getVoIPFunction(Intent intent) {
@@ -270,12 +245,17 @@ public class CommandHelper {
         }
 
         private FunctionReceivedListener mListener;
+        private Communicable<String, String> mCommunicator;
 
         public BroadcastHandler(FunctionReceivedListener l) {
             mListener = l;
         }
 
-        static public BroadcastReceiver registerReceiver(Context ctx, FunctionReceivedListener l) {
+        public void registerCommuncator(Communicable<String, String> communicator) {
+            mCommunicator = communicator;
+        }
+
+        static public BroadcastHandler registerReceiver(Context ctx, FunctionReceivedListener l) {
             BroadcastHandler handler = new BroadcastHandler(l);
             IntentFilter intentFilter = new IntentFilter("android.intent.action.MAIN");
             ctx.registerReceiver(handler, intentFilter);
@@ -313,6 +293,16 @@ public class CommandHelper {
                     break;
                 case Constants.INTENT_OWNER_VOIP:
                     mListener.onFunctionReceived(CommandHelper.getVoIPFunction(intent));
+                    break;
+
+                case Constants.DebugInterface.INTENT_RECEIVE_FUNCTION:
+                    mListener.onFunctionReceived(CommandHelper.getFunction(intent));
+                    break;
+                case Constants.DebugInterface.INTNET_SEND_FUNCTION:
+                    String recv = intent.getStringExtra(Constants.DebugInterface.INTENT_KEY_RECEIVER_ID);
+                    String func = intent.getStringExtra(Constants.DebugInterface.INTENT_KEY_FUNCTION_CONTENT);
+                    if (mCommunicator != null && recv != null && func != null)
+                        mCommunicator.send(recv, func);
                     break;
 
                 default:
