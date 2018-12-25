@@ -8,6 +8,7 @@ import android.util.Log;
 import android.util.SparseArray;
 
 import com.google.audioworker.functions.audio.record.RecordDetectFunction;
+import com.google.audioworker.functions.audio.record.RecordDumpFunction;
 import com.google.audioworker.functions.audio.record.RecordFunction;
 import com.google.audioworker.functions.audio.record.RecordInfoFunction;
 import com.google.audioworker.functions.audio.record.RecordStartFunction;
@@ -16,10 +17,14 @@ import com.google.audioworker.functions.audio.record.detectors.DetectorBase;
 import com.google.audioworker.functions.audio.record.detectors.ToneDetector;
 import com.google.audioworker.functions.common.WorkerFunction;
 import com.google.audioworker.utils.Constants;
+import com.google.audioworker.utils.signalproc.WavUtils;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -29,6 +34,7 @@ import java.util.HashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RecordController extends ControllerBase {
     private final static String TAG = Constants.packageTag("RecordController");
@@ -205,6 +211,19 @@ public class RecordController extends ControllerBase {
                     default:
                         break;
                 }
+            } else if (function instanceof RecordDumpFunction) {
+                WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
+                if (mMainRunningTask == null || mMainRunningTask.hasDone()) {
+                    if (l != null) {
+                        ack.setReturnCode(-1);
+                        ack.setDescription("no recording process running");
+                        l.onAckReceived(ack);
+                    }
+                    return;
+                }
+
+                String path = new File(getDataDir(), ((RecordDumpFunction) function).getFileName()).getAbsolutePath();
+                mMainRunningTask.dumpBufferTo(path, function);
             }
         } else {
             if (function.isValid())
@@ -267,12 +286,48 @@ public class RecordController extends ControllerBase {
         }
     }
 
+    static class RecordCircularBuffer {
+        private byte[] raw;
+        private int head = 0;
+        private int len = 0;
+
+        RecordCircularBuffer(int buffsize) {
+            raw = new byte[buffsize];
+        }
+
+        void push(byte[] src) {
+            synchronized (this) {
+                for (byte v : src) {
+                    raw[(head + len) % raw.length] = v;
+                    if (len < raw.length) {
+                        len++;
+                    } else {
+                        head++;
+                        head %= raw.length;
+                    }
+                }
+            }
+        }
+
+        void fetch(byte[] dest) {
+            synchronized (this) {
+                for (int i = 0; i < dest.length; i++) {
+                    dest[i] = raw[(head + i) % raw.length];
+                }
+            }
+        }
+    }
+
     public static class RecordRunnable implements Runnable {
         private RecordStartFunction mStartFunction;
         private RecordStopFunction mStopFunction;
         private WorkerFunction.WorkerFunctionListener mListener;
 
         private final RecordSharedBuffer sharedBuffer;
+        private final AtomicBoolean needPush;
+
+        private final RecordCircularBuffer dumpBuffer;
+        private final int dumpBufferSize;
         private RecordInternalRunnable slave;
 
         private final ArrayList<DetectorBase> mDetectors;
@@ -286,6 +341,9 @@ public class RecordController extends ControllerBase {
             int minBuffsize = AudioRecord.getMinBufferSize(
                     mStartFunction.getSamplingFreq(), parseChannelMask(mStartFunction.getNumChannels()), parseEncodingFormat(mStartFunction.getBitWidth()));
             sharedBuffer = new RecordSharedBuffer(minBuffsize);
+            dumpBufferSize = mStartFunction.getBitWidth() / 8 * mStartFunction.getNumChannels() * mStartFunction.getSamplingFreq() * mStartFunction.getDumpBufferSizeMs() / 1000;
+            dumpBuffer = new RecordCircularBuffer(dumpBufferSize);
+            needPush = new AtomicBoolean(true);
             mDetectors = new ArrayList<>();
         }
 
@@ -375,7 +433,6 @@ public class RecordController extends ControllerBase {
             int minBuffsize = sharedBuffer.raw.length;
             long minBuffsizeMillis = minBuffsize*1000 / mStartFunction.getSamplingFreq() / mStartFunction.getNumChannels() / (mStartFunction.getBitWidth() / 8);
             byte[] buffer = new byte[minBuffsize];
-            int cnt = 0;
             Log.d(TAG, "RecordRunnable: start running");
             returnAck(mStartFunction, 0);
             while (!exitPending) {
@@ -394,15 +451,36 @@ public class RecordController extends ControllerBase {
                     Arrays.fill(buffer, (byte) 0);
                 }
 
-                short[] frame = new short[buffer.length / 2];
-                ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(frame);
-                ArrayList<Double> values = new ArrayList<>(frame.length);
-                for (short v : frame)
-                    values.add(v * 1.0 / (1 << 15));
+                pushDumpBuffer(buffer);
+
+                ArrayList<ArrayList<Double>> values = new ArrayList<>(mStartFunction.getNumChannels());
+                for (int c = 0; c < mStartFunction.getNumChannels(); c++)
+                    values.add(new ArrayList<Double>());
+                switch (mStartFunction.getBitWidth()) {
+                    case 8: {
+                        for (int i = 0; i < buffer.length; i++) {
+                            byte v = buffer[i];
+                            values.get(i % mStartFunction.getNumChannels()).add(v * 1.0 / (1 << 7));
+                        }
+                    }
+                        break;
+
+                    default:
+                    case 16: {
+                        short[] frame = new short[buffer.length / 2];
+                        ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(frame);
+
+                        for (int i = 0; i < frame.length; i++) {
+                            short v = frame[i];
+                            values.get(i % mStartFunction.getNumChannels()).add(v * 1.0 / (1 << 15));
+                        }
+                    }
+                        break;
+                }
 
                 synchronized (mDetectors) {
                     for (DetectorBase detector : mDetectors)
-                        detector.feed(values);
+                        detector.feed(values.get(0));
                 }
             }
             if (mStopFunction != null) {
@@ -414,6 +492,69 @@ public class RecordController extends ControllerBase {
             if (slave != null) {
                 slave.tryStop();
                 slave = null;
+            }
+        }
+
+        private void pushDumpBuffer(final byte[] buffer) {
+            if (dumpBufferSize <= 0 || !needPush.get())
+                return;
+
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    dumpBuffer.push(buffer);
+                }
+            }).start();
+        }
+
+        public void dumpBufferTo(final String path, final WorkerFunction function) {
+            if (dumpBufferSize <= 0)
+                return;
+
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    _dumpBufferTo(path, function);
+                }
+            }).start();
+        }
+
+        private void _dumpBufferTo(String path, WorkerFunction function) {
+            WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
+            ArrayList<Object> returns = new ArrayList<>();
+            WavUtils.WavConfig config = new WavUtils.WavConfig.Builder()
+                    .withDurationMillis(mStartFunction.getDumpBufferSizeMs())
+                    .withBitPerSample(mStartFunction.getBitWidth())
+                    .withNumChannels(mStartFunction.getNumChannels())
+                    .withSamplingFrequency(mStartFunction.getSamplingFreq()).build();
+
+            try {
+                DataOutputStream dump = WavUtils.obtainWavFile(config, path);
+                byte[] buffer = new byte[dumpBufferSize];
+
+                needPush.set(false);
+                dumpBuffer.fetch(buffer);
+                needPush.set(true);
+
+                Log.d(TAG, "dump buffer: " + buffer.length + " bytes");
+                dump.write(buffer);
+                dump.close();
+
+                returns.add(path);
+                ack.setReturnCode(0);
+                ack.setDescription("Record dump successfully");
+                ack.setReturns(returns);
+            } catch (IOException e) {
+                e.printStackTrace();
+
+                returns.add(e.getMessage());
+                ack.setReturnCode(-1);
+                ack.setDescription("Record dump failed: IO Exception");
+                ack.setReturns(returns);
+            }
+
+            if (mListener != null) {
+                mListener.onAckReceived(ack);
             }
         }
     }

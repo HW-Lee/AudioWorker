@@ -19,12 +19,14 @@ import com.google.audioworker.functions.audio.voip.VoIPFunction;
 import com.google.audioworker.functions.audio.voip.VoIPInfoFunction;
 import com.google.audioworker.functions.audio.voip.VoIPStartFunction;
 import com.google.audioworker.functions.audio.voip.VoIPStopFunction;
+import com.google.audioworker.functions.audio.voip.VoIPTxDumpFunction;
 import com.google.audioworker.functions.common.WorkerFunction;
 import com.google.audioworker.utils.Constants;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -265,6 +267,19 @@ public class VoIPController extends ControllerBase {
                 ack.setReturnCode(0);
                 ack.setDescription("info returned");
                 l.onAckReceived(ack);
+            } else if (function instanceof VoIPTxDumpFunction) {
+                WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
+                if (mTxRunnable == null || mTxRunnable.hasDone()) {
+                    if (l != null) {
+                        ack.setReturnCode(-1);
+                        ack.setDescription("no recording process running");
+                        l.onAckReceived(ack);
+                    }
+                    return;
+                }
+
+                String path = new File(getDataDir(), ((VoIPTxDumpFunction) function).getFileName()).getAbsolutePath();
+                mTxRunnable.dumpBufferTo(path, function);
             }
         } else {
             if (function.isValid())

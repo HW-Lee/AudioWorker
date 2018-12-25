@@ -14,6 +14,7 @@ import com.google.audioworker.functions.audio.playback.PlaybackInfoFunction;
 import com.google.audioworker.functions.audio.playback.PlaybackStartFunction;
 import com.google.audioworker.functions.audio.playback.PlaybackStopFunction;
 import com.google.audioworker.functions.audio.record.RecordDetectFunction;
+import com.google.audioworker.functions.audio.record.RecordDumpFunction;
 import com.google.audioworker.functions.audio.record.RecordEventFunction;
 import com.google.audioworker.functions.audio.record.RecordFunction;
 import com.google.audioworker.functions.audio.record.RecordInfoFunction;
@@ -26,6 +27,7 @@ import com.google.audioworker.functions.audio.voip.VoIPFunction;
 import com.google.audioworker.functions.audio.voip.VoIPInfoFunction;
 import com.google.audioworker.functions.audio.voip.VoIPStartFunction;
 import com.google.audioworker.functions.audio.voip.VoIPStopFunction;
+import com.google.audioworker.functions.audio.voip.VoIPTxDumpFunction;
 import com.google.audioworker.functions.common.WorkerFunction;
 import com.google.audioworker.functions.shell.ShellFunction;
 import com.google.audioworker.utils.Constants;
@@ -183,6 +185,9 @@ public class CommandHelper {
             case Constants.MasterInterface.INTENT_RECORD_DETECT_SETPARAMS:
                 function = new RecordDetectFunction(RecordDetectFunction.OP_SETPARAMS);
                 break;
+            case Constants.MasterInterface.INTENT_RECORD_DUMP:
+                function = new RecordDumpFunction();
+                break;
             case Constants.SlaveInterface.INTENT_RECORD_EVENT:
                 function = new RecordEventFunction();
                 break;
@@ -218,6 +223,9 @@ public class CommandHelper {
                 break;
             case Constants.MasterInterface.INTENT_VOIP_DETECT_SETPARAMS:
                 function = new VoIPDetectFunction(RecordDetectFunction.OP_SETPARAMS);
+                break;
+            case Constants.MasterInterface.INTENT_VOIP_TX_DUMP:
+                function = new VoIPTxDumpFunction();
                 break;
             case Constants.SlaveInterface.INTENT_VOIP_EVENT:
                 function = new VoIPEventFunction();
