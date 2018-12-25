@@ -113,6 +113,7 @@ public class VoIPStartFunction extends VoIPFunction {
             case 24000:
             case 32000:
             case 44100:
+            case 48000:
                 return true;
         }
         return false;
