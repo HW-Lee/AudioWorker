@@ -233,9 +233,9 @@ public abstract class WorkerFunction {
                     && (this.value instanceof Float || this.value instanceof Integer)) {
                 float v;
                 if (value instanceof Integer)
-                    v = Float.valueOf(value.toString());
+                    v = (int) value;
                 else
-                    v = (Float) value;
+                    v = (float) value;
 
                 if (this.value instanceof Float)
                     this.value = (T) Float.valueOf(v);

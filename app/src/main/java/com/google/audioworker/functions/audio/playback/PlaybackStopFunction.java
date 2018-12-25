@@ -14,7 +14,7 @@ public class PlaybackStopFunction extends PlaybackFunction {
     };
 
     private Parameter<String> PARAM_TYPE = new Parameter<>(ATTR_TYPE, true, null);
-    private Parameter<Integer> PARAM_PLAYBACK_ID = new Parameter<>(ATTR_PLAYBACK_ID, true, null);
+    private Parameter<Integer> PARAM_PLAYBACK_ID = new Parameter<>(ATTR_PLAYBACK_ID, true, -1);
     private Parameter[] PARAMS = {
             PARAM_TYPE,
             PARAM_PLAYBACK_ID

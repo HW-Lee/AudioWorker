@@ -1,5 +1,7 @@
 package com.google.audioworker.functions.audio.voip;
 
+import android.util.Log;
+
 import com.google.audioworker.utils.Constants;
 
 public class VoIPStartFunction extends VoIPFunction {
@@ -27,7 +29,7 @@ public class VoIPStartFunction extends VoIPFunction {
             ATTR_TX_DUMP_BUFFER_SIZE_MS
     };
 
-    private Parameter<Float> PARAM_TARGET_FREQ = new Parameter<>(ATTR_TARGET_FREQ, true, null);
+    private Parameter<Float> PARAM_TARGET_FREQ = new Parameter<>(ATTR_TARGET_FREQ, true, -1f);
     private Parameter<Float> PARAM_RX_AMP = new Parameter<>(ATTR_RX_AMP, false, Constants.VoIPDefaultConfig.Rx.AMPLITUDE);
     private Parameter<Integer> PARAM_RX_FS = new Parameter<>(ATTR_RX_FS, false, Constants.VoIPDefaultConfig.Rx.SAMPLINGFREQ);
     private Parameter<Integer> PARAM_RX_NCH = new Parameter<>(ATTR_RX_NCH, false, Constants.VoIPDefaultConfig.Rx.NUMCHANNELS);
@@ -98,7 +100,7 @@ public class VoIPStartFunction extends VoIPFunction {
     }
 
     private boolean checkTargetFreq(float freq) {
-        return freq > 0 && freq < PARAM_RX_FS.getValue()/2.0f;
+        return freq > 0;
     }
 
     private boolean checkAmplitude(float amp) {

@@ -25,8 +25,8 @@ public class PlaybackStartFunction extends PlaybackFunction {
     };
 
     private Parameter<String> PARAM_TYPE = new AudioFunction.Parameter<>(ATTR_TYPE, true, null);
-    private Parameter<Float> PARAM_TARGET_FREQ = new AudioFunction.Parameter<>(ATTR_TARGET_FREQ, true, null);
-    private Parameter<Integer> PARAM_PLAYBACK_ID = new AudioFunction.Parameter<>(ATTR_PLAYBACK_ID, true, null);
+    private Parameter<Float> PARAM_TARGET_FREQ = new AudioFunction.Parameter<>(ATTR_TARGET_FREQ, true, -1f);
+    private Parameter<Integer> PARAM_PLAYBACK_ID = new AudioFunction.Parameter<>(ATTR_PLAYBACK_ID, true, -1);
     private Parameter<Float> PARAM_AMPLITUDE = new AudioFunction.Parameter<>(ATTR_AMPLITUDE, false, Constants.PlaybackDefaultConfig.AMPLITUDE);
     private Parameter<Integer> PARAM_FS = new AudioFunction.Parameter<>(ATTR_FS, false, Constants.PlaybackDefaultConfig.SAMPLINGFREQ);
     private Parameter<Integer> PARAM_NCH = new AudioFunction.Parameter<>(ATTR_NCH, false, Constants.PlaybackDefaultConfig.NUMCHANNELS);
@@ -103,7 +103,7 @@ public class PlaybackStartFunction extends PlaybackFunction {
     }
 
     private boolean checkTargetFreq(float freq) {
-        return freq > 0 && freq < PARAM_FS.getValue()/2.0f;
+        return freq > 0;
     }
 
     private boolean checkPlaybackId(int id) {
