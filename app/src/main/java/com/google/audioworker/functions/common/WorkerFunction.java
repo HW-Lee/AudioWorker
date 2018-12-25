@@ -51,7 +51,7 @@ public abstract class WorkerFunction {
     private Collection<String> getRequiredNotDefinedAttributes() {
         ArrayList<String> requiredNotDefined = new ArrayList<>();
         for (Parameter parameter : getParameters()) {
-            if (parameter.isRequired() && parameter.getValue() == null)
+            if (parameter.isRequired() && !parameter.beenSet())
                 requiredNotDefined.add(parameter.getAttribute());
         }
 
@@ -203,11 +203,13 @@ public abstract class WorkerFunction {
     public static class Parameter<T> {
         private String attr;
         private boolean required;
+        private boolean set;
         private T value;
 
         public Parameter(String attr, boolean required, T defaultValue) {
             this.attr = attr;
             this.required = required;
+            this.set = false;
             this.value = defaultValue;
         }
 
@@ -227,8 +229,16 @@ public abstract class WorkerFunction {
             return value;
         }
 
+        public boolean beenSet() {
+            return this.set;
+        }
+
         @SuppressWarnings("unchecked")
         public void setValue(Object value) {
+            if (value == null)
+                return;
+            
+            this.set = true;
             if ((value instanceof Float || value instanceof Integer)
                     && (this.value instanceof Float || this.value instanceof Integer)) {
                 float v;
