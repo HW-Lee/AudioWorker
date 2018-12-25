@@ -331,6 +331,8 @@ public class VoIPController extends ControllerBase {
         private WorkerFunction.WorkerFunctionListener mListener;
         private WorkerFunction mFunction;
 
+        private boolean isRunning;
+
         private boolean isRxRunning;
         private boolean isTxRunning;
 
@@ -339,6 +341,7 @@ public class VoIPController extends ControllerBase {
             mListener = l;
             isRxRunning = false;
             isTxRunning = false;
+            isRunning = false;
         }
 
         @Override
@@ -359,12 +362,14 @@ public class VoIPController extends ControllerBase {
                 isTxRunning = ack.getReturnCode() >= 0;
             }
 
-            if (isRxRunning && isTxRunning && mListener != null) {
+            if (isRxRunning && isTxRunning && mListener != null && !isRunning) {
+                isRunning = true;
                 WorkerFunction.Ack oack = WorkerFunction.Ack.ackToFunction(mFunction);
                 oack.setReturnCode(0);
                 oack.setDescription("VoIP starts");
                 mListener.onAckReceived(oack);
-            } else if (!isRxRunning && !isTxRunning && mListener != null) {
+            } else if (!isRxRunning && !isTxRunning && mListener != null && isRunning) {
+                isRunning = false;
                 WorkerFunction function = new VoIPStopFunction();
                 String cmdId = ack.getTarget();
                 String[] tags = {"p-start", "p-stop", "c-start", "c-stop"};
