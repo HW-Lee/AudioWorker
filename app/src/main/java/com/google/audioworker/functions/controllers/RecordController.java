@@ -439,7 +439,7 @@ public class RecordController extends ControllerBase {
                 try {
                     if (!sharedBuffer.dataAvailable()) {
                         synchronized (this) {
-                            wait((long) (minBuffsizeMillis * 1.1));
+                            wait((long) (minBuffsizeMillis * Constants.Controllers.Config.Record.TIMEOUT_MULTIPLIER));
                         }
                     }
                 } catch (InterruptedException e) {

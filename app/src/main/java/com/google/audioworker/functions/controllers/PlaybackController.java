@@ -111,6 +111,7 @@ public class PlaybackController extends ControllerBase {
                     WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
                     ack.setReturnCode(-1);
                     ack.setDescription("invalid argument: the task[" + playbackType + ": " + playbackId + "] does not exist");
+                    l.onAckReceived(ack);
                 }
             } else if (function instanceof PlaybackInfoFunction) {
                 mPoolExecuter.execute(new PlaybackInfoRunnable((PlaybackInfoFunction) function, l));
