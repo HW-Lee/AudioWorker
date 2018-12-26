@@ -10,7 +10,6 @@ import com.google.audioworker.utils.Constants;
 import org.json.JSONException;
 
 import java.util.HashMap;
-import java.util.Objects;
 
 public class MainController extends ManagerController {
     private final static String TAG = Constants.packageTag("MainController");
@@ -38,8 +37,8 @@ public class MainController extends ManagerController {
         String targetId;
         try {
             targetId = ack.getString(Constants.MessageSpecification.COMMAND_ACK_TARGET);
-            if (mRequestedFunctions.containsKey(targetId)) {
-                Objects.requireNonNull(mRequestedFunctions.get(targetId)).setAck(ack);
+            if (mRequestedFunctions.containsKey(targetId) && mRequestedFunctions.get(targetId) != null) {
+                mRequestedFunctions.get(targetId).pushAck(ack);
                 listFunctions();
             }
         } catch (JSONException e) {
@@ -65,8 +64,10 @@ public class MainController extends ManagerController {
 
     private void listFunctions() {
         for (String targetId : mRequestedFunctions.keySet()) {
+            if (mRequestedFunctions.get(targetId) == null)
+                continue;
             Log.d(TAG, "Requested WorkerFunction#" + targetId);
-            Log.d(TAG, Objects.requireNonNull(mRequestedFunctions.get(targetId)).toString());
+            Log.d(TAG, mRequestedFunctions.get(targetId).toString());
         }
     }
 }

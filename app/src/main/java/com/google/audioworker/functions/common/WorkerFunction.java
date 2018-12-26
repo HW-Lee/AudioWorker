@@ -18,7 +18,7 @@ public abstract class WorkerFunction {
     abstract public void setParameter(String attr, Object value);
 
     protected String mCommandId;
-    protected Ack mAck;
+    protected final ArrayList<Ack> mAcks = new ArrayList<>();
 
     public interface WorkerFunctionListener {
         public void onAckReceived(Ack ack);
@@ -32,16 +32,18 @@ public abstract class WorkerFunction {
         return mCommandId;
     }
 
-    public void setAck(Ack ack) {
-        mAck = ack;
+    public void pushAck(Ack ack) {
+        synchronized (mAcks) {
+            mAcks.add(ack);
+        }
     }
 
-    public Ack getAck() {
-        return mAck;
+    public ArrayList<Ack> getAcks() {
+        return mAcks;
     }
 
     public boolean isExecuted() {
-        return mAck != null;
+        return mAcks.size() > 0;
     }
 
     public boolean isValid() {
@@ -65,7 +67,12 @@ public abstract class WorkerFunction {
         save_put(info, "class", getClass().asSubclass(getClass()).getName());
         save_put(info, "has-ack", isExecuted());
         if (isExecuted()) {
-            save_put(info, "ack", mAck);
+            JSONArray arr = new JSONArray();
+            synchronized (mAcks) {
+                for (Ack ack : mAcks)
+                    arr.put(ack.toString());
+            }
+            save_put(info, "ack", arr);
         }
         for (Parameter parameter : getParameters()) {
             save_put(params, parameter.getAttribute(), parameter.getValue());
