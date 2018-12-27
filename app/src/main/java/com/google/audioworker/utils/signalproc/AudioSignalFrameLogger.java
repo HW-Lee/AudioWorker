@@ -16,7 +16,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Locale;
 
 /**
  * Created by hw_lee on 2018/3/9.
@@ -39,7 +38,7 @@ public class AudioSignalFrameLogger {
             mName = name;
             mFs = fs;
             mValues = Arrays.copyOf(value, value.length);
-            createAt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS '(UTF+8)'", Locale.TAIWAN).format(Calendar.getInstance().getTime());
+            createAt = new SimpleDateFormat(Constants.Logging.TIME_FORMAT, Constants.Logging.LOCALE).format(Calendar.getInstance().getTime());
         }
 
         public String getCreateAt() {
