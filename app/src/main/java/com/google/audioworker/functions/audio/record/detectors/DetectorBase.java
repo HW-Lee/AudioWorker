@@ -24,7 +24,7 @@ public abstract class DetectorBase {
 
     abstract public Target getTargetById(int id);
     abstract public void registerTarget(Target target);
-    abstract public void feed(List<? extends Number> data);
+    abstract public void feed(List<? extends Double>[] data);
     abstract public boolean parseParameters(String params);
     abstract public boolean setParameters(String params);
     abstract public String getHandle();

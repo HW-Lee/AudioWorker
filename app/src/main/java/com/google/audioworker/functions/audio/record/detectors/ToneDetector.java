@@ -5,6 +5,7 @@ import android.util.Log;
 import android.util.SparseArray;
 
 import com.google.audioworker.utils.Constants;
+import com.google.audioworker.utils.ds.CircularArray;
 import com.google.audioworker.utils.signalproc.FFT;
 
 import org.json.JSONArray;
@@ -19,7 +20,7 @@ public class ToneDetector extends DetectorBase {
 
     private int mSamplingFreq;
     private int mProcessFrameMillis = Constants.DetectorConfig.ToneDetector.PROCESS_FRAME_MILLIS;
-    private ArrayList<Double> mBuffer;
+    private CircularArray<Double> mBuffer;
     final private ArrayList<Target> mTargets;
 
     public static class Target extends DetectorBase.Target {
@@ -44,7 +45,7 @@ public class ToneDetector extends DetectorBase {
     public ToneDetector(DetectionListener l, String params) {
         super(l, params);
         int numSamples = mProcessFrameMillis * mSamplingFreq / 1000;
-        mBuffer = new ArrayList<>(numSamples);
+        mBuffer = new CircularArray<>(numSamples);
         for (int i = 0; i < numSamples; i++)
             mBuffer.add(0.);
         mTargets = new ArrayList<>();
@@ -71,14 +72,8 @@ public class ToneDetector extends DetectorBase {
     }
 
     @Override
-    public void feed(List<? extends Number> data) {
-        while (data.size() > mBuffer.size()) {
-            mBuffer.add(0.);
-        }
-        for (Number d : data) {
-            mBuffer.add(Double.valueOf(d.toString()));
-            mBuffer.remove(0);
-        }
+    public void feed(List<? extends Double>[] data) {
+        mBuffer.addAll(data[0]);
 
         final double[] signal = new double[mBuffer.size()];
         for (int i = 0; i < signal.length; i++)

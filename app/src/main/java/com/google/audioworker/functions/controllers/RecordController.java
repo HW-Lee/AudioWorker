@@ -453,14 +453,16 @@ public class RecordController extends ControllerBase {
 
                 pushDumpBuffer(buffer);
 
-                ArrayList<ArrayList<Double>> values = new ArrayList<>(mStartFunction.getNumChannels());
+                @SuppressWarnings("unchecked")
+                ArrayList<Double>[] values = new ArrayList[mStartFunction.getNumChannels()];
                 for (int c = 0; c < mStartFunction.getNumChannels(); c++)
-                    values.add(new ArrayList<Double>());
+                    values[0] = new ArrayList<>();
+
                 switch (mStartFunction.getBitWidth()) {
                     case 8: {
                         for (int i = 0; i < buffer.length; i++) {
                             byte v = buffer[i];
-                            values.get(i % mStartFunction.getNumChannels()).add(v * 1.0 / (1 << 7));
+                            values[i % mStartFunction.getNumChannels()].add(v * 1.0 / (1 << 7));
                         }
                     }
                         break;
@@ -472,7 +474,7 @@ public class RecordController extends ControllerBase {
 
                         for (int i = 0; i < frame.length; i++) {
                             short v = frame[i];
-                            values.get(i % mStartFunction.getNumChannels()).add(v * 1.0 / (1 << 15));
+                            values[i % mStartFunction.getNumChannels()].add(v * 1.0 / (1 << 15));
                         }
                     }
                         break;
@@ -480,7 +482,7 @@ public class RecordController extends ControllerBase {
 
                 synchronized (mDetectors) {
                     for (DetectorBase detector : mDetectors)
-                        detector.feed(values.get(0));
+                        detector.feed(values);
                 }
             }
             if (mStopFunction != null) {
