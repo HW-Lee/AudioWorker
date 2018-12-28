@@ -1,7 +1,5 @@
 package com.google.audioworker.functions.audio.voip;
 
-import android.util.Log;
-
 import com.google.audioworker.utils.Constants;
 
 public class VoIPStartFunction extends VoIPFunction {
