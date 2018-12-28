@@ -42,6 +42,7 @@ public class WifiCommunicator extends BroadcastReceiver implements
     private HashMap<String, WifiP2pDevice> mPeers;
 
     private Method setDeviceNameMethod;
+    private String mName;
 
     private ExchangeableThread<String, String> mRunningThread;
 
@@ -95,6 +96,11 @@ public class WifiCommunicator extends BroadcastReceiver implements
         }
 
         mPeers = new HashMap<>();
+    }
+
+    @Override
+    public String getName() {
+        return mName;
     }
 
     @Override
@@ -161,9 +167,7 @@ public class WifiCommunicator extends BroadcastReceiver implements
                     e.printStackTrace();
                 }
             }
-            if (mActivity.get() != null) {
-                mActivity.get().updateThisDeviceInfo(d.deviceName + "[" + d.deviceAddress + "]");
-            }
+            mName = d.deviceName + "[" + d.deviceAddress + "]";
         } else if (WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION.equals(action)) {
             Log.d(TAG, "now trying to request peers");
             mWifiP2pManager.requestPeers(mChannel, this);

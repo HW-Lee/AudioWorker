@@ -1,20 +1,17 @@
 package com.google.audioworker.activities;
 
+import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTabHost;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.CompoundButton;
-import android.widget.EditText;
-import android.widget.ListView;
-import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.google.audioworker.R;
@@ -26,14 +23,11 @@ import com.google.audioworker.utils.communicate.base.Communicable;
 import com.google.audioworker.utils.communicate.base.Communicator;
 import com.google.audioworker.utils.communicate.base.Exchangeable;
 import com.google.audioworker.utils.communicate.wifip2p.WifiCommunicator;
-import com.google.audioworker.views.PeerListAdapter;
 
 import org.json.JSONException;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
 
 public class MainActivity extends AppCompatActivity
         implements Exchangeable.ExchangeListener<String, String>, Communicator.CommunicatorListener,
@@ -42,19 +36,12 @@ public class MainActivity extends AppCompatActivity
 
     private Communicable<String, String> mCommunicator;
 
-    private EditText mThisDeviceInfoText;
-    private PeerListAdapter mPeerListAdapter;
-    private final Object lock = new Object();
-    private Button mConnectBtn;
-
-    private boolean isRunning = false;
-
-    private ArrayList<Communicator.PeerInfo> mPeers;
-    private ArrayList<String> mConnectedPeers;
-    private String mSelectedReceiver;
+    private FragmentTabHost mTabHost;
 
     private MainController mMainController;
     private CommandHelper.BroadcastHandler mBroadcastReceiver;
+
+    private final ArrayList<Communicator.PeerInfo> mPeers = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -95,79 +82,26 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void initUI() {
-        mThisDeviceInfoText = findViewById(R.id.this_device_info);
-        CheckBox cb = findViewById(R.id.master_select);
+        mTabHost = findViewById(R.id.tab_host);
+        mTabHost.setup(this, getSupportFragmentManager(), R.id.fragment_container);
 
-        cb.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        for (Constants.Fragments.FragmentInfo info : Constants.Fragments.FRAGMENT_INFOS) {
+            mTabHost.addTab(mTabHost.newTabSpec(info.spec).setIndicator(info.label, null), info.classTarget, null);
+        }
+
+        getSupportFragmentManager().registerFragmentLifecycleCallbacks(new FragmentManager.FragmentLifecycleCallbacks() {
             @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked) {
-                    findViewById(R.id.peer_list).setVisibility(View.VISIBLE);
-                    findViewById(R.id.connect_btn).setVisibility(View.VISIBLE);
-                    findViewById(R.id.connect_btn).setClickable(true);
-                } else {
-                    findViewById(R.id.peer_list).setVisibility(View.INVISIBLE);
-                    findViewById(R.id.connect_btn).setVisibility(View.INVISIBLE);
-                    findViewById(R.id.connect_btn).setClickable(false);
-                }
-            }
-        });
-
-        mPeers = new ArrayList<>(10);
-
-        mConnectBtn = findViewById(R.id.connect_btn);
-        mConnectBtn.setText("Connect");
-
-        mConnectBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startConnecting();
-            }
-        });
-
-        mPeerListAdapter = new PeerListAdapter(this);
-        ((ListView) findViewById(R.id.peer_list)).setAdapter(mPeerListAdapter);
-
-        mConnectedPeers = new ArrayList<>(10);
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, android.R.id.text1, mConnectedPeers);
-        ((Spinner) findViewById(R.id.send_to_spinner)).setAdapter(adapter);
-        ((Spinner) findViewById(R.id.send_to_spinner)).setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                Log.d(TAG, "Selected Receiver: '" + mConnectedPeers.get(position) + "'");
-                mSelectedReceiver = mConnectedPeers.get(position);
+            public void onFragmentStarted(@NonNull FragmentManager fm, @NonNull Fragment f) {
+                super.onFragmentStarted(fm, f);
+                handleFragment();
             }
 
             @Override
-            public void onNothingSelected(AdapterView<?> parent) {
+            public void onFragmentResumed(@NonNull FragmentManager fm, @NonNull Fragment f) {
+                super.onFragmentResumed(fm, f);
+                handleFragment();
             }
-        });
-
-        findViewById(R.id.send_to_btn).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String text = ((EditText) findViewById(R.id.msg_text)).getText().toString();
-                if (mSelectedReceiver != null) {
-                    CommandHelper.Command cmd = null;
-                    try {
-                        cmd = new CommandHelper.Command(text);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    if (cmd != null)
-                        text = cmd.toString();
-                    mCommunicator.send(mSelectedReceiver, text);
-                }
-                Toast.makeText(MainActivity.this, "send '" + text + "' to '" + mSelectedReceiver + "'", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        findViewById(R.id.refresh_btn).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mCommunicator.refreshPeers();
-            }
-        });
+        }, true);
     }
 
     private void initControllers() {
@@ -178,21 +112,12 @@ public class MainActivity extends AppCompatActivity
         mMainController.activate(this);
     }
 
-    public void updateThisDeviceInfo(String deviceInfo) {
-        mThisDeviceInfoText.setText(deviceInfo);
+    public Communicable<String, String> getCommunicator() {
+        return mCommunicator;
     }
 
-    private void startConnecting() {
-        for (String selectedPeer : mPeerListAdapter.getSelectedPeers()) {
-            if (!mCommunicator.isConnected(selectedPeer))
-                mCommunicator.connectTo(selectedPeer);
-        }
-    }
-
-    private void startRunning() {
-    }
-
-    private void stopRunning() {
+    private Fragment getFragment() {
+        return getSupportFragmentManager().findFragmentById(R.id.fragment_container);
     }
 
     @Override
@@ -228,41 +153,6 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onPeerInfoUpdated(Collection<Communicator.PeerInfo> peers) {
-        synchronized (lock) {
-            mPeers.clear();
-            mPeers.addAll(peers);
-            mConnectedPeers.clear();
-            mConnectedPeers.addAll(mCommunicator.getConnected());
-            Collections.sort(mPeers, new Comparator<Communicator.PeerInfo>() {
-                @Override
-                public int compare(Communicator.PeerInfo o1, Communicator.PeerInfo o2) {
-                    if (o1.status.equals(o2.status))
-                        return 0;
-                    String[] statusList = {
-                            "connected",
-                            "invited",
-                            "available",
-                            "unavailable",
-                            "failed"
-                    };
-                    for (String status : statusList) {
-                        if (status.equals(o1.status))
-                            return -1;
-                        if (status.equals(o2.status))
-                            return 1;
-                    }
-                    return 0;
-                }
-            });
-            mPeerListAdapter.updatePeers(peers);
-            ((ArrayAdapter) ((Spinner) findViewById(R.id.send_to_spinner)).getAdapter()).notifyDataSetChanged();
-            if (mConnectedPeers.size() > 0)
-                mSelectedReceiver = mConnectedPeers.get(0);
-        }
-    }
-
-    @Override
     public void onFunctionReceived(WorkerFunction function) {
         Log.d(TAG, "onFunctionReceived(" + function + ")");
         mMainController.execute(function, this);
@@ -283,5 +173,24 @@ public class MainActivity extends AppCompatActivity
         } catch (JSONException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public void onPeerInfoUpdated(Collection<Communicator.PeerInfo> peers) {
+        synchronized (mPeers) {
+            mPeers.clear();
+            mPeers.addAll(peers);
+        }
+        notifyPeerInfoUpdated();
+    }
+
+    private void notifyPeerInfoUpdated() {
+        if (getFragment() instanceof Communicator.CommunicatorListener) {
+            ((Communicator.CommunicatorListener) getFragment()).onPeerInfoUpdated(mPeers);
+        }
+    }
+
+    private void handleFragment() {
+        notifyPeerInfoUpdated();
     }
 }

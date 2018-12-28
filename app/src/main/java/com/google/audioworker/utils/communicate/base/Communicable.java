@@ -3,6 +3,7 @@ package com.google.audioworker.utils.communicate.base;
 import java.util.Collection;
 
 public interface Communicable<I, T> extends Exchangeable<I, T> {
+    public String getName();
     public void refreshPeers();
     public void notifyOnPause();
     public void notifyOnResume();
