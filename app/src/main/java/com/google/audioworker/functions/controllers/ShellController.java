@@ -35,6 +35,7 @@ public class ShellController extends ControllerBase {
 
     @Override
     public void destroy() {
+        super.destroy();
         mPoolExecuter.shutdown();
         mPoolExecuter = null;
     }

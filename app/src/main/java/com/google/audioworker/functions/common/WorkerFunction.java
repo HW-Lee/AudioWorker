@@ -47,7 +47,15 @@ public abstract class WorkerFunction {
     }
 
     public boolean isValid() {
-        return getRequiredNotDefinedAttributes().size() == 0;
+        if (getRequiredNotDefinedAttributes().size() > 0)
+            return false;
+
+        for (Parameter parameter : getParameters()) {
+            if (!isValueAccepted(parameter.getAttribute(), parameter.getValue()))
+                return false;
+        }
+
+        return true;
     }
 
     private Collection<String> getRequiredNotDefinedAttributes() {

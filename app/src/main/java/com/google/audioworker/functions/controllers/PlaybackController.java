@@ -61,6 +61,8 @@ public class PlaybackController extends ControllerBase {
 
     @Override
     public void destroy() {
+        super.destroy();
+
         for (SparseArray<PlaybackRunnable> tasks : mRunningPlaybackTasks.values()) {
             for (int i = 0; i < tasks.size(); i++) {
                 PlaybackRunnable task = tasks.get(i);
@@ -75,7 +77,16 @@ public class PlaybackController extends ControllerBase {
     }
 
     @Override
-    public void execute(WorkerFunction function, WorkerFunction.WorkerFunctionListener l) {
+    public void execute(final WorkerFunction function, final WorkerFunction.WorkerFunctionListener l) {
+        mPoolExecuter.execute(new Runnable() {
+            @Override
+            public void run() {
+                executeBackground(function, l);
+            }
+        });
+    }
+
+    private void executeBackground(WorkerFunction function, WorkerFunction.WorkerFunctionListener l) {
         if (function instanceof PlaybackFunction && function.isValid()) {
             if (function instanceof PlaybackStartFunction) {
                 int playbackId = ((PlaybackStartFunction) function).getPlaybackId();
@@ -187,6 +198,12 @@ public class PlaybackController extends ControllerBase {
         }
 
         public void tryStop(PlaybackStopFunction function) {
+            tryStop(function, null);
+        }
+
+        public void tryStop(PlaybackStopFunction function, WorkerFunction.WorkerFunctionListener l) {
+            if (l != null)
+                mListener = l;
             exitPending = true;
             mStopFunction = function;
         }

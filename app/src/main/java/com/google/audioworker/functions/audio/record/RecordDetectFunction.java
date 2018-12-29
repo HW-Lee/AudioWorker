@@ -41,6 +41,10 @@ public class RecordDetectFunction extends RecordFunction {
             PARAM_TPARAMS
     };
 
+    public RecordDetectFunction() {
+        this(OP_REGISTER);
+    }
+
     public RecordDetectFunction(String type) {
         super();
         setType(type);
@@ -58,7 +62,15 @@ public class RecordDetectFunction extends RecordFunction {
 
     @Override
     public Parameter[] getParameters() {
-        return PARAMS;
+        switch (getOperationType()) {
+            case OP_REGISTER:
+                return new Parameter[]{PARAM_CLASS_NAME, PARAM_TPARAMS};
+            case OP_UNREGISTER:
+                return new Parameter[]{PARAM_CLASS_HANDLE};
+            case OP_SETPARAMS:
+                return new Parameter[]{PARAM_CLASS_HANDLE, PARAM_TPARAMS};
+        }
+        return new Parameter[0];
     }
 
     @Override

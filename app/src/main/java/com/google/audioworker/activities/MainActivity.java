@@ -114,6 +114,10 @@ public class MainActivity extends AppCompatActivity
         return mCommunicator;
     }
 
+    public MainController getMainController() {
+        return mMainController;
+    }
+
     private Fragment getFragment() {
         return getSupportFragmentManager().findFragmentById(R.id.fragment_container);
     }

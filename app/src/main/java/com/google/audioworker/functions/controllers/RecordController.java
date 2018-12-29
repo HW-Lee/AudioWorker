@@ -4,6 +4,7 @@ import android.content.Context;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
+import android.support.annotation.NonNull;
 import android.util.Log;
 import android.util.SparseArray;
 
@@ -31,6 +32,7 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -40,6 +42,7 @@ public class RecordController extends ControllerBase {
     private final static String TAG = Constants.packageTag("RecordController");
 
     private HashMap<String, DetectorBase> mDetectors;
+    private final ArrayList<RecordRunnable.RecordDataListener> mDataListeners = new ArrayList<>();
     private RecordRunnable mMainRunningTask;
     private ThreadPoolExecutor mPoolExecuter;
 
@@ -63,38 +66,67 @@ public class RecordController extends ControllerBase {
 
     @Override
     public void destroy() {
+        super.destroy();
         if (mMainRunningTask != null && !mMainRunningTask.hasDone()) {
             mMainRunningTask.tryStop();
             mMainRunningTask = null;
         }
         mPoolExecuter.shutdown();
         mPoolExecuter = null;
+        mDataListeners.clear();
     }
 
     @Override
-    public void execute(final WorkerFunction function, WorkerFunction.WorkerFunctionListener l) {
+    public void execute(final WorkerFunction function, final WorkerFunction.WorkerFunctionListener l) {
+        mPoolExecuter.execute(new Runnable() {
+            @Override
+            public void run() {
+                executeBackground(function, l);
+            }
+        });
+    }
+
+    private void executeBackground(final WorkerFunction function, WorkerFunction.WorkerFunctionListener l) {
         if (function instanceof RecordFunction && function.isValid()) {
             if (function instanceof RecordStartFunction) {
-                if (mMainRunningTask != null && !mMainRunningTask.hasDone()) {
+                if (isRecording()) {
                     RecordStopFunction f = new RecordStopFunction();
                     f.setCommandId(function.getCommandId());
+                    for (RecordRunnable.RecordDataListener dl : mDataListeners)
+                        mMainRunningTask.unregisterDataListener(dl);
                     mMainRunningTask.tryStop(f);
+
+                    while (isRecording()) {
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
                 }
-                mMainRunningTask = new RecordRunnable((RecordStartFunction) function, l);
+
+                mMainRunningTask = new RecordRunnable((RecordStartFunction) function, l, this);
                 mMainRunningTask.setRecordRunner(new RecordInternalRunnable(mMainRunningTask));
+                for (RecordRunnable.RecordDataListener dl : mDataListeners)
+                    mMainRunningTask.registerDataListener(dl);
                 mPoolExecuter.execute(mMainRunningTask);
                 mPoolExecuter.execute(mMainRunningTask.slave);
             } else if (function instanceof RecordStopFunction) {
-                if (mMainRunningTask != null && !mMainRunningTask.hasDone()) {
-                    mMainRunningTask.tryStop((RecordStopFunction) function);
+                if (isRecording()) {
+                    mMainRunningTask.tryStop((RecordStopFunction) function, l);
                     mMainRunningTask = null;
+                } else if (l != null) {
+                    WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
+                    ack.setReturnCode(-1);
+                    ack.setDescription("no recording process running");
+                    l.onAckReceived(ack);
                 }
                 mDetectors.clear();
             } else if (function instanceof RecordInfoFunction) {
                 if (l == null)
                     return;
                 WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
-                if (mMainRunningTask != null && !mMainRunningTask.hasDone()) {
+                if (isRecording()) {
                     ArrayList<Object> returns = new ArrayList<>();
                     JSONObject detectionInfo = new JSONObject();
 
@@ -119,7 +151,7 @@ public class RecordController extends ControllerBase {
                 l.onAckReceived(ack);
             } else if (function instanceof RecordDetectFunction) {
                 WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
-                if (mMainRunningTask == null || mMainRunningTask.hasDone()) {
+                if (!isRecording()) {
                     if (l != null) {
                         ack.setReturnCode(-1);
                         ack.setDescription("no recording process running");
@@ -213,7 +245,7 @@ public class RecordController extends ControllerBase {
                 }
             } else if (function instanceof RecordDumpFunction) {
                 WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
-                if (mMainRunningTask == null || mMainRunningTask.hasDone()) {
+                if (!isRecording()) {
                     if (l != null) {
                         ack.setReturnCode(-1);
                         ack.setDescription("no recording process running");
@@ -237,6 +269,33 @@ public class RecordController extends ControllerBase {
                 l.onAckReceived(ack);
             }
         }
+    }
+
+    public boolean isRecording() {
+        return mMainRunningTask != null && !mMainRunningTask.hasDone();
+    }
+
+    public void registerDataListener(@NonNull RecordRunnable.RecordDataListener l) {
+        synchronized (mDataListeners) {
+            if (!mDataListeners.contains(l))
+                mDataListeners.add(l);
+        }
+
+        if (!isRecording())
+            return;
+
+        mMainRunningTask.registerDataListener(l);
+    }
+
+    public void unregisterDataListener(@NonNull RecordRunnable.RecordDataListener l) {
+        synchronized (mDataListeners) {
+            mDataListeners.remove(l);
+        }
+
+        if (!isRecording())
+            return;
+
+        mMainRunningTask.unregisterDataListener(l);
     }
 
     static public String processDetectorParams(RecordRunnable runnable, String className, String params) {
@@ -330,13 +389,21 @@ public class RecordController extends ControllerBase {
         private final int dumpBufferSize;
         private RecordInternalRunnable slave;
 
+        private ControllerBase mController;
         private final ArrayList<DetectorBase> mDetectors;
+        private final ArrayList<RecordDataListener> mDataListeners;
 
         private boolean exitPending;
+        private boolean hasDone;
 
-        RecordRunnable(RecordStartFunction function, WorkerFunction.WorkerFunctionListener l) {
+        public interface RecordDataListener {
+            void onDataUpdated(List<? extends Double>[] signal, RecordStartFunction function);
+        }
+
+        RecordRunnable(RecordStartFunction function, WorkerFunction.WorkerFunctionListener l, ControllerBase controller) {
             mStartFunction = function;
             mListener = l;
+            mController = controller;
 
             int minBuffsize = AudioRecord.getMinBufferSize(
                     mStartFunction.getSamplingFreq(), parseChannelMask(mStartFunction.getNumChannels()), parseEncodingFormat(mStartFunction.getBitWidth()));
@@ -345,6 +412,7 @@ public class RecordController extends ControllerBase {
             dumpBuffer = new RecordCircularBuffer(dumpBufferSize);
             needPush = new AtomicBoolean(true);
             mDetectors = new ArrayList<>();
+            mDataListeners = new ArrayList<>();
         }
 
         public RecordStartFunction getStartFunction() {
@@ -356,7 +424,7 @@ public class RecordController extends ControllerBase {
         }
 
         public boolean hasDone() {
-            return exitPending;
+            return hasDone;
         }
 
         public void tryStop() {
@@ -364,6 +432,12 @@ public class RecordController extends ControllerBase {
         }
 
         public void tryStop(RecordStopFunction function) {
+            tryStop(function, null);
+        }
+
+        public void tryStop(RecordStopFunction function, WorkerFunction.WorkerFunctionListener l) {
+            if (l != null)
+                mListener = l;
             mStopFunction = function;
             exitPending = true;
         }
@@ -392,6 +466,20 @@ public class RecordController extends ControllerBase {
 
         public void setRecordRunner(RecordInternalRunnable runner) {
             slave = runner;
+        }
+
+        public void registerDataListener(@NonNull RecordDataListener l) {
+            synchronized (mDataListeners) {
+                if (mDataListeners.contains(l))
+                    return;
+                mDataListeners.add(l);
+            }
+        }
+
+        public void unregisterDataListener(@NonNull RecordDataListener l) {
+            synchronized (mDataListeners) {
+                mDataListeners.remove(l);
+            }
         }
 
         public void registerDetector(DetectorBase detector) {
@@ -432,9 +520,15 @@ public class RecordController extends ControllerBase {
         public void run() {
             int minBuffsize = sharedBuffer.raw.length;
             long minBuffsizeMillis = minBuffsize*1000 / mStartFunction.getSamplingFreq() / mStartFunction.getNumChannels() / (mStartFunction.getBitWidth() / 8);
-            byte[] buffer = new byte[minBuffsize];
+            final byte[] buffer = new byte[minBuffsize];
             Log.d(TAG, "RecordRunnable: start running");
             returnAck(mStartFunction, 0);
+
+            if (mController != null)
+                mController.broadcastStateChange(mController);
+
+            exitPending = false;
+            hasDone = false;
             while (!exitPending) {
                 try {
                     if (!sharedBuffer.dataAvailable()) {
@@ -454,9 +548,9 @@ public class RecordController extends ControllerBase {
                 pushDumpBuffer(buffer);
 
                 @SuppressWarnings("unchecked")
-                ArrayList<Double>[] values = new ArrayList[mStartFunction.getNumChannels()];
+                final ArrayList<Double>[] values = new ArrayList[mStartFunction.getNumChannels()];
                 for (int c = 0; c < mStartFunction.getNumChannels(); c++)
-                    values[0] = new ArrayList<>();
+                    values[c] = new ArrayList<>();
 
                 switch (mStartFunction.getBitWidth()) {
                     case 8: {
@@ -480,11 +574,23 @@ public class RecordController extends ControllerBase {
                         break;
                 }
 
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        for (RecordDataListener l : mDataListeners)
+                            l.onDataUpdated(values, mStartFunction);
+                    }
+                }).start();
+
                 synchronized (mDetectors) {
                     for (DetectorBase detector : mDetectors)
                         detector.feed(values);
                 }
             }
+
+            if (mController != null)
+                mController.broadcastStateChange(mController);
+
             if (mStopFunction != null) {
                 returnAck(mStopFunction, 0);
             } else {
@@ -495,6 +601,9 @@ public class RecordController extends ControllerBase {
                 slave.tryStop();
                 slave = null;
             }
+
+            mDataListeners.clear();
+            hasDone = true;
         }
 
         private void pushDumpBuffer(final byte[] buffer) {

@@ -48,6 +48,7 @@ public class CommandHelper {
             try {
                 put(Constants.MessageSpecification.COMMAND_ID, genId());
             } catch (JSONException e) {
+                e.printStackTrace();
                 Log.e(TAG + "::Command", "put command id failed");
             }
         }
@@ -56,6 +57,15 @@ public class CommandHelper {
             super(s);
             if (!has(Constants.MessageSpecification.COMMAND_ID)) {
                 put(Constants.MessageSpecification.COMMAND_ID, genId());
+            }
+        }
+
+        public String getCommandId() {
+            try {
+                return getString(Constants.MessageSpecification.COMMAND_ID);
+            } catch (JSONException e) {
+                e.printStackTrace();
+                return "N/A";
             }
         }
 

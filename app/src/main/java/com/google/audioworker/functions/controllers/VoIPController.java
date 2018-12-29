@@ -71,12 +71,22 @@ public class VoIPController extends ControllerBase {
 
     @Override
     public void destroy() {
+        super.destroy();
         mPoolExecuter.shutdown();
         mPoolExecuter = null;
     }
 
     @Override
-    public void execute(final WorkerFunction function, WorkerFunction.WorkerFunctionListener l) {
+    public void execute(final WorkerFunction function, final WorkerFunction.WorkerFunctionListener l) {
+        mPoolExecuter.execute(new Runnable() {
+            @Override
+            public void run() {
+                executeBackground(function, l);
+            }
+        });
+    }
+
+    private void executeBackground(final WorkerFunction function, WorkerFunction.WorkerFunctionListener l) {
         if (function instanceof VoIPFunction && function.isValid()) {
             if (function instanceof VoIPStartFunction) {
                 if (mRxRunnable != null && !mRxRunnable.hasDone()) {
@@ -89,6 +99,14 @@ public class VoIPController extends ControllerBase {
                     RecordStopFunction txStopFunction = new RecordStopFunction();
                     initTxStopFunction(function, txStopFunction);
                     mTxRunnable.tryStop(txStopFunction);
+
+                    while (!mTxRunnable.hasDone()) {
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
                     mTxRunnable = null;
                 }
 
@@ -100,7 +118,7 @@ public class VoIPController extends ControllerBase {
 
                 ProxyListener listener = new ProxyListener(function, l);
                 mRxRunnable = new PlaybackController.PlaybackRunnable(rxStartFunction, listener, this);
-                mTxRunnable = new RecordController.RecordRunnable(txStartFunction, listener);
+                mTxRunnable = new RecordController.RecordRunnable(txStartFunction, listener, this);
                 mTxRunnable.setRecordRunner(new RecordController.RecordInternalRunnable(mTxRunnable, MediaRecorder.AudioSource.VOICE_COMMUNICATION));
                 if (mContextRef.get() != null) {
                     ((AudioManager) mContextRef.get().getSystemService(Context.AUDIO_SERVICE)).setMode(AudioManager.MODE_IN_COMMUNICATION);
@@ -114,12 +132,24 @@ public class VoIPController extends ControllerBase {
 
                 initRxStopFunction(function, rxStopFunction);
                 initTxStopFunction(function, txStopFunction);
+                ProxyListener listener = new ProxyListener(function, l, true);
+                if ((mRxRunnable == null || mRxRunnable.hasDone()) &&
+                        (mTxRunnable == null || mTxRunnable.hasDone())) {
+                    if (l != null) {
+                        WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
+                        ack.setReturnCode(-1);
+                        ack.setDescription("no VoIP process running");
+                        l.onAckReceived(ack);
+                    }
+                    return;
+                }
+
                 if (mRxRunnable != null && !mRxRunnable.hasDone()) {
-                    mRxRunnable.tryStop(rxStopFunction);
+                    mRxRunnable.tryStop(rxStopFunction, listener);
                     mRxRunnable = null;
                 }
                 if (mTxRunnable != null && !mTxRunnable.hasDone()) {
-                    mTxRunnable.tryStop(txStopFunction);
+                    mTxRunnable.tryStop(txStopFunction, listener);
                     mTxRunnable = null;
                 }
                 if (mContextRef.get() != null) {
@@ -337,11 +367,15 @@ public class VoIPController extends ControllerBase {
         private boolean isTxRunning;
 
         ProxyListener(WorkerFunction function, WorkerFunction.WorkerFunctionListener l) {
+            this(function, l, false);
+        }
+
+        ProxyListener(WorkerFunction function, WorkerFunction.WorkerFunctionListener l, boolean initRunning) {
             mFunction = function;
             mListener = l;
-            isRxRunning = false;
-            isTxRunning = false;
-            isRunning = false;
+            isRxRunning = initRunning;
+            isTxRunning = initRunning;
+            isRunning = initRunning;
         }
 
         @Override

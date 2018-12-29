@@ -8,6 +8,10 @@ public class VoIPDetectFunction extends VoIPFunction {
 
     private RecordDetectFunction mReference;
 
+    public VoIPDetectFunction() {
+        mReference = new RecordDetectFunction();
+    }
+
     public VoIPDetectFunction(String type) {
         mReference = new RecordDetectFunction(type);
     }

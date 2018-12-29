@@ -1,6 +1,7 @@
 package com.google.audioworker.fragments;
 
 import android.content.Context;
+import android.support.annotation.CallSuper;
 import android.support.v4.app.Fragment;
 
 import com.google.audioworker.activities.MainActivity;
@@ -13,6 +14,7 @@ public class WorkerFragment extends Fragment {
 
     protected WeakReference<MainActivity> mActivityRef;
 
+    @CallSuper
     @Override
     public void onAttach(Context ctx) {
         super.onAttach(ctx);
