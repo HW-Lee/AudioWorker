@@ -19,7 +19,7 @@ public class ToneDetector extends DetectorBase {
     private final static String TAG = Constants.packageTag("ToneDetector");
 
     private int mSamplingFreq;
-    private int mProcessFrameMillis = Constants.DetectorConfig.ToneDetector.PROCESS_FRAME_MILLIS;
+    private int mProcessFrameMillis = Constants.Detectors.ToneDetector.Config.PROCESS_FRAME_MILLIS;
     private CircularArray<Double> mBuffer;
     final private ArrayList<Target> mTargets;
 
@@ -34,7 +34,7 @@ public class ToneDetector extends DetectorBase {
         public JSONObject toJson() {
             JSONObject obj = new JSONObject();
             try {
-                obj.put(Constants.DetectorConfig.ToneDetector.PARAM_TARGET_FREQ, targetFreq);
+                obj.put(Constants.Detectors.ToneDetector.PARAM_TARGET_FREQ, targetFreq);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -93,7 +93,7 @@ public class ToneDetector extends DetectorBase {
             return true;
         try {
             JSONObject jsonParams = new JSONObject(params);
-            mSamplingFreq = jsonParams.getInt(Constants.DetectorConfig.ToneDetector.PARAM_FS);
+            mSamplingFreq = jsonParams.getInt(Constants.Detectors.ToneDetector.PARAM_FS);
         } catch (JSONException e) {
             e.printStackTrace();
             return false;
@@ -144,8 +144,8 @@ public class ToneDetector extends DetectorBase {
     }
 
     private void processParamsIfClearTargets(JSONObject jsonParams) throws JSONException {
-        if (!jsonParams.has(Constants.DetectorConfig.ToneDetector.PARAM_CLEAR_TARGETS) ||
-                !jsonParams.getBoolean(Constants.DetectorConfig.ToneDetector.PARAM_CLEAR_TARGETS))
+        if (!jsonParams.has(Constants.Detectors.ToneDetector.PARAM_CLEAR_TARGETS) ||
+                !jsonParams.getBoolean(Constants.Detectors.ToneDetector.PARAM_CLEAR_TARGETS))
             return;
 
         synchronized (mTargets) {
@@ -154,9 +154,9 @@ public class ToneDetector extends DetectorBase {
     }
 
     private void processParamsOfTargetFreqs (JSONObject jsonParams) throws JSONException {
-        if (!jsonParams.has(Constants.DetectorConfig.ToneDetector.PARAM_TARGET_FREQ))
+        if (!jsonParams.has(Constants.Detectors.ToneDetector.PARAM_TARGET_FREQ))
             return;
-        JSONArray targetFreqs = jsonParams.getJSONArray(Constants.DetectorConfig.ToneDetector.PARAM_TARGET_FREQ);
+        JSONArray targetFreqs = jsonParams.getJSONArray(Constants.Detectors.ToneDetector.PARAM_TARGET_FREQ);
 
         for (int i = 0; i < targetFreqs.length(); i++) {
             Target t = new Target((float) targetFreqs.getDouble(i));

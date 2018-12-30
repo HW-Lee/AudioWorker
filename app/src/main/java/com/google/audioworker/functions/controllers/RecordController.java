@@ -90,11 +90,9 @@ public class RecordController extends ControllerBase {
         if (function instanceof RecordFunction && function.isValid()) {
             if (function instanceof RecordStartFunction) {
                 if (isRecording()) {
-                    RecordStopFunction f = new RecordStopFunction();
-                    f.setCommandId(function.getCommandId());
                     for (RecordRunnable.RecordDataListener dl : mDataListeners)
                         mMainRunningTask.unregisterDataListener(dl);
-                    mMainRunningTask.tryStop(f);
+                    mMainRunningTask.tryStop(new RecordStopFunction());
 
                     while (isRecording()) {
                         try {
@@ -163,6 +161,11 @@ public class RecordController extends ControllerBase {
                 switch (((RecordDetectFunction) function).getOperationType()) {
                     case RecordDetectFunction.OP_REGISTER: {
                         String className = ((RecordDetectFunction) function).getDetectorClassName();
+                        String[] findings = Constants.Detectors.getDetectorClassNamesByTag(className);
+
+                        if (findings.length > 0)
+                            className = findings[0];
+
                         DetectorBase detector = null;
                         try {
                             Class[] types = {DetectorBase.DetectionListener.class, String.class};
@@ -180,7 +183,6 @@ public class RecordController extends ControllerBase {
                         } catch (ClassNotFoundException | NoSuchMethodException |
                                 IllegalAccessException | InstantiationException | InvocationTargetException e) {
                             e.printStackTrace();
-                            return;
                         }
 
                         if (detector == null) {
@@ -304,7 +306,7 @@ public class RecordController extends ControllerBase {
         if (className.equals(ToneDetector.class.getName())) {
             try {
                 JSONObject obj = new JSONObject(params);
-                obj.put(Constants.DetectorConfig.ToneDetector.PARAM_FS, runnable.mStartFunction.getSamplingFreq());
+                obj.put(Constants.Detectors.ToneDetector.PARAM_FS, runnable.mStartFunction.getSamplingFreq());
                 params = obj.toString();
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -592,6 +594,8 @@ public class RecordController extends ControllerBase {
                 mController.broadcastStateChange(mController);
 
             if (mStopFunction != null) {
+                if (mStopFunction.getCommandId() == null)
+                    mStopFunction.setCommandId(mStartFunction.getCommandId());
                 returnAck(mStopFunction, 0);
             } else {
                 returnAck(mStartFunction, -1);

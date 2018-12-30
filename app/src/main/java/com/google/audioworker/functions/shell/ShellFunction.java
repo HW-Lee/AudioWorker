@@ -2,14 +2,14 @@ package com.google.audioworker.functions.shell;
 
 import android.content.Intent;
 
-import com.google.audioworker.functions.common.WorkerFunction;
+import com.google.audioworker.functions.common.ParameterizedWorkerFunction;
 import com.google.audioworker.utils.Constants;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class ShellFunction extends WorkerFunction {
+public class ShellFunction extends ParameterizedWorkerFunction {
     private final static String TAG = Constants.packageTag("ShellFunction");
 
     private final static String ATTR_COMMAND = "cmd";

@@ -136,12 +136,16 @@ public class CommandHelper {
     }
 
     static private void checkParameters(WorkerFunction function, Intent intent) {
+        if (!(function instanceof WorkerFunction.Parameterizable))
+            return;
+
+        WorkerFunction.Parameterizable pfunction = (WorkerFunction.Parameterizable) function;
         Bundle extras = intent.getExtras();
         if (extras != null) {
-            for (WorkerFunction.Parameter parameter : function.getParameters()) {
+            for (WorkerFunction.Parameter parameter : pfunction.getParameters()) {
                 String attr = parameter.getAttribute();
                 if (extras.containsKey(attr)) {
-                    function.setParameter(attr, extras.get(attr));
+                    pfunction.setParameter(attr, extras.get(attr));
                 }
             }
 

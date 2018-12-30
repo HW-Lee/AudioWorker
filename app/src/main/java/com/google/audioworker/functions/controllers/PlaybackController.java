@@ -99,7 +99,6 @@ public class PlaybackController extends ControllerBase {
                 if (playbackRunnable != null) {
                     Log.w(TAG, "The playback-id " + playbackId + " is running, stop it");
                     PlaybackStopFunction stopFunction = new PlaybackStopFunction();
-                    stopFunction.setCommandId(function.getCommandId());
                     stopFunction.setPlaybackId(((PlaybackStartFunction) function).getPlaybackId());
                     playbackRunnable.tryStop(stopFunction);
                     tasks.delete(playbackId);
@@ -278,6 +277,8 @@ public class PlaybackController extends ControllerBase {
             }
             if (mStopFunction != null) {
                 Log.d(TAG, "run_nonoffload: terminated (id: " + mStopFunction.getPlaybackId() + ")");
+                if (mStopFunction.getCommandId() == null)
+                    mStopFunction.setCommandId(mStartFunction.getCommandId());
                 returnAck(mStopFunction, 0);
             } else {
                 returnAck(mStartFunction, -1);

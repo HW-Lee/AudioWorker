@@ -1,6 +1,6 @@
 package com.google.audioworker.functions.audio;
 
-import com.google.audioworker.functions.common.WorkerFunction;
+import com.google.audioworker.functions.common.ParameterizedWorkerFunction;
 
-public abstract class AudioFunction extends WorkerFunction {
+public abstract class AudioFunction extends ParameterizedWorkerFunction {
 }

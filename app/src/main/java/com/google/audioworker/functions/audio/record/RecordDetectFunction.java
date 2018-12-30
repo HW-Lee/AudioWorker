@@ -33,7 +33,7 @@ public class RecordDetectFunction extends RecordFunction {
     private Parameter<String> PARAM_TYPE = new Parameter<>(ATTR_TYPE, true, null);
     private Parameter<String> PARAM_CLASS_NAME = new Parameter<>(ATTR_CLASS_NAME, true, null);
     private Parameter<String> PARAM_CLASS_HANDLE = new Parameter<>(ATTR_CLASS_HANDLE, true, null);
-    private Parameter<String> PARAM_TPARAMS = new Parameter<>(ATTR_PARAMS, false, null);
+    private Parameter<String> PARAM_TPARAMS = new Parameter<>(ATTR_PARAMS, false, "{}");
     private Parameter[] PARAMS = {
             PARAM_TYPE,
             PARAM_CLASS_NAME,
