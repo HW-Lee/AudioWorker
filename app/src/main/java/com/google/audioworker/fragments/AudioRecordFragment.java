@@ -24,7 +24,7 @@ public class AudioRecordFragment extends WorkerFragment
     private final static String TAG = Constants.packageTag("AudioRecordFragment");
 
     private ArrayList<String> mSupportIntents;
-    private DataView[] mSignal;
+    private DataView[] mSignalViews;
 
     @Override
     public void onAttach(Context ctx) {
@@ -83,10 +83,10 @@ public class AudioRecordFragment extends WorkerFragment
         ((WorkerFunctionView) mActivityRef.get().findViewById(R.id.record_func_attr_container)).setSupportedIntentActions(mSupportIntents);
         ((WorkerFunctionView) mActivityRef.get().findViewById(R.id.record_func_attr_container)).setController(controller);
 
-        mSignal = new DataView[2];
-        mSignal[0] = mActivityRef.get().findViewById(R.id.record_signal_1);
-        mSignal[1] = mActivityRef.get().findViewById(R.id.record_signal_2);
-        for (DataView v : mSignal) {
+        mSignalViews = new DataView[2];
+        mSignalViews[0] = mActivityRef.get().findViewById(R.id.record_signal_1);
+        mSignalViews[1] = mActivityRef.get().findViewById(R.id.record_signal_2);
+        for (DataView v : mSignalViews) {
             v.setGridSlotsY(4);
             v.setGridSlotsX(10);
         }
@@ -94,8 +94,9 @@ public class AudioRecordFragment extends WorkerFragment
 
     @Override
     public void onDataUpdated(List<? extends Double>[] signal, RecordStartFunction function) {
-        for (int i = 0; i < signal.length; i++)
-            mSignal[i].plot(signal[i]);
+        for (int i = 0; i < signal.length; i++) {
+            mSignalViews[i].plot(signal[i]);
+        }
     }
 
     @Override
@@ -103,9 +104,13 @@ public class AudioRecordFragment extends WorkerFragment
         if (!(controller instanceof RecordController))
             return;
 
-        if (((RecordController) controller).isRecording())
+        if (((RecordController) controller).isRecording()) {
             ((TextView) mActivityRef.get().findViewById(R.id.record_status)).setText("status: running");
-        else
+        } else {
             ((TextView) mActivityRef.get().findViewById(R.id.record_status)).setText("status: idle");
+            for (DataView v : mSignalViews) {
+                v.reset();
+            }
+        }
     }
 }

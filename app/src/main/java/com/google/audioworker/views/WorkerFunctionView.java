@@ -39,6 +39,7 @@ public class WorkerFunctionView extends LinearLayout {
     private LinearLayout mParameterViewContainer;
     private ArrayList<ParameterView> mParameterViews;
     private Button mSendFunctionBtn;
+    private String mListenedFunctionId;
 
     public WorkerFunctionView(Context context) {
         super(context);
@@ -118,7 +119,9 @@ public class WorkerFunctionView extends LinearLayout {
             return;
 
         ArrayList<WorkerFunction.Parameter> parameters = new ArrayList<>();
-        Collections.addAll(parameters, function.getParameters());
+        if (function instanceof WorkerFunction.Parameterizable) {
+            Collections.addAll(parameters, ((WorkerFunction.Parameterizable) function).getParameters());
+        }
         Collections.sort(parameters, new Comparator<WorkerFunction.Parameter>() {
             @Override
             public int compare(WorkerFunction.Parameter p1, WorkerFunction.Parameter p2) {
@@ -155,23 +158,33 @@ public class WorkerFunctionView extends LinearLayout {
     }
 
     private void sendFunction() {
-        if (mController == null)
+        if (mController == null) {
+            showAck(null);
             return;
+        }
 
         WorkerFunction function = CommandHelper.getFunction(new Intent(mSelectedAction));
-        if (function == null)
+        if (function == null) {
+            showAck(null);
             return;
+        }
 
-        for (ParameterView pv : mParameterViews) {
-            function.setParameter(pv.getAttributeLabel(), pv.getRequestValue());
+        if (function instanceof WorkerFunction.Parameterizable) {
+            for (ParameterView pv : mParameterViews) {
+                ((WorkerFunction.Parameterizable) function).setParameter(pv.getAttributeLabel(), pv.getRequestValue());
+            }
         }
 
         String timestamp = new CommandHelper.Command().getCommandId().split("::")[1];
         function.setCommandId(TAG + "-" + timestamp);
         Toast.makeText(getContext(), "Send function: " + function, Toast.LENGTH_LONG).show();
+        mListenedFunctionId = function.getCommandId();
         mController.execute(function, new WorkerFunction.WorkerFunctionListener() {
             @Override
             public void onAckReceived(final WorkerFunction.Ack ack) {
+                if (!ack.getTarget().equals(mListenedFunctionId))
+                    return;
+
                 ((Activity) getContext()).runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -183,14 +196,15 @@ public class WorkerFunctionView extends LinearLayout {
     }
 
     private void showAck(WorkerFunction.Ack ack) {
-        Toast.makeText(getContext(), "receive ack: " + ack, Toast.LENGTH_LONG).show();
+        if (ack != null)
+            Toast.makeText(getContext(), "receive ack: " + ack, Toast.LENGTH_LONG).show();
         mSendFunctionBtn.setText("Send Function");
         mSendFunctionBtn.setEnabled(true);
     }
 
     private class ParameterView extends LinearLayout {
         TextView attrLabel;
-        EditText currentValue;
+        EditText defaultValue;
         EditText requestValue;
 
         public ParameterView(Context context, WorkerFunction.Parameter parameter) {
@@ -202,29 +216,33 @@ public class WorkerFunctionView extends LinearLayout {
             setOrientation(LinearLayout.HORIZONTAL);
 
             attrLabel = new TextView(getContext());
-            currentValue = new EditText(getContext());
-            currentValue.setEnabled(false);
+            defaultValue = new EditText(getContext());
+            defaultValue.setEnabled(false);
             requestValue = new EditText(getContext());
             requestValue.setEnabled(true);
 
             attrLabel.setLayoutParams(new LayoutParams(0, LayoutParams.MATCH_PARENT, 1));
-            currentValue.setLayoutParams(new LayoutParams(0, LayoutParams.MATCH_PARENT, 1));
+            defaultValue.setLayoutParams(new LayoutParams(0, LayoutParams.MATCH_PARENT, 1));
             requestValue.setLayoutParams(new LayoutParams(0, LayoutParams.MATCH_PARENT, 1));
 
             attrLabel.setGravity(Gravity.CENTER);
-            currentValue.setGravity(Gravity.CENTER);
+            defaultValue.setGravity(Gravity.CENTER);
             requestValue.setGravity(Gravity.CENTER);
 
             attrLabel.setPadding(getPxByDp(1), getPxByDp(1), getPxByDp(1), getPxByDp(1));
 
             attrLabel.setText(parameter.getAttribute());
-            if (parameter.getValue() != null)
-                currentValue.setText(parameter.getValue().toString());
-            else
-                currentValue.setText("NULL");
+            if (!parameter.isRequired()) {
+                if (parameter.getValue() != null)
+                    defaultValue.setText(parameter.getValue().toString());
+                else
+                    defaultValue.setText("NULL");
+            } else {
+                defaultValue.setText("Required");
+            }
 
             addView(attrLabel);
-            addView(currentValue);
+            addView(defaultValue);
             addView(requestValue);
         }
 

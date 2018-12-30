@@ -79,6 +79,14 @@ public class DataView extends View {
         mGridSlotsY = gridSlotsY;
     }
 
+    public void reset() {
+        synchronized (mDataBuffer) {
+            mDataBuffer.clear();
+        }
+
+        this.postInvalidate();
+    }
+
     public void plot(Collection<? extends Double> data) {
         synchronized (mDataBuffer) {
             mDataBuffer.clear();

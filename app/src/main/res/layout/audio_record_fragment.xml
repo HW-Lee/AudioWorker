@@ -23,14 +23,24 @@
             android:id="@+id/record_func_attr_container">
         </com.google.audioworker.views.WorkerFunctionView>
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:text="Channel[1]"/>
+
         <com.google.audioworker.views.DataView
             android:id="@+id/record_signal_1"
             android:layout_width="match_parent"
             android:layout_height="200dp" />
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp" />
+        <TextView
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:textSize="16sp"
+        android:gravity="center"
+        android:text="Channel[2]"/>
 
         <com.google.audioworker.views.DataView
             android:id="@+id/record_signal_2"
