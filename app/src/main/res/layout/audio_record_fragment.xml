@@ -23,6 +23,12 @@
             android:id="@+id/record_func_attr_container">
         </com.google.audioworker.views.WorkerFunctionView>
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:id="@+id/record_aux_view_container"/>
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="40dp"

@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 
 public class WorkerFunctionView extends LinearLayout {
     private final static String TAG = Constants.packageTag("WorkerFunctionView");
@@ -36,10 +37,17 @@ public class WorkerFunctionView extends LinearLayout {
 
     private Spinner mSpinner;
     private String mSelectedAction;
+    private ActionSelectedListener mListener;
     private LinearLayout mParameterViewContainer;
-    private ArrayList<ParameterView> mParameterViews;
+    private HashMap<String, ParameterView> mParameterViews;
     private Button mSendFunctionBtn;
     private String mListenedFunctionId;
+
+    public interface ActionSelectedListener {
+        void onActionSelected(String action, HashMap<String, ParameterView> views);
+        void onFunctionSent(WorkerFunction function);
+        void onFunctionAckReceived(WorkerFunction.Ack ack);
+    }
 
     public WorkerFunctionView(Context context) {
         super(context);
@@ -60,10 +68,15 @@ public class WorkerFunctionView extends LinearLayout {
         mController = controller;
     }
 
-    public void setSupportedIntentActions(Collection<? extends String> actions) {
+    public void setSupportedIntentActions(Collection<? extends String> action) {
+        setSupportedIntentActions(action, null);
+    }
+
+    public void setSupportedIntentActions(Collection<? extends String> actions, ActionSelectedListener l) {
         final ArrayList<String> selections = new ArrayList<>();
         selections.add("");
         selections.addAll(actions);
+        mListener = l;
         mSpinner.setAdapter(new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, android.R.id.text1, selections));
 
         mSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -92,7 +105,7 @@ public class WorkerFunctionView extends LinearLayout {
         mParameterViewContainer.setOrientation(LinearLayout.VERTICAL);
         mParameterViewContainer.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 
-        mParameterViews = new ArrayList<>();
+        mParameterViews = new HashMap<>();
         mSendFunctionBtn = new Button(getContext());
         mSendFunctionBtn.setLayoutParams(new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, getPxByDp(50)));
         mSendFunctionBtn.setText("Send Function");
@@ -111,12 +124,18 @@ public class WorkerFunctionView extends LinearLayout {
         mParameterViewContainer.invalidate();
         mParameterViews.clear();
 
-        if (mSelectedAction == null)
+        if (mSelectedAction == null) {
+            if (mListener != null)
+                mListener.onActionSelected(mSelectedAction, mParameterViews);
             return;
+        }
 
         WorkerFunction function = CommandHelper.getFunction(new Intent(mSelectedAction));
-        if (function == null)
+        if (function == null) {
+            if (mListener != null)
+                mListener.onActionSelected(mSelectedAction, mParameterViews);
             return;
+        }
 
         ArrayList<WorkerFunction.Parameter> parameters = new ArrayList<>();
         if (function instanceof WorkerFunction.Parameterizable) {
@@ -135,9 +154,10 @@ public class WorkerFunctionView extends LinearLayout {
 
         for (WorkerFunction.Parameter p : parameters) {
             ParameterView v = new ParameterView(getContext(), p);
+            v.attrLabel.setPadding(getPxByDp(1), getPxByDp(1), getPxByDp(1), getPxByDp(1));
             v.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, getPxByDp(50)));
             mParameterViewContainer.addView(v);
-            mParameterViews.add(v);
+            mParameterViews.put(p.getAttribute(), v);
         }
 
         mSendFunctionBtn.setText("Send Function");
@@ -155,6 +175,9 @@ public class WorkerFunctionView extends LinearLayout {
         mParameterViewContainer.addView(mSendFunctionBtn);
 
         mParameterViewContainer.invalidate();
+
+        if (mListener != null)
+            mListener.onActionSelected(mSelectedAction, mParameterViews);
     }
 
     private void sendFunction() {
@@ -170,7 +193,7 @@ public class WorkerFunctionView extends LinearLayout {
         }
 
         if (function instanceof WorkerFunction.Parameterizable) {
-            for (ParameterView pv : mParameterViews) {
+            for (ParameterView pv : mParameterViews.values()) {
                 ((WorkerFunction.Parameterizable) function).setParameter(pv.getAttributeLabel(), pv.getRequestValue());
             }
         }
@@ -182,6 +205,8 @@ public class WorkerFunctionView extends LinearLayout {
         mController.execute(function, new WorkerFunction.WorkerFunctionListener() {
             @Override
             public void onAckReceived(final WorkerFunction.Ack ack) {
+                if (mListener != null)
+                    mListener.onFunctionAckReceived(ack);
                 if (!ack.getTarget().equals(mListenedFunctionId))
                     return;
 
@@ -193,6 +218,8 @@ public class WorkerFunctionView extends LinearLayout {
                 });
             }
         });
+        if (mListener != null)
+            mListener.onFunctionSent(function);
     }
 
     private void showAck(WorkerFunction.Ack ack) {
@@ -202,10 +229,10 @@ public class WorkerFunctionView extends LinearLayout {
         mSendFunctionBtn.setEnabled(true);
     }
 
-    private class ParameterView extends LinearLayout {
-        TextView attrLabel;
-        EditText defaultValue;
-        EditText requestValue;
+    public static class ParameterView extends LinearLayout {
+        public TextView attrLabel;
+        public EditText defaultValue;
+        public EditText requestValue;
 
         public ParameterView(Context context, WorkerFunction.Parameter parameter) {
             super(context);
@@ -228,8 +255,6 @@ public class WorkerFunctionView extends LinearLayout {
             attrLabel.setGravity(Gravity.CENTER);
             defaultValue.setGravity(Gravity.CENTER);
             requestValue.setGravity(Gravity.CENTER);
-
-            attrLabel.setPadding(getPxByDp(1), getPxByDp(1), getPxByDp(1), getPxByDp(1));
 
             attrLabel.setText(parameter.getAttribute());
             if (!parameter.isRequired()) {
