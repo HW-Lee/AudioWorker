@@ -78,6 +78,29 @@ public abstract class WorkerFunction {
             return (int) getProperty(Constants.MessageSpecification.COMMAND_ACK_RETURN_CODE);
         }
 
+        public String getDescription() {
+            return (String) getProperty(Constants.MessageSpecification.COMMAND_ACK_DESC);
+        }
+
+        public Object[] getReturns() {
+            ArrayList<Object> returns = new ArrayList<>();
+            JSONArray jsonReturns = (JSONArray) getProperty(Constants.MessageSpecification.COMMAND_ACK_RETURN);
+            if (jsonReturns == null)
+                return new Object[0];
+            try {
+                for (int i = 0; i < jsonReturns.length(); i++) {
+                    if (jsonReturns.get(i) != null)
+                        returns.add(jsonReturns.get(i));
+                }
+
+                return returns.toArray();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                return new Object[0];
+            }
+
+        }
+
         public String getTarget() {
             return "" + getProperty(Constants.MessageSpecification.COMMAND_ACK_TARGET);
         }

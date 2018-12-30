@@ -251,7 +251,7 @@ public class VoIPController extends ControllerBase {
                             DetectorBase detector = mDetectors.get(((VoIPDetectFunction) function).getClassHandle());
                             boolean success = true;
                             if (detector != null && ((VoIPDetectFunction) function).getDetectorParams() != null)
-                                success = detector.setParameters(((VoIPDetectFunction) function).getDetectorParams());
+                                success = detector.setDetectorParameters(((VoIPDetectFunction) function).getDetectorParams());
 
                             if (l != null) {
                                 ack.setReturnCode(success ? 0 : -1);

@@ -228,7 +228,7 @@ public class RecordController extends ControllerBase {
                             DetectorBase detector = mDetectors.get(((RecordDetectFunction) function).getClassHandle());
                             boolean success = true;
                             if (detector != null && ((RecordDetectFunction) function).getDetectorParams() != null)
-                                success = detector.setParameters(((RecordDetectFunction) function).getDetectorParams());
+                                success = detector.setDetectorParameters(((RecordDetectFunction) function).getDetectorParams());
 
                             if (l != null) {
                                 ack.setReturnCode(success ? 0 : -1);

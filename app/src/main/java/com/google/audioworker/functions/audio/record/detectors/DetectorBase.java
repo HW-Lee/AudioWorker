@@ -26,7 +26,8 @@ public abstract class DetectorBase {
     abstract public void registerTarget(Target target);
     abstract public void feed(List<? extends Double>[] data);
     abstract public boolean parseParameters(String params);
-    abstract public boolean setParameters(String params);
+    abstract public boolean setDetectorParameters(String params);
+    abstract public JSONObject getDetectorParameters();
     abstract public String getHandle();
     abstract public String getInfo();
 

@@ -8,10 +8,10 @@ import org.json.JSONObject;
 public class RecordDetectFunction extends RecordFunction {
     private final static String TAG = Constants.packageTag("RecordDetectFunction");
 
-    private final static String ATTR_TYPE = "type";
-    private final static String ATTR_CLASS_NAME = "class";
-    private final static String ATTR_CLASS_HANDLE = "class-handle";
-    private final static String ATTR_PARAMS = "params";
+    public final static String ATTR_TYPE = "type";
+    public final static String ATTR_CLASS_NAME = "class";
+    public final static String ATTR_CLASS_HANDLE = "class-handle";
+    public final static String ATTR_PARAMS = "params";
 
     public final static String OP_REGISTER = "register";
     public final static String OP_UNREGISTER = "unregister";
