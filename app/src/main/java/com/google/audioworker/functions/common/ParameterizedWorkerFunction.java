@@ -1,5 +1,7 @@
 package com.google.audioworker.functions.common;
 
+import com.google.audioworker.utils.Constants;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -8,6 +10,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public abstract class ParameterizedWorkerFunction extends WorkerFunction implements WorkerFunction.Parameterizable {
+    public final static String KEY_CLASS_NAME = "class";
+    public final static String KEY_HAS_ACK = "has-ack";
+    public final static String KEY_ACK = "ack";
+    public final static String KEY_PARAMS = "params";
+    public final static String KEY_UNDEFINED_REQUIRED = "required-not-defined";
+    public final static String KEY_COMMAND_ID = Constants.MessageSpecification.COMMAND_ID;
+
     @Override
     public boolean isValid() {
         if (getRequiredNotDefinedAttributes().size() > 0)
@@ -36,28 +45,28 @@ public abstract class ParameterizedWorkerFunction extends WorkerFunction impleme
         JSONObject info = new JSONObject();
         JSONObject params = new JSONObject();
         JSONArray requiedNotDefined = new JSONArray();
-        save_put(info, "class", getClass().asSubclass(getClass()).getName());
-        save_put(info, "has-ack", isExecuted());
+        save_put(info, KEY_CLASS_NAME, getClass().asSubclass(getClass()).getName());
+        save_put(info, KEY_HAS_ACK, isExecuted());
         if (isExecuted()) {
             JSONArray arr = new JSONArray();
             synchronized (mAcks) {
                 for (Ack ack : mAcks)
                     arr.put(ack.toString());
             }
-            save_put(info, "ack", arr);
+            save_put(info, KEY_ACK, arr);
         }
         for (Parameter parameter : getParameters()) {
             save_put(params, parameter.getAttribute(), parameter.getValue());
         }
-        save_put(info, "params", params);
+        save_put(info, KEY_PARAMS, params);
         for (String attr : getRequiredNotDefinedAttributes()) {
             requiedNotDefined.put(attr);
         }
         if (requiedNotDefined.length() > 0) {
-            save_put(info, "required-not-defined", requiedNotDefined);
+            save_put(info, KEY_UNDEFINED_REQUIRED, requiedNotDefined);
         }
         if (mCommandId != null) {
-            save_put(info, "command-id", mCommandId);
+            save_put(info, KEY_COMMAND_ID, mCommandId);
         }
         return info;
     }

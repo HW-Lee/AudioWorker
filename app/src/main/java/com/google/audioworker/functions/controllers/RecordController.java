@@ -26,7 +26,6 @@ import org.json.JSONObject;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -137,7 +136,7 @@ public class RecordController extends ControllerBase {
                             continue;
 
                         try {
-                            detectionInfo.put(handle, detector.getInfo());
+                            detectionInfo.put(handle, detector.toString());
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
@@ -169,24 +168,13 @@ public class RecordController extends ControllerBase {
                         if (findings.length > 0)
                             className = findings[0];
 
-                        DetectorBase detector = null;
-                        try {
-                            Class[] types = {DetectorBase.DetectionListener.class, String.class};
-                            Object c;
-                            String params = processDetectorParams(mMainRunningTask, className, ((RecordDetectFunction) function).getDetectorParams());
-
-                            c = Class.forName(className).getConstructor(types).newInstance(new DetectorBase.DetectionListener() {
-                                @Override
-                                public void onTargetDetected(SparseArray<? extends DetectorBase.Target> targets) {
-                                    RecordController.this.onTargetDetected(function.getCommandId(), targets);
-                                }
-                            }, params);
-                            if (c instanceof DetectorBase)
-                                detector = (DetectorBase) c;
-                        } catch (ClassNotFoundException | NoSuchMethodException |
-                                IllegalAccessException | InstantiationException | InvocationTargetException e) {
-                            e.printStackTrace();
-                        }
+                        String params = processDetectorParams(mMainRunningTask, className, ((RecordDetectFunction) function).getDetectorParams());
+                        DetectorBase detector = ToneDetector.getDetectorByClassName(className, new DetectorBase.DetectionListener() {
+                            @Override
+                            public void onTargetDetected(SparseArray<? extends DetectorBase.Target> targets) {
+                                RecordController.this.onTargetDetected(function.getCommandId(), targets);
+                            }
+                        }, params);
 
                         if (detector == null) {
                             if (l != null) {

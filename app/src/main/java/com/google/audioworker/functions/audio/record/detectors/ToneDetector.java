@@ -1,13 +1,16 @@
 package com.google.audioworker.functions.audio.record.detectors;
 
+import android.content.Context;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import android.util.SparseArray;
+import android.view.View;
 
 import com.google.audioworker.functions.common.WorkerFunction;
 import com.google.audioworker.utils.Constants;
 import com.google.audioworker.utils.ds.CircularArray;
 import com.google.audioworker.utils.signalproc.FFT;
+import com.google.audioworker.views.ToneDetectorView;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -16,13 +19,19 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ToneDetector extends DetectorBase implements WorkerFunction.Parameterizable {
+public class ToneDetector extends VisualizableDetector implements WorkerFunction.Parameterizable {
     private final static String TAG = Constants.packageTag("ToneDetector");
 
     private int mSamplingFreq;
     private int mProcessFrameMillis = Constants.Detectors.ToneDetector.Config.PROCESS_FRAME_MILLIS;
     private CircularArray<Double> mBuffer;
     final private ArrayList<Target> mTargets;
+
+    public final static String INFO_KEY_SAMPLING_FREQ = "Sampling Frequency";
+    public final static String INFO_KEY_FRAME_SIZE = "Process Frame Size";
+    public final static String INFO_KEY_HANDLE = "Handle";
+    public final static String INFO_KEY_UNIT = "unit";
+    public final static String INFO_KEY_TARGETS = "Targets";
 
     private final static String ATTR_TARGETS = Constants.Detectors.ToneDetector.PARAM_TARGET_FREQ;
     private final static String ATTR_CLEAR_TARGETS = Constants.Detectors.ToneDetector.PARAM_CLEAR_TARGETS;
@@ -42,7 +51,10 @@ public class ToneDetector extends DetectorBase implements WorkerFunction.Paramet
 
         switch (attr) {
             case ATTR_TARGETS:
-                PARAM_TARGETS.setValue("[" + value.toString() + "]");
+                if (value.toString().startsWith("[") && value.toString().endsWith("]"))
+                    PARAM_TARGETS.setValue(value.toString());
+                else
+                    PARAM_TARGETS.setValue("[" + value.toString() + "]");
                 return;
             case ATTR_CLEAR_TARGETS:
                 PARAM_CLEAR_TARGETS.setValue(Boolean.valueOf(value.toString()));
@@ -66,7 +78,11 @@ public class ToneDetector extends DetectorBase implements WorkerFunction.Paramet
 
     private boolean checkTargetString(String s) {
         try {
-            JSONArray jsonArray = new JSONArray("[" + s + "]");
+            JSONArray jsonArray;
+            if (s.startsWith("[") && s.endsWith("]"))
+                jsonArray = new JSONArray(s);
+            else
+                jsonArray = new JSONArray("[" + s + "]");
             for (int i = 0; i < jsonArray.length(); i++) {
                 if (jsonArray.getDouble(i) <= 0)
                     return false;
@@ -76,6 +92,11 @@ public class ToneDetector extends DetectorBase implements WorkerFunction.Paramet
             e.printStackTrace();
         }
         return false;
+    }
+
+    @Override
+    public View getVisualizedView(Context ctx, String token, DetectorBase detector) {
+        return ToneDetectorView.createView(ctx, token, detector);
     }
 
     public static class Target extends DetectorBase.Target {
@@ -199,7 +220,30 @@ public class ToneDetector extends DetectorBase implements WorkerFunction.Paramet
     @NonNull
     @Override
     public String toString() {
-        return getInfo();
+        try {
+            JSONObject obj = new JSONObject();
+            JSONObject unitObj = new JSONObject();
+
+            unitObj.put(INFO_KEY_SAMPLING_FREQ, "Hz");
+            unitObj.put(INFO_KEY_FRAME_SIZE, "ms");
+
+            obj.put(INFO_KEY_HANDLE, getHandle());
+            obj.put(INFO_KEY_SAMPLING_FREQ, mSamplingFreq);
+            obj.put(INFO_KEY_FRAME_SIZE, mProcessFrameMillis);
+            obj.put(INFO_KEY_UNIT, unitObj);
+
+            JSONArray targets = new JSONArray();
+            synchronized (mTargets) {
+                for (Target t : mTargets)
+                    targets.put(t.toJson());
+            }
+            obj.put(INFO_KEY_TARGETS, targets);
+
+            return obj.toString();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return super.toString();
     }
 
     @Override
@@ -272,8 +316,6 @@ public class ToneDetector extends DetectorBase implements WorkerFunction.Paramet
         SparseArray<Target> targets = new SparseArray<>();
         double[] spectrum = FFT.transformAbs(signal);
 
-        if (targets.size() > 0) {
-            mListener.onTargetDetected(targets);
-        }
+        broadcastTargetDetected(targets);
     }
 }

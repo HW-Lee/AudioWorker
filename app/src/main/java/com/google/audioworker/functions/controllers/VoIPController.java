@@ -29,7 +29,6 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -197,25 +196,13 @@ public class VoIPController extends ControllerBase {
                 switch (((VoIPDetectFunction) function).getOperationType()) {
                     case RecordDetectFunction.OP_REGISTER: {
                         String className = ((VoIPDetectFunction) function).getDetectorClassName();
-                        DetectorBase detector = null;
-                        try {
-                            Class[] types = {DetectorBase.DetectionListener.class, String.class};
-                            Object c;
-                            String params = RecordController.processDetectorParams(mTxRunnable, className, ((VoIPDetectFunction) function).getDetectorParams());
-
-                            c = Class.forName(className).getConstructor(types).newInstance(new DetectorBase.DetectionListener() {
-                                @Override
-                                public void onTargetDetected(SparseArray<? extends DetectorBase.Target> targets) {
-                                    VoIPController.this.onTargetDetected(function.getCommandId(), targets);
-                                }
-                            }, params);
-                            if (c instanceof DetectorBase)
-                                detector = (DetectorBase) c;
-                        } catch (ClassNotFoundException | NoSuchMethodException |
-                                IllegalAccessException | InstantiationException | InvocationTargetException e) {
-                            e.printStackTrace();
-                            return;
-                        }
+                        String params = RecordController.processDetectorParams(mTxRunnable, className, ((VoIPDetectFunction) function).getDetectorParams());
+                        DetectorBase detector = DetectorBase.getDetectorByClassName(className, new DetectorBase.DetectionListener() {
+                            @Override
+                            public void onTargetDetected(SparseArray<? extends DetectorBase.Target> targets) {
+                                VoIPController.this.onTargetDetected(function.getCommandId(), targets);
+                            }
+                        }, params);
 
                         if (detector == null) {
                             if (l != null) {
