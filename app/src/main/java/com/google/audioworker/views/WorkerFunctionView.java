@@ -77,7 +77,7 @@ public class WorkerFunctionView extends LinearLayout {
         selections.add("");
         selections.addAll(actions);
         mListener = l;
-        mSpinner.setAdapter(new ArrayAdapter<>(getContext(), android.R.layout.simple_list_item_1, android.R.id.text1, selections));
+        mSpinner.setAdapter(ViewUtils.getSimpleAdapter(getContext(), selections));
 
         mSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override

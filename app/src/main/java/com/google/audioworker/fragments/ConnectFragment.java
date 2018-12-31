@@ -20,6 +20,7 @@ import com.google.audioworker.functions.commands.CommandHelper;
 import com.google.audioworker.utils.Constants;
 import com.google.audioworker.utils.communicate.base.Communicator;
 import com.google.audioworker.views.PeerListAdapter;
+import com.google.audioworker.views.ViewUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -74,7 +75,7 @@ public class ConnectFragment extends WorkerFragment implements Communicator.Comm
         mPeers = new ArrayList<>(10);
 
         mConnectedPeers = new ArrayList<>(10);
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(mActivityRef.get(), android.R.layout.simple_list_item_1, android.R.id.text1, mConnectedPeers);
+        ArrayAdapter<String> adapter = ViewUtils.getSimpleAdapter(mActivityRef.get(), mConnectedPeers);
         ((Spinner) mActivityRef.get().findViewById(R.id.send_to_spinner)).setAdapter(adapter);
         ((Spinner) mActivityRef.get().findViewById(R.id.send_to_spinner)).setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override

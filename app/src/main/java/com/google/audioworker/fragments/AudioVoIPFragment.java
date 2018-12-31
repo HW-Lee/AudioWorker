@@ -10,8 +10,8 @@ import android.view.ViewGroup;
 import com.google.audioworker.R;
 import com.google.audioworker.utils.Constants;
 
-public class AudioPlaybackFragment extends WorkerFragment {
-    private final static String TAG = Constants.packageTag("AudioPlaybackFragment");
+public class AudioVoIPFragment extends WorkerFragment {
+    private final static String TAG = Constants.packageTag("AudioVoIPFragment");
 
     @Override
     public void onAttach(Context ctx) {
@@ -20,7 +20,7 @@ public class AudioPlaybackFragment extends WorkerFragment {
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.audio_playback_fragment, container, false);
+        return null;
     }
 
     @Override

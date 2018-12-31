@@ -26,6 +26,7 @@ import com.google.audioworker.functions.controllers.ControllerBase;
 import com.google.audioworker.functions.controllers.RecordController;
 import com.google.audioworker.utils.Constants;
 import com.google.audioworker.views.DataView;
+import com.google.audioworker.views.ViewUtils;
 import com.google.audioworker.views.WorkerFunctionView;
 
 import org.json.JSONException;
@@ -251,10 +252,7 @@ public class AudioRecordFragment extends WorkerFragment
             }
         }
 
-        Spinner spinner = new Spinner(mActivityRef.get());
-        spinner.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, getPxByDp(40)));
-        spinner.setAdapter(new ArrayAdapter<>(mActivityRef.get(), android.R.layout.simple_list_item_1, android.R.id.text1, detectorClassNames));
-        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+        Spinner spinner = ViewUtils.getSimpleSpinner(mActivityRef.get(), detectorClassNames, new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if (position == 0)
@@ -267,6 +265,7 @@ public class AudioRecordFragment extends WorkerFragment
             public void onNothingSelected(AdapterView<?> parent) {
             }
         });
+        spinner.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, getPxByDp(40)));
 
         mAuxViewContainer.addView(spinner);
         mAuxViewContainer.invalidate();
@@ -284,10 +283,7 @@ public class AudioRecordFragment extends WorkerFragment
             handles.addAll(mDetectorHandles.keySet());
         }
 
-        Spinner spinner = new Spinner(mActivityRef.get());
-        spinner.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, getPxByDp(40)));
-        spinner.setAdapter(new ArrayAdapter<>(mActivityRef.get(), android.R.layout.simple_list_item_1, android.R.id.text1, handles));
-        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+        Spinner spinner = ViewUtils.getSimpleSpinner(mActivityRef.get(), handles, new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 WorkerFunctionView.ParameterView pv = views.get(RecordDetectFunction.ATTR_CLASS_HANDLE);
@@ -301,6 +297,7 @@ public class AudioRecordFragment extends WorkerFragment
             public void onNothingSelected(AdapterView<?> parent) {
             }
         });
+        spinner.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, getPxByDp(40)));
 
         mAuxViewContainer.addView(spinner);
         mAuxViewContainer.invalidate();
@@ -318,10 +315,7 @@ public class AudioRecordFragment extends WorkerFragment
             handles.addAll(mDetectorHandles.keySet());
         }
 
-        Spinner spinner = new Spinner(mActivityRef.get());
-        spinner.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, getPxByDp(40)));
-        spinner.setAdapter(new ArrayAdapter<>(mActivityRef.get(), android.R.layout.simple_list_item_1, android.R.id.text1, handles));
-        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+        Spinner spinner = ViewUtils.getSimpleSpinner(mActivityRef.get(), handles, new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 if (position == 0)
@@ -334,6 +328,7 @@ public class AudioRecordFragment extends WorkerFragment
             public void onNothingSelected(AdapterView<?> parent) {
             }
         });
+        spinner.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, getPxByDp(40)));
 
         mAuxViewContainer.addView(spinner);
         mAuxViewContainer.invalidate();

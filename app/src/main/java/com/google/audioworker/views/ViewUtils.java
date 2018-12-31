@@ -1,0 +1,28 @@
+package com.google.audioworker.views;
+
+import android.content.Context;
+import android.support.annotation.NonNull;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
+
+import java.util.ArrayList;
+import java.util.Collection;
+
+public class ViewUtils {
+    static public Spinner getSimpleSpinner(@NonNull Context ctx, Collection<? extends String> values) {
+        return getSimpleSpinner(ctx, values, null);
+    }
+
+    static public Spinner getSimpleSpinner(@NonNull Context ctx, Collection<? extends String> values, AdapterView.OnItemSelectedListener l) {
+        Spinner spinner = new Spinner(ctx);
+        spinner.setAdapter(getSimpleAdapter(ctx, values));
+        spinner.setOnItemSelectedListener(l);
+
+        return spinner;
+    }
+
+    static public ArrayAdapter<String> getSimpleAdapter(@NonNull Context ctx, Collection<? extends String> values) {
+        return new ArrayAdapter<>(ctx, android.R.layout.simple_list_item_1, android.R.id.text1, new ArrayList<>(values));
+    }
+}
