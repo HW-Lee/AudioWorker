@@ -3,6 +3,7 @@ package com.google.audioworker.functions.controllers;
 import android.content.Context;
 import android.media.AudioManager;
 import android.media.MediaRecorder;
+import android.support.annotation.NonNull;
 import android.util.Log;
 import android.util.SparseArray;
 
@@ -41,6 +42,7 @@ public class VoIPController extends ControllerBase {
     private WeakReference<Context> mContextRef;
 
     private HashMap<String, DetectorBase> mDetectors;
+    private final ArrayList<RecordController.RecordRunnable.RecordDataListener> mDataListeners = new ArrayList<>();
 
     private ThreadPoolExecutor mPoolExecuter;
     private PlaybackController.PlaybackRunnable mRxRunnable;
@@ -74,6 +76,8 @@ public class VoIPController extends ControllerBase {
         super.destroy();
         mPoolExecuter.shutdown();
         mPoolExecuter = null;
+        mDetectors.clear();
+        mDataListeners.clear();
     }
 
     @Override
@@ -89,15 +93,17 @@ public class VoIPController extends ControllerBase {
     private void executeBackground(final WorkerFunction function, WorkerFunction.WorkerFunctionListener l) {
         if (function instanceof VoIPFunction && function.isValid()) {
             if (function instanceof VoIPStartFunction) {
-                if (mRxRunnable != null && !mRxRunnable.hasDone()) {
+                if (isRxRunning()) {
                     PlaybackStopFunction rxStopFunction = new PlaybackStopFunction();
                     initRxStopFunction(function, rxStopFunction);
                     mRxRunnable.tryStop(rxStopFunction);
                     mRxRunnable = null;
                 }
-                if (mTxRunnable != null && !mTxRunnable.hasDone()) {
+                if (isTxRunning()) {
                     RecordStopFunction txStopFunction = new RecordStopFunction();
                     initTxStopFunction(function, txStopFunction);
+                    for (RecordController.RecordRunnable.RecordDataListener dl : mDataListeners)
+                        mTxRunnable.unregisterDataListener(dl);
                     mTxRunnable.tryStop(txStopFunction);
 
                     while (!mTxRunnable.hasDone()) {
@@ -123,6 +129,10 @@ public class VoIPController extends ControllerBase {
                 if (mContextRef.get() != null) {
                     ((AudioManager) mContextRef.get().getSystemService(Context.AUDIO_SERVICE)).setMode(AudioManager.MODE_IN_COMMUNICATION);
                 }
+                for (RecordController.RecordRunnable.RecordDataListener dl : mDataListeners)
+                    mTxRunnable.registerDataListener(dl);
+                for (DetectorBase detector : mDetectors.values())
+                    mTxRunnable.registerDetector(detector);
                 mPoolExecuter.execute(mRxRunnable);
                 mPoolExecuter.execute(mTxRunnable);
                 mPoolExecuter.execute(mTxRunnable.getSlave());
@@ -133,8 +143,7 @@ public class VoIPController extends ControllerBase {
                 initRxStopFunction(function, rxStopFunction);
                 initTxStopFunction(function, txStopFunction);
                 ProxyListener listener = new ProxyListener(function, l, true);
-                if ((mRxRunnable == null || mRxRunnable.hasDone()) &&
-                        (mTxRunnable == null || mTxRunnable.hasDone())) {
+                if (!isRxRunning() && !isTxRunning()) {
                     if (l != null) {
                         WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
                         ack.setReturnCode(-1);
@@ -144,11 +153,11 @@ public class VoIPController extends ControllerBase {
                     return;
                 }
 
-                if (mRxRunnable != null && !mRxRunnable.hasDone()) {
+                if (isRxRunning()) {
                     mRxRunnable.tryStop(rxStopFunction, listener);
                     mRxRunnable = null;
                 }
-                if (mTxRunnable != null && !mTxRunnable.hasDone()) {
+                if (isTxRunning()) {
                     mTxRunnable.tryStop(txStopFunction, listener);
                     mTxRunnable = null;
                 }
@@ -158,7 +167,7 @@ public class VoIPController extends ControllerBase {
                 mDetectors.clear();
             } else if (function instanceof VoIPConfigFunction) {
                 WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
-                if (mRxRunnable != null && !mRxRunnable.hasDone()) {
+                if (isRxRunning()) {
                     WorkerFunction f = mRxRunnable.setSignalConfig(((VoIPConfigFunction) function).getRxAmplitude(), ((VoIPConfigFunction) function).getTargetFrequency());
                     ArrayList<Object> returns = new ArrayList<>();
                     returns.add(f.toString());
@@ -176,7 +185,7 @@ public class VoIPController extends ControllerBase {
                 }
             } else if (function instanceof VoIPDetectFunction) {
                 WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
-                if (mTxRunnable == null || mTxRunnable.hasDone()) {
+                if (!isTxRunning()) {
                     if (l != null) {
                         ack.setReturnCode(-1);
                         ack.setDescription("no recording process running");
@@ -272,8 +281,7 @@ public class VoIPController extends ControllerBase {
                 if (l == null)
                     return;
                 WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
-                if (mTxRunnable != null && !mTxRunnable.hasDone() &&
-                        mRxRunnable != null && !mRxRunnable.hasDone()) {
+                if (isVoIPRunning()) {
                     ArrayList<Object> returns = new ArrayList<>();
                     JSONObject detectionInfo = new JSONObject();
 
@@ -299,7 +307,7 @@ public class VoIPController extends ControllerBase {
                 l.onAckReceived(ack);
             } else if (function instanceof VoIPTxDumpFunction) {
                 WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
-                if (mTxRunnable == null || mTxRunnable.hasDone()) {
+                if (!isTxRunning()) {
                     if (l != null) {
                         ack.setReturnCode(-1);
                         ack.setDescription("no recording process running");
@@ -355,6 +363,41 @@ public class VoIPController extends ControllerBase {
     }
 
     public void onTargetDetected(final String commandId, SparseArray<? extends DetectorBase.Target> targets) {
+    }
+
+    public boolean isTxRunning() {
+        return mTxRunnable != null && !mTxRunnable.hasDone();
+    }
+
+    public boolean isRxRunning() {
+        return mRxRunnable != null && !mRxRunnable.hasDone();
+    }
+
+    public boolean isVoIPRunning() {
+        return isRxRunning() && isTxRunning();
+    }
+
+    public void registerDataListener(@NonNull RecordController.RecordRunnable.RecordDataListener l) {
+        synchronized (mDataListeners) {
+            if (!mDataListeners.contains(l))
+                mDataListeners.add(l);
+        }
+
+        if (!isTxRunning())
+            return;
+
+        mTxRunnable.registerDataListener(l);
+    }
+
+    public void unregisterDataListener(@NonNull RecordController.RecordRunnable.RecordDataListener l) {
+        synchronized (mDataListeners) {
+            mDataListeners.remove(l);
+        }
+
+        if (!isTxRunning())
+            return;
+
+        mTxRunnable.unregisterDataListener(l);
     }
 
     class ProxyListener implements WorkerFunction.WorkerFunctionListener {

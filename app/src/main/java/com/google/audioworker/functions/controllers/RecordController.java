@@ -73,6 +73,7 @@ public class RecordController extends ControllerBase {
         }
         mPoolExecuter.shutdown();
         mPoolExecuter = null;
+        mDetectors.clear();
         mDataListeners.clear();
     }
 
@@ -107,6 +108,8 @@ public class RecordController extends ControllerBase {
                 mMainRunningTask.setRecordRunner(new RecordInternalRunnable(mMainRunningTask));
                 for (RecordRunnable.RecordDataListener dl : mDataListeners)
                     mMainRunningTask.registerDataListener(dl);
+                for (DetectorBase detector : mDetectors.values())
+                    mMainRunningTask.registerDetector(detector);
                 mPoolExecuter.execute(mMainRunningTask);
                 mPoolExecuter.execute(mMainRunningTask.slave);
             } else if (function instanceof RecordStopFunction) {
