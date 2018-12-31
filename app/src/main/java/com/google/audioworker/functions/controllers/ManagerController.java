@@ -5,7 +5,7 @@ import android.support.annotation.CallSuper;
 
 import java.util.HashMap;
 
-public abstract class ManagerController extends ControllerBase {
+public abstract class ManagerController extends ControllerBase implements ControllerBase.ControllerStateListener {
     protected HashMap<String, ControllerBase> mControllers;
 
     public ManagerController() {
@@ -29,12 +29,7 @@ public abstract class ManagerController extends ControllerBase {
     public void activate(Context ctx) {
         for (ControllerBase controller : mControllers.values()) {
             controller.activate(ctx);
-            controller.registerStateListener(new ControllerStateListener() {
-                @Override
-                public void onStateChanged(ControllerBase controller) {
-                    broadcastStateChange(controller);
-                }
-            });
+            controller.setManager(this);
         }
     }
 
@@ -47,5 +42,11 @@ public abstract class ManagerController extends ControllerBase {
             controller.destroy();
 
         mControllers.clear();
+    }
+
+    @CallSuper
+    @Override
+    public void onStateChanged(ControllerBase controller) {
+        broadcastStateChange(controller);
     }
 }

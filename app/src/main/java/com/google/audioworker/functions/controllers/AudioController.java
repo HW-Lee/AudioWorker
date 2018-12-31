@@ -2,12 +2,22 @@ package com.google.audioworker.functions.controllers;
 
 import com.google.audioworker.functions.audio.playback.PlaybackFunction;
 import com.google.audioworker.functions.audio.record.RecordFunction;
+import com.google.audioworker.functions.audio.record.detectors.DetectorBase;
 import com.google.audioworker.functions.audio.voip.VoIPFunction;
 import com.google.audioworker.functions.common.WorkerFunction;
 import com.google.audioworker.utils.Constants;
 
 public class AudioController extends ManagerController {
     private final static String TAG = Constants.packageTag("AudioController");
+
+    public interface TxCallback {
+        void registerDataListener(RecordController.RecordRunnable.RecordDataListener l);
+        void unregisterDataListener(RecordController.RecordRunnable.RecordDataListener l);
+        DetectorBase getDetectorByHandle(String handle);
+    }
+
+    public static abstract class AudioTxController extends ControllerBase implements TxCallback {
+    }
 
     public AudioController() {
         super();

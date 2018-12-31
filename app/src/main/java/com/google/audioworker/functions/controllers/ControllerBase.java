@@ -18,6 +18,7 @@ public abstract class ControllerBase {
         void onStateChanged(ControllerBase controller);
     }
 
+    protected ManagerController mManager;
     protected String _dataPath;
     protected final ArrayList<WeakReference<ControllerStateListener>> _stateListeners = new ArrayList<>();
 
@@ -77,10 +78,17 @@ public abstract class ControllerBase {
         }
     }
 
+    public void setManager(ManagerController manager) {
+        mManager = manager;
+    }
+
     protected void broadcastStateChange(final ControllerBase controller) {
         new Thread(new Runnable() {
             @Override
             public void run() {
+                if (mManager != null)
+                    mManager.onStateChanged(controller);
+
                 ArrayList<WeakReference<ControllerStateListener>> listeners = new ArrayList<>(_stateListeners);
 
                 for (WeakReference<ControllerStateListener> ref : listeners) {

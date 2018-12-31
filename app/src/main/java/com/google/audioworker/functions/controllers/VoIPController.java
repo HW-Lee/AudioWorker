@@ -35,7 +35,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-public class VoIPController extends ControllerBase {
+public class VoIPController extends AudioController.AudioTxController {
     private final static String TAG = Constants.packageTag("VoIPController");
 
     private WeakReference<Context> mContextRef;
@@ -352,6 +352,11 @@ public class VoIPController extends ControllerBase {
     public void onTargetDetected(final String commandId, SparseArray<? extends DetectorBase.Target> targets) {
     }
 
+    @Override
+    public DetectorBase getDetectorByHandle(String handle) {
+        return mDetectors.get(handle);
+    }
+
     public boolean isTxRunning() {
         return mTxRunnable != null && !mTxRunnable.hasDone();
     }
@@ -364,6 +369,7 @@ public class VoIPController extends ControllerBase {
         return isRxRunning() && isTxRunning();
     }
 
+    @Override
     public void registerDataListener(@NonNull RecordController.RecordRunnable.RecordDataListener l) {
         synchronized (mDataListeners) {
             if (!mDataListeners.contains(l))
@@ -376,6 +382,7 @@ public class VoIPController extends ControllerBase {
         mTxRunnable.registerDataListener(l);
     }
 
+    @Override
     public void unregisterDataListener(@NonNull RecordController.RecordRunnable.RecordDataListener l) {
         synchronized (mDataListeners) {
             mDataListeners.remove(l);

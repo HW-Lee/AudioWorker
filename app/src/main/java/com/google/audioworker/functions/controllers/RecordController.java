@@ -37,7 +37,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class RecordController extends ControllerBase {
+public class RecordController extends AudioController.AudioTxController {
     private final static String TAG = Constants.packageTag("RecordController");
 
     private HashMap<String, DetectorBase> mDetectors;
@@ -264,10 +264,16 @@ public class RecordController extends ControllerBase {
         }
     }
 
+    @Override
+    public DetectorBase getDetectorByHandle(String handle) {
+        return mDetectors.get(handle);
+    }
+
     public boolean isRecording() {
         return mMainRunningTask != null && !mMainRunningTask.hasDone();
     }
 
+    @Override
     public void registerDataListener(@NonNull RecordRunnable.RecordDataListener l) {
         synchronized (mDataListeners) {
             if (!mDataListeners.contains(l))
@@ -280,6 +286,7 @@ public class RecordController extends ControllerBase {
         mMainRunningTask.registerDataListener(l);
     }
 
+    @Override
     public void unregisterDataListener(@NonNull RecordRunnable.RecordDataListener l) {
         synchronized (mDataListeners) {
             mDataListeners.remove(l);

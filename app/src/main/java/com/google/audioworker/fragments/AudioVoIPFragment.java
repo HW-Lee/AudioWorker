@@ -7,7 +7,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.google.audioworker.R;
 import com.google.audioworker.utils.Constants;
 
 public class AudioVoIPFragment extends WorkerFragment {

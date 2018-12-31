@@ -7,12 +7,38 @@ import android.support.v4.app.FragmentTabHost;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 
 import com.google.audioworker.R;
+import com.google.audioworker.functions.common.WorkerFunction;
 import com.google.audioworker.utils.Constants;
+import com.google.audioworker.views.DataView;
+import com.google.audioworker.views.WorkerFunctionView;
+
+import java.util.Collection;
 
 public class AudioFragment extends WorkerFragment {
     private final static String TAG = Constants.packageTag("AudioFragment");
+
+    public interface TxSupport {
+        void initTxSupport();
+        DataView[] getTxDataViews();
+        LinearLayout getTxAuxViewContainer();
+        LinearLayout getTxInfoContainer();
+        String getTxInfoTitle();
+        Object[] getTxReturns(WorkerFunction.Ack ack);
+        String getControllerName();
+        WorkerFunction getInfoRequestFunction();
+    }
+
+    public interface RxSupport {
+    }
+
+    public interface WorkerFunctionAuxSupport {
+        Collection<? extends String> getSupportedIntents();
+        WorkerFunctionView getWorkerFunctionView();
+        boolean needToShowAuxView(String action);
+    }
 
     @Override
     public void onAttach(Context ctx) {

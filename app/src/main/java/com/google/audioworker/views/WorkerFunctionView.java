@@ -155,7 +155,7 @@ public class WorkerFunctionView extends LinearLayout {
         for (WorkerFunction.Parameter p : parameters) {
             ParameterView v = new ParameterView(getContext(), p);
             v.attrLabel.setPadding(getPxByDp(1), getPxByDp(1), getPxByDp(1), getPxByDp(1));
-            v.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, getPxByDp(50)));
+            v.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
             mParameterViewContainer.addView(v);
             mParameterViews.put(p.getAttribute(), v);
         }
@@ -248,9 +248,16 @@ public class WorkerFunctionView extends LinearLayout {
             requestValue = new EditText(getContext());
             requestValue.setEnabled(true);
 
-            attrLabel.setLayoutParams(new LayoutParams(0, LayoutParams.MATCH_PARENT, 1));
-            defaultValue.setLayoutParams(new LayoutParams(0, LayoutParams.MATCH_PARENT, 1));
-            requestValue.setLayoutParams(new LayoutParams(0, LayoutParams.MATCH_PARENT, 1));
+            LayoutParams params;
+
+            params = new LayoutParams(0, LayoutParams.MATCH_PARENT, 1);
+            params.gravity = Gravity.BOTTOM;
+            attrLabel.setLayoutParams(params);
+            defaultValue.setLayoutParams(params);
+
+            params = new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1);
+            params.gravity = Gravity.BOTTOM;
+            requestValue.setLayoutParams(params);
 
             attrLabel.setGravity(Gravity.CENTER);
             defaultValue.setGravity(Gravity.CENTER);
