@@ -181,6 +181,7 @@ public abstract class AudioRxSupportFragment extends WorkerFragment
 
         static <T extends WorkerFragment & AudioFragment.RxSupport>
         void updateRxInfoContent(T fragment, Bundle bundle, Object[] returns) {
+            bundle.mRxInfoContentView.removeAllViews();
             if (returns.length < 1 || fragment.mActivityRef.get() == null)
                 return;
 
@@ -212,7 +213,6 @@ public abstract class AudioRxSupportFragment extends WorkerFragment
                 return;
             }
 
-            bundle.mRxInfoContentView.removeAllViews();
             if (Factory.getNumRunningTracks(bundle) == 0) {
                 {
                     TextView tv = new TextView(fragment.mActivityRef.get());

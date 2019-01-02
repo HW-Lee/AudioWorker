@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -467,6 +468,24 @@ public class PlaybackController extends AudioController.AudioRxController {
         }
     }
 
+    static String getPlaybackInfoAckString(Collection<? extends PlaybackStartFunction> functions) {
+        JSONObject obj = new JSONObject();
+        try {
+            for (PlaybackStartFunction function : functions) {
+                String type = function.getPlaybackType();
+                if (!obj.has(type)) {
+                    obj.put(type, new JSONObject());
+                }
+                obj.getJSONObject(type).put(String.valueOf(function.getPlaybackId()), function.toJson());
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return new JSONObject().toString();
+        }
+
+        return obj.toString();
+    }
+
     class PlaybackInfoRunnable implements Runnable {
         private PlaybackInfoFunction mFunction;
         private WorkerFunction.WorkerFunctionListener mListener;
@@ -482,23 +501,21 @@ public class PlaybackController extends AudioController.AudioRxController {
                 return;
 
             ArrayList<Object> returns = new ArrayList<>();
-            JSONObject obj = new JSONObject();
+            ArrayList<PlaybackStartFunction> functions = new ArrayList<>();
             for (String type : mRunningPlaybackTasks.keySet()) {
                 SparseArray<PlaybackRunnable> tasks = mRunningPlaybackTasks.get(type);
                 if (tasks == null)
                     continue;
-                JSONObject info = new JSONObject();
                 for (int i = 0; i < tasks.size(); i++) {
                     int idx = tasks.keyAt(i);
                     PlaybackRunnable task = tasks.get(idx);
                     if (task == null) {
                         continue;
                     }
-                    save_put(info, String.valueOf(idx), task.mStartFunction.toJson());
+                    functions.add(task.mStartFunction);
                 }
-                save_put(obj, type, info);
             }
-            returns.add(obj.toString());
+            returns.add(PlaybackController.getPlaybackInfoAckString(functions));
 
             WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(mFunction);
             ack.setReturnCode(0);

@@ -24,9 +24,6 @@ import com.google.audioworker.functions.audio.voip.VoIPTxDumpFunction;
 import com.google.audioworker.functions.common.WorkerFunction;
 import com.google.audioworker.utils.Constants;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.io.File;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -160,9 +157,6 @@ public class VoIPController extends AudioController.AudioRxTxController {
                     mTxRunnable.tryStop(txStopFunction, listener);
                     mTxRunnable = null;
                 }
-                if (mContextRef.get() != null) {
-                    ((AudioManager) mContextRef.get().getSystemService(Context.AUDIO_SERVICE)).setMode(AudioManager.MODE_NORMAL);
-                }
                 mDetectors.clear();
             } else if (function instanceof VoIPConfigFunction) {
                 WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
@@ -270,23 +264,12 @@ public class VoIPController extends AudioController.AudioRxTxController {
                 WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
                 if (isVoIPRunning()) {
                     ArrayList<Object> returns = new ArrayList<>();
-                    JSONObject detectionInfo = new JSONObject();
+                    ArrayList<PlaybackStartFunction> functions = new ArrayList<>();
+                    functions.add(mRxRunnable.getStartFunction());
 
-                    for (String handle : mDetectors.keySet()) {
-                        DetectorBase detector = mDetectors.get(handle);
-                        if (detector == null)
-                            continue;
-
-                        try {
-                            detectionInfo.put(handle, detector.getInfo());
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-                    returns.add(mRxRunnable.getStartFunction().toString());
+                    returns.add(PlaybackController.getPlaybackInfoAckString(functions));
                     returns.add(mTxRunnable.getStartFunction().toString());
-                    returns.add(detectionInfo.toString());
+                    returns.add(RecordController.getDetectorAckString(mDetectors));
                     ack.setReturns(returns);
                 }
                 ack.setReturnCode(0);
@@ -458,6 +441,11 @@ public class VoIPController extends AudioController.AudioRxTxController {
                     oack.setDescription("VoIP terminated");
                 else
                     oack.setDescription("VoIP unexpected failed");
+
+                if (mContextRef.get() != null) {
+                    ((AudioManager) mContextRef.get().getSystemService(Context.AUDIO_SERVICE)).setMode(AudioManager.MODE_NORMAL);
+                }
+
                 mListener.onAckReceived(oack);
             }
         }

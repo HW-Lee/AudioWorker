@@ -128,22 +128,9 @@ public class RecordController extends AudioController.AudioTxController {
                 WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
                 if (isRecording()) {
                     ArrayList<Object> returns = new ArrayList<>();
-                    JSONObject detectionInfo = new JSONObject();
-
-                    for (String handle : mDetectors.keySet()) {
-                        DetectorBase detector = mDetectors.get(handle);
-                        if (detector == null)
-                            continue;
-
-                        try {
-                            detectionInfo.put(handle, detector.toString());
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
 
                     returns.add(mMainRunningTask.mStartFunction.toString());
-                    returns.add(detectionInfo.toString());
+                    returns.add(RecordController.getDetectorAckString(mDetectors));
                     ack.setReturns(returns);
                 }
                 ack.setReturnCode(0);
@@ -262,6 +249,24 @@ public class RecordController extends AudioController.AudioTxController {
                 l.onAckReceived(ack);
             }
         }
+    }
+
+    static String getDetectorAckString(HashMap<String, DetectorBase> detectors) {
+        JSONObject detectionInfo = new JSONObject();
+
+        for (String handle : detectors.keySet()) {
+            DetectorBase detector = detectors.get(handle);
+            if (detector == null)
+                continue;
+
+            try {
+                detectionInfo.put(handle, detector.toString());
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return detectionInfo.toString();
     }
 
     @Override

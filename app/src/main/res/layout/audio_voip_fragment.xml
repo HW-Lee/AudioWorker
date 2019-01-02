@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="6dp"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:id="@+id/voip_rx_status"
+            android:padding="2dp"
+            android:textSize="20sp"
+            android:gravity="center_vertical"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:id="@+id/voip_tx_status"
+            android:padding="2dp"
+            android:textSize="20sp"
+            android:gravity="center_vertical"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:id="@+id/voip_phone_state"
+            android:padding="2dp"
+            android:textSize="20sp"
+            android:gravity="center_vertical"/>
+
+        <com.google.audioworker.views.WorkerFunctionView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/voip_func_attr_container">
+        </com.google.audioworker.views.WorkerFunctionView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:id="@+id/voip_tx_aux_view_container"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:id="@+id/voip_rx_aux_view_container"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:text="Channel[1]"/>
+
+        <com.google.audioworker.views.DataView
+            android:id="@+id/voip_tx_signal_1"
+            android:layout_width="match_parent"
+            android:layout_height="200dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:text="Channel[2]"/>
+
+        <com.google.audioworker.views.DataView
+            android:id="@+id/voip_tx_signal_2"
+            android:layout_width="match_parent"
+            android:layout_height="200dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:id="@+id/voip_tx_info_container"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:id="@+id/voip_rx_info_container"/>
+
+    </LinearLayout>
+
+</ScrollView>

@@ -40,7 +40,7 @@ import java.util.List;
 public abstract class AudioTxSupportFragment extends WorkerFragment
         implements RecordController.RecordRunnable.RecordDataListener, AudioFragment.TxSupport,
             AudioFragment.WorkerFunctionAuxSupport, WorkerFunctionView.ActionSelectedListener {
-    private final static String TAG = Constants.packageTag("AudioInputSupportFragment");
+    private final static String TAG = Constants.packageTag("AudioTxSupportFragment");
 
     private final Factory.Bundle mBundle = new Factory.Bundle();
 
@@ -275,8 +275,10 @@ public abstract class AudioTxSupportFragment extends WorkerFragment
                             continue;
 
                         View v = ((DetectorBase.Visualizable) detector).getVisualizedView(fragment.mActivityRef.get(), jsonDetectors.getString(key), detector);
-                        v.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-                        container.addView(v);
+                        if (v != null) {
+                            v.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                            container.addView(v);
+                        }
                         if (iterator.hasNext()) {
                             View border = ViewUtils.getHorizontalBorder(fragment.mActivityRef.get(), fragment.getPxByDp(4));
                             border.setBackgroundColor(Color.argb(200, 0, 0, 0));
@@ -497,6 +499,7 @@ public abstract class AudioTxSupportFragment extends WorkerFragment
                 @Override
                 public void onAckReceived(WorkerFunction.Ack ack) {
                     final Object[] returns = fragment.getTxReturns(ack);
+
                     Factory.updateDetectors(bundle, returns);
                     fragment.mActivityRef.get().runOnUiThread(new Runnable() {
                         @Override
