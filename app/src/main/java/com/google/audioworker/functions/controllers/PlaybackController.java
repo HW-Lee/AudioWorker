@@ -115,7 +115,7 @@ public class PlaybackController extends AudioController.AudioRxController {
                 }
                 PlaybackRunnable playbackRunnable = tasks.get(playbackId);
                 if (playbackRunnable != null) {
-                    playbackRunnable.tryStop((PlaybackStopFunction) function);
+                    playbackRunnable.tryStop((PlaybackStopFunction) function, l);
                     tasks.delete(playbackId);
                 } else if (l != null) {
                     WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
