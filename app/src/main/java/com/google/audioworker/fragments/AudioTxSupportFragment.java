@@ -5,7 +5,6 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.CallSuper;
 import android.util.Pair;
-import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.AdapterView;
@@ -39,7 +38,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
-public abstract class AudioTxSupportFragment<T extends AudioController.AudioTxController> extends WorkerFragment
+public abstract class AudioTxSupportFragment extends WorkerFragment
         implements RecordController.RecordRunnable.RecordDataListener, AudioFragment.TxSupport,
             AudioFragment.WorkerFunctionAuxSupport, WorkerFunctionView.ActionSelectedListener {
     private final static String TAG = Constants.packageTag("AudioInputSupportFragment");
@@ -63,12 +62,14 @@ public abstract class AudioTxSupportFragment<T extends AudioController.AudioTxCo
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         initTxSupport();
+        init();
     }
 
     @Override
     public void onResume() {
         super.onResume();
         initTxSupport();
+        init();
     }
 
     @Override
@@ -85,8 +86,7 @@ public abstract class AudioTxSupportFragment<T extends AudioController.AudioTxCo
         mDetectorParameterViews.clear();
     }
 
-    @Override
-    public void initTxSupport() {
+    public void init() {
         if (mActivityRef.get() == null)
             return;
 
@@ -131,7 +131,7 @@ public abstract class AudioTxSupportFragment<T extends AudioController.AudioTxCo
         mTxInfoContentView = new LinearLayout(mActivityRef.get());
         mTxInfoContentView.setOrientation(LinearLayout.VERTICAL);
         mTxInfoContentView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-        mTxInfoContentView.setVisibility(View.GONE);
+        mTxInfoContentView.setVisibility(View.VISIBLE);
 
         TextView tv = new TextView(mActivityRef.get());
         tv.setText(title);
@@ -139,7 +139,7 @@ public abstract class AudioTxSupportFragment<T extends AudioController.AudioTxCo
         tv.setTextSize(20);
         tv.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
         final TextView toggle = new TextView(mActivityRef.get());
-        toggle.setText(">");
+        toggle.setText("v");
         toggle.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
         toggle.setTextSize(20);
         toggle.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
@@ -170,13 +170,13 @@ public abstract class AudioTxSupportFragment<T extends AudioController.AudioTxCo
     @Override
     public void onActionSelected(String action, HashMap<String, WorkerFunctionView.ParameterView> views) {
         if (action == null || !needToShowAuxView(action)) {
-            hideAuxView();
+            hideTxAuxView();
         } else {
-            updateAuxView(action, views);
+            updateTxAuxView(action, views);
         }
     }
 
-    private void updateAuxView(String action, HashMap<String, WorkerFunctionView.ParameterView> views) {
+    protected void updateTxAuxView(String action, HashMap<String, WorkerFunctionView.ParameterView> views) {
         switch (action) {
             case Constants.MasterInterface.INTENT_RECORD_DETECT_REGISTER:
             case Constants.MasterInterface.INTENT_VOIP_DETECT_REGISTER:
@@ -215,7 +215,7 @@ public abstract class AudioTxSupportFragment<T extends AudioController.AudioTxCo
                 mActivityRef.get().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        updateInfoContent(returns);
+                        updateTxInfoContent(returns);
                     }
                 });
             }
@@ -241,7 +241,7 @@ public abstract class AudioTxSupportFragment<T extends AudioController.AudioTxCo
         }
     }
 
-    private void updateInfoContent(Object[] returns) {
+    protected void updateTxInfoContent(Object[] returns) {
         mTxInfoContentView.removeAllViews();
         if (returns.length < 2)
             return;
@@ -325,8 +325,7 @@ public abstract class AudioTxSupportFragment<T extends AudioController.AudioTxCo
                     v.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
                     container.addView(v);
                     if (iterator.hasNext()) {
-                        View border = new View(mActivityRef.get());
-                        border.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, getPxByDp(4)));
+                        View border = ViewUtils.getHorizontalBorder(mActivityRef.get(), getPxByDp(4));
                         border.setBackgroundColor(Color.argb(200, 0, 0, 0));
                         container.addView(border);
                     }
@@ -470,7 +469,7 @@ public abstract class AudioTxSupportFragment<T extends AudioController.AudioTxCo
         getTxAuxViewContainer().invalidate();
     }
 
-    private void hideAuxView() {
+    private void hideTxAuxView() {
         if (mActivityRef.get() == null)
             return;
 
@@ -534,9 +533,5 @@ public abstract class AudioTxSupportFragment<T extends AudioController.AudioTxCo
 
         getTxAuxViewContainer().addView(b);
         getTxAuxViewContainer().invalidate();
-    }
-
-    private int getPxByDp(float dp) {
-        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, getResources().getDisplayMetrics());
     }
 }

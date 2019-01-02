@@ -6,12 +6,26 @@ import android.support.annotation.NonNull;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import com.google.audioworker.R;
+import com.google.audioworker.functions.audio.playback.PlaybackInfoFunction;
+import com.google.audioworker.functions.common.WorkerFunction;
+import com.google.audioworker.functions.controllers.AudioController;
+import com.google.audioworker.functions.controllers.ControllerBase;
 import com.google.audioworker.utils.Constants;
+import com.google.audioworker.views.WorkerFunctionView;
 
-public class AudioPlaybackFragment extends WorkerFragment {
+import java.util.ArrayList;
+import java.util.Collection;
+
+public class AudioPlaybackFragment extends AudioRxSupportFragment {
     private final static String TAG = Constants.packageTag("AudioPlaybackFragment");
+
+    private WorkerFunctionView mWorkerFunctionView;
+    private LinearLayout mRxAuxViewContainer;
+    private LinearLayout mRxInfoContainer;
 
     @Override
     public void onAttach(Context ctx) {
@@ -29,7 +43,91 @@ public class AudioPlaybackFragment extends WorkerFragment {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+    }
+
+    @Override
     public void onDestroy() {
         super.onDestroy();
+    }
+
+    @Override
+    public void initRxSupport() {
+        if (mActivityRef.get() == null)
+            return;
+
+        mWorkerFunctionView = mActivityRef.get().findViewById(R.id.playback_func_attr_container);
+        mRxAuxViewContainer = mActivityRef.get().findViewById(R.id.playback_aux_view_container);
+        mRxInfoContainer = mActivityRef.get().findViewById(R.id.playback_info_container);
+    }
+
+    @Override
+    public LinearLayout getRxAuxViewContainer() {
+        return mRxAuxViewContainer;
+    }
+
+    @Override
+    public LinearLayout getRxInfoContainer() {
+        return mRxInfoContainer;
+    }
+
+    @Override
+    public String getRxInfoTitle() {
+        return "Playback Info";
+    }
+
+    @Override
+    public Object[] getRxReturns(WorkerFunction.Ack ack) {
+        return ack.getReturns();
+    }
+
+    @Override
+    public Collection<? extends String> getSupportedIntents() {
+        ArrayList<String> supportIntents = new ArrayList<>();
+        for (String intentAction : Constants.MasterInterface.INTENT_NAMES)
+            if (Constants.getIntentOwner(intentAction).equals(Constants.INTENT_OWNER_PLAYBACK))
+                supportIntents.add(intentAction);
+
+        return supportIntents;
+    }
+
+    @Override
+    public WorkerFunctionView getWorkerFunctionView() {
+        return mWorkerFunctionView;
+    }
+
+    @Override
+    public boolean needToShowAuxView(String action) {
+        switch (action) {
+            case Constants.MasterInterface.INTENT_PLAYBACK_START:
+            case Constants.MasterInterface.INTENT_PLAYBACK_STOP:
+                return true;
+        }
+        return false;
+    }
+
+    @Override
+    public String getControllerName() {
+        return Constants.Controllers.NAME_PLAYBACK;
+    }
+
+    @Override
+    public WorkerFunction getInfoRequestFunction() {
+        return new PlaybackInfoFunction();
+    }
+
+    @Override
+    public void onFunctionAckReceived(WorkerFunction.Ack ack) {
+        super.onFunctionAckReceived(ack);
+
+        if (mActivityRef.get() == null)
+            return;
+
+        ControllerBase controller = mActivityRef.get().getMainController().getSubControllerByName(getControllerName());
+        if (controller instanceof AudioController.RxSupport && ((AudioController.RxSupport) controller).isRxRunning())
+            ((TextView) mActivityRef.get().findViewById(R.id.playback_status)).setText("Status: running (" + ((AudioController.RxSupport) controller).getNumRxRunning() + " tracks)");
+        else
+            ((TextView) mActivityRef.get().findViewById(R.id.playback_status)).setText("Status: idle");
     }
 }

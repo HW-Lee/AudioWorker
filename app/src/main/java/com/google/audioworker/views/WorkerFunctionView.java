@@ -194,6 +194,9 @@ public class WorkerFunctionView extends LinearLayout {
 
         if (function instanceof WorkerFunction.Parameterizable) {
             for (ParameterView pv : mParameterViews.values()) {
+                if (pv.getRequestValue().toString().equals(""))
+                    continue;
+
                 ((WorkerFunction.Parameterizable) function).setParameter(pv.getAttributeLabel(), pv.getRequestValue());
             }
         }
@@ -286,12 +289,10 @@ public class WorkerFunctionView extends LinearLayout {
             try {
                 return Integer.valueOf(requestValue.getText().toString());
             } catch (NumberFormatException e) {
-                e.printStackTrace();
             }
             try {
                 return Float.valueOf(requestValue.getText().toString());
             } catch (NumberFormatException e) {
-                e.printStackTrace();
             }
 
             return requestValue.getText().toString();

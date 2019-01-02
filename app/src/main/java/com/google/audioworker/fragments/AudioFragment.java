@@ -20,18 +20,26 @@ import java.util.Collection;
 public class AudioFragment extends WorkerFragment {
     private final static String TAG = Constants.packageTag("AudioFragment");
 
-    public interface TxSupport {
+    private interface TxRxSupportCommon {
+        String getControllerName();
+        WorkerFunction getInfoRequestFunction();
+    }
+
+    public interface TxSupport extends TxRxSupportCommon {
         void initTxSupport();
         DataView[] getTxDataViews();
         LinearLayout getTxAuxViewContainer();
         LinearLayout getTxInfoContainer();
         String getTxInfoTitle();
         Object[] getTxReturns(WorkerFunction.Ack ack);
-        String getControllerName();
-        WorkerFunction getInfoRequestFunction();
     }
 
-    public interface RxSupport {
+    public interface RxSupport extends TxRxSupportCommon {
+        void initRxSupport();
+        LinearLayout getRxAuxViewContainer();
+        LinearLayout getRxInfoContainer();
+        String getRxInfoTitle();
+        Object[] getRxReturns(WorkerFunction.Ack ack);
     }
 
     public interface WorkerFunctionAuxSupport {

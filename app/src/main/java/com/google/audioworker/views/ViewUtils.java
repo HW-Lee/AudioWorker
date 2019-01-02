@@ -2,8 +2,10 @@ package com.google.audioworker.views;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
+import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 
 import java.util.ArrayList;
@@ -24,5 +26,11 @@ public class ViewUtils {
 
     static public ArrayAdapter<String> getSimpleAdapter(@NonNull Context ctx, Collection<? extends String> values) {
         return new ArrayAdapter<>(ctx, android.R.layout.simple_list_item_1, android.R.id.text1, new ArrayList<>(values));
+    }
+
+    static public View getHorizontalBorder(@NonNull Context ctx, int borderWidth) {
+        View border = new View(ctx);
+        border.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, borderWidth));
+        return border;
     }
 }

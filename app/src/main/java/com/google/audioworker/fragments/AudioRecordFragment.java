@@ -12,8 +12,8 @@ import android.widget.TextView;
 import com.google.audioworker.R;
 import com.google.audioworker.functions.audio.record.RecordInfoFunction;
 import com.google.audioworker.functions.common.WorkerFunction;
+import com.google.audioworker.functions.controllers.AudioController;
 import com.google.audioworker.functions.controllers.ControllerBase;
-import com.google.audioworker.functions.controllers.RecordController;
 import com.google.audioworker.utils.Constants;
 import com.google.audioworker.views.DataView;
 import com.google.audioworker.views.WorkerFunctionView;
@@ -21,7 +21,7 @@ import com.google.audioworker.views.WorkerFunctionView;
 import java.util.ArrayList;
 import java.util.Collection;
 
-public class AudioRecordFragment extends AudioTxSupportFragment<RecordController> implements ControllerBase.ControllerStateListener {
+public class AudioRecordFragment extends AudioTxSupportFragment implements ControllerBase.ControllerStateListener {
     private final static String TAG = Constants.packageTag("AudioRecordFragment");
 
     private DataView[] mSignalViews;
@@ -58,8 +58,6 @@ public class AudioRecordFragment extends AudioTxSupportFragment<RecordController
         mWorkerFunctionView = mActivityRef.get().findViewById(R.id.record_func_attr_container);
 
         mActivityRef.get().getMainController().registerStateListener(this);
-
-        super.initTxSupport();
     }
 
     @Override
@@ -135,7 +133,7 @@ public class AudioRecordFragment extends AudioTxSupportFragment<RecordController
 
         TextView v = mActivityRef.get().findViewById(R.id.record_status);
         ControllerBase controller = mActivityRef.get().getMainController().getSubControllerByName(getControllerName());
-        if (controller instanceof RecordController && ((RecordController) controller).isRecording())
+        if (controller instanceof AudioController.AudioTxController && ((AudioController.AudioTxController) controller).isTxRunning())
             v.setText("Status: running");
         else
             v.setText("Status: idle");
@@ -145,7 +143,7 @@ public class AudioRecordFragment extends AudioTxSupportFragment<RecordController
     public void onStateChanged(ControllerBase controller) {
         Log.d(TAG, "onStateChanged(" + controller + ")");
         TextView v = mActivityRef.get().findViewById(R.id.record_status);
-        if (controller instanceof RecordController && ((RecordController) controller).isRecording()) {
+        if (controller instanceof AudioController.TxSupport && ((AudioController.TxSupport) controller).isTxRunning()) {
             v.setText("Status: running");
         } else {
             v.setText("Status: idle");

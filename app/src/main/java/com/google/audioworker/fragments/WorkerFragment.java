@@ -3,6 +3,7 @@ package com.google.audioworker.fragments;
 import android.content.Context;
 import android.support.annotation.CallSuper;
 import android.support.v4.app.Fragment;
+import android.util.TypedValue;
 
 import com.google.audioworker.activities.MainActivity;
 import com.google.audioworker.utils.Constants;
@@ -20,5 +21,9 @@ public class WorkerFragment extends Fragment {
         super.onAttach(ctx);
         if (ctx instanceof MainActivity)
             mActivityRef = new WeakReference<>((MainActivity) ctx);
+    }
+
+    final protected int getPxByDp(float dp) {
+        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, getResources().getDisplayMetrics());
     }
 }
