@@ -20,7 +20,7 @@ import java.util.Collection;
 public class AudioFragment extends WorkerFragment {
     private final static String TAG = Constants.packageTag("AudioFragment");
 
-    private interface TxRxSupportCommon {
+    interface TxRxSupportCommon {
         String getControllerName();
         WorkerFunction getInfoRequestFunction();
     }

@@ -4,12 +4,9 @@ import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.CallSuper;
-import android.support.annotation.NonNull;
 import android.util.SparseArray;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -38,104 +35,34 @@ public abstract class AudioRxSupportFragment extends WorkerFragment
         implements AudioFragment.RxSupport, AudioFragment.WorkerFunctionAuxSupport, WorkerFunctionView.ActionSelectedListener {
     private final static String TAG = Constants.packageTag("AudioRxSupportFragment");
 
-    protected FrameLayout mRxInfoCollapseToggleView;
-    protected LinearLayout mRxInfoContentView;
-
-    protected HashMap<String, SparseArray<JSONObject>> mRunningUsecases;
+    private final Factory.Bundle mBundle = new Factory.Bundle();
 
     @Override
     public void onAttach(Context ctx) {
         super.onAttach(ctx);
     }
 
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.audio_playback_fragment, container, false);
-    }
-
+    @CallSuper
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        initRxSupport();
-        init();
+        Factory.init(this, mBundle);
     }
 
+    @CallSuper
     @Override
     public void onResume() {
         super.onResume();
-        initRxSupport();
-        init();
+        Factory.init(this, mBundle);
     }
 
-    public void init() {
-        if (mActivityRef.get() == null)
-            return;
-
-        WorkerFunctionView workerFunctionView = getWorkerFunctionView();
-        workerFunctionView.setSupportedIntentActions(getSupportedIntents(), this);
-        workerFunctionView.setController(mActivityRef.get().getMainController().getSubControllerByName(getControllerName()));
-
-        initInfoView(getRxInfoTitle());
-        LinearLayout rxInfoContainer = getRxInfoContainer();
-        rxInfoContainer.removeAllViews();
-        rxInfoContainer.addView(mRxInfoCollapseToggleView);
-        rxInfoContainer.addView(mRxInfoContentView);
-
-        mRunningUsecases = new HashMap<>();
-        mRunningUsecases.put(PlaybackFunction.TASK_OFFLOAD, new SparseArray<JSONObject>());
-        mRunningUsecases.put(PlaybackFunction.TASK_NONOFFLOAD, new SparseArray<JSONObject>());
-
-        mActivityRef.get().getMainController().execute(getInfoRequestFunction(), new WorkerFunction.WorkerFunctionListener() {
-            @Override
-            public void onAckReceived(WorkerFunction.Ack ack) {
-                onFunctionAckReceived(ack);
-            }
-        });
-    }
-
-    protected void initInfoView(String title) {
-        mRxInfoCollapseToggleView = new FrameLayout(mActivityRef.get());
-        mRxInfoCollapseToggleView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, getPxByDp(40)));
-        mRxInfoContentView = new LinearLayout(mActivityRef.get());
-        mRxInfoContentView.setOrientation(LinearLayout.VERTICAL);
-        mRxInfoContentView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-        mRxInfoContentView.setVisibility(View.VISIBLE);
-
-        TextView tv = new TextView(mActivityRef.get());
-        tv.setText(title);
-        tv.setGravity(Gravity.CENTER);
-        tv.setTextSize(20);
-        tv.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
-        final TextView toggle = new TextView(mActivityRef.get());
-        toggle.setText("v");
-        toggle.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
-        toggle.setTextSize(20);
-        toggle.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
-        toggle.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (mRxInfoContentView.getVisibility() == View.GONE) {
-                    toggle.setText("v");
-                    mRxInfoContentView.setVisibility(View.VISIBLE);
-                } else {
-                    toggle.setText(">");
-                    mRxInfoContentView.setVisibility(View.GONE);
-                }
-            }
-        });
-
-        mRxInfoCollapseToggleView.addView(tv);
-        mRxInfoCollapseToggleView.addView(toggle);
-    }
-
+    @CallSuper
     @Override
     public void onActionSelected(String action, HashMap<String, WorkerFunctionView.ParameterView> views) {
-        if (action == null || !needToShowAuxView(action))
-            hideRxAuxView();
-        else
-            showRxAuxView(action, views);
+        Factory.onActionSelected(this, mBundle, action, views);
     }
 
+    @CallSuper
     @Override
     public void onFunctionSent(WorkerFunction function) {
     }
@@ -143,270 +70,366 @@ public abstract class AudioRxSupportFragment extends WorkerFragment
     @CallSuper
     @Override
     public void onFunctionAckReceived(WorkerFunction.Ack ack) {
-        if (mActivityRef.get() == null)
-            return;
+        Factory.onFunctionAckReceived(this, mBundle, ack);
+    }
 
-        ControllerBase controller = mActivityRef.get().getMainController();
-        controller.execute(getInfoRequestFunction(), new WorkerFunction.WorkerFunctionListener() {
-            @Override
-            public void onAckReceived(WorkerFunction.Ack ack) {
-                final Object[] returns = getRxReturns(ack);
+    static class Factory {
+        static class Bundle {
+            FrameLayout mRxInfoCollapseToggleView;
+            LinearLayout mRxInfoContentView;
+            HashMap<String, SparseArray<JSONObject>> mRunningUsecases;
+        }
 
-                mActivityRef.get().runOnUiThread(new Runnable() {
+        static <T extends WorkerFragment & AudioFragment.RxSupport>
+        void init(final T fragment, Bundle bundle) {
+            if (fragment.mActivityRef.get() == null)
+                return;
+
+            fragment.initRxSupport();
+
+            if (fragment instanceof AudioFragment.WorkerFunctionAuxSupport && fragment instanceof WorkerFunctionView.ActionSelectedListener) {
+                WorkerFunctionView workerFunctionView = ((AudioFragment.WorkerFunctionAuxSupport) fragment).getWorkerFunctionView();
+                workerFunctionView.setSupportedIntentActions(
+                        ((AudioFragment.WorkerFunctionAuxSupport) fragment).getSupportedIntents(), (WorkerFunctionView.ActionSelectedListener) fragment);
+                workerFunctionView.setController(fragment.mActivityRef.get().getMainController().getSubControllerByName(fragment.getControllerName()));
+            }
+
+            Factory.initInfoView(fragment, bundle, fragment.getRxInfoTitle());
+            LinearLayout rxInfoContainer = fragment.getRxInfoContainer();
+            rxInfoContainer.removeAllViews();
+            rxInfoContainer.addView(bundle.mRxInfoCollapseToggleView);
+            rxInfoContainer.addView(bundle.mRxInfoContentView);
+
+            bundle.mRunningUsecases = new HashMap<>();
+            bundle.mRunningUsecases.put(PlaybackFunction.TASK_OFFLOAD, new SparseArray<JSONObject>());
+            bundle.mRunningUsecases.put(PlaybackFunction.TASK_NONOFFLOAD, new SparseArray<JSONObject>());
+
+            if (fragment instanceof WorkerFunctionView.ActionSelectedListener) {
+                fragment.mActivityRef.get().getMainController().execute(fragment.getInfoRequestFunction(), new WorkerFunction.WorkerFunctionListener() {
                     @Override
-                    public void run() {
-                        updateRxInfoContent(returns);
+                    public void onAckReceived(WorkerFunction.Ack ack) {
+                        ((WorkerFunctionView.ActionSelectedListener) fragment).onFunctionAckReceived(ack);
                     }
                 });
             }
-        });
-    }
-
-    protected void updateRxInfoContent(Object[] returns) {
-        if (returns.length < 1 || mActivityRef.get() == null)
-            return;
-
-
-        try {
-            JSONObject rxInfo = new JSONObject(returns[0].toString());
-            for (String type : mRunningUsecases.keySet()) {
-                SparseArray<JSONObject> array = mRunningUsecases.get(type);
-                if (!rxInfo.has(type) || rxInfo.getJSONObject(type) == null || array == null)
-                    continue;
-
-                array.clear();
-                JSONObject jsonOffload = rxInfo.getJSONObject(type);
-                Iterator<String> iterator = jsonOffload.keys();
-                while (iterator.hasNext()) {
-                    String key = iterator.next();
-                    int id;
-                    try {
-                        id = Integer.valueOf(key);
-                        JSONObject usecase = jsonOffload.getJSONObject(key);
-                        if (usecase != null)
-                            array.put(id, usecase);
-                    } catch (NumberFormatException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-            return;
         }
 
-        mRxInfoContentView.removeAllViews();
-        if (getNumRunningTracks() == 0) {
-            {
-                TextView tv = new TextView(mActivityRef.get());
-                tv.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, getPxByDp(40)));
-                tv.setGravity(Gravity.CENTER_VERTICAL);
-                tv.setTextSize(16);
-                tv.setText("no running tracks");
-                mRxInfoContentView.addView(tv);
+        static <T extends WorkerFragment & AudioFragment.RxSupport>
+        void initInfoView(T fragment, final Bundle bundle, String title) {
+            bundle.mRxInfoCollapseToggleView = new FrameLayout(fragment.mActivityRef.get());
+            bundle.mRxInfoCollapseToggleView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, fragment.getPxByDp(40)));
+            bundle.mRxInfoContentView = new LinearLayout(fragment.mActivityRef.get());
+            bundle.mRxInfoContentView.setOrientation(LinearLayout.VERTICAL);
+            bundle.mRxInfoContentView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+            bundle.mRxInfoContentView.setVisibility(View.VISIBLE);
+
+            TextView tv = new TextView(fragment.mActivityRef.get());
+            tv.setText(title);
+            tv.setGravity(Gravity.CENTER);
+            tv.setTextSize(20);
+            tv.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
+            final TextView toggle = new TextView(fragment.mActivityRef.get());
+            toggle.setText("v");
+            toggle.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
+            toggle.setTextSize(20);
+            toggle.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
+            toggle.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (bundle.mRxInfoContentView.getVisibility() == View.GONE) {
+                        toggle.setText("v");
+                        bundle.mRxInfoContentView.setVisibility(View.VISIBLE);
+                    } else {
+                        toggle.setText(">");
+                        bundle.mRxInfoContentView.setVisibility(View.GONE);
+                    }
+                }
+            });
+
+            bundle.mRxInfoCollapseToggleView.addView(tv);
+            bundle.mRxInfoCollapseToggleView.addView(toggle);
+        }
+
+        static <T extends WorkerFragment & AudioFragment.RxSupport & AudioFragment.WorkerFunctionAuxSupport>
+        void onActionSelected(final T fragment, final Bundle bundle, String action, HashMap<String, WorkerFunctionView.ParameterView> views) {
+            if (action == null || !fragment.needToShowAuxView(action))
+                Factory.hideRxAuxView(fragment);
+            else
+                Factory.showRxAuxView(fragment, bundle, action, views);
+        }
+
+        static <T extends WorkerFragment & AudioFragment.RxSupport>
+        void onFunctionAckReceived(final T fragment, final Bundle bundle, WorkerFunction.Ack ack) {
+            if (fragment.mActivityRef.get() == null)
+                return;
+
+            ControllerBase controller = fragment.mActivityRef.get().getMainController();
+            controller.execute(fragment.getInfoRequestFunction(), new WorkerFunction.WorkerFunctionListener() {
+                @Override
+                public void onAckReceived(WorkerFunction.Ack ack) {
+                    final Object[] returns = fragment.getRxReturns(ack);
+
+                    fragment.mActivityRef.get().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Factory.updateRxInfoContent(fragment, bundle, returns);
+                        }
+                    });
+                }
+            });
+        }
+
+        static <T extends WorkerFragment & AudioFragment.RxSupport>
+        void updateRxInfoContent(T fragment, Bundle bundle, Object[] returns) {
+            if (returns.length < 1 || fragment.mActivityRef.get() == null)
+                return;
+
+            try {
+                JSONObject rxInfo = new JSONObject(returns[0].toString());
+                for (String type : bundle.mRunningUsecases.keySet()) {
+                    SparseArray<JSONObject> array = bundle.mRunningUsecases.get(type);
+                    if (!rxInfo.has(type) || rxInfo.getJSONObject(type) == null || array == null)
+                        continue;
+
+                    array.clear();
+                    JSONObject jsonOffload = rxInfo.getJSONObject(type);
+                    Iterator<String> iterator = jsonOffload.keys();
+                    while (iterator.hasNext()) {
+                        String key = iterator.next();
+                        int id;
+                        try {
+                            id = Integer.valueOf(key);
+                            JSONObject usecase = jsonOffload.getJSONObject(key);
+                            if (usecase != null)
+                                array.put(id, usecase);
+                        } catch (NumberFormatException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+                return;
             }
-        } else {
-            for (String type : mRunningUsecases.keySet()) {
-                SparseArray<JSONObject> usecases = mRunningUsecases.get(type);
+
+            bundle.mRxInfoContentView.removeAllViews();
+            if (Factory.getNumRunningTracks(bundle) == 0) {
+                {
+                    TextView tv = new TextView(fragment.mActivityRef.get());
+                    tv.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, fragment.getPxByDp(40)));
+                    tv.setGravity(Gravity.CENTER_VERTICAL);
+                    tv.setTextSize(16);
+                    tv.setText("no running tracks");
+                    bundle.mRxInfoContentView.addView(tv);
+                }
+            } else {
+                for (String type : bundle.mRunningUsecases.keySet()) {
+                    SparseArray<JSONObject> usecases = bundle.mRunningUsecases.get(type);
+                    if (usecases == null || usecases.size() == 0)
+                        continue;
+
+                    {
+                        TextView tv = new TextView(fragment.mActivityRef.get());
+                        tv.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, fragment.getPxByDp(40)));
+                        tv.setGravity(Gravity.CENTER_VERTICAL);
+                        tv.setTextSize(16);
+                        tv.setText(usecases.size() + " running " + type + " tracks");
+                        bundle.mRxInfoContentView.addView(tv);
+                    }
+
+                    LinearLayout configContainer = new LinearLayout(fragment.mActivityRef.get());
+                    configContainer.setOrientation(LinearLayout.VERTICAL);
+                    configContainer.setPadding(fragment.getPxByDp(6), fragment.getPxByDp(6), fragment.getPxByDp(6), fragment.getPxByDp(6));
+                    configContainer.setBackgroundResource(R.drawable.border2);
+                    configContainer.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+                    for (int i = 0; i < usecases.size(); i++) {
+                        if (i > 0) {
+                            View border = ViewUtils.getHorizontalBorder(fragment.mActivityRef.get(), fragment.getPxByDp(2));
+                            border.setBackgroundColor(Color.argb(64, 0, 0, 0));
+                            configContainer.addView(border);
+                        }
+                        int idx = usecases.keyAt(i);
+                        Factory.appendTrackInfoView(fragment, configContainer, usecases.get(idx));
+                    }
+
+                    bundle.mRxInfoContentView.addView(configContainer);
+                }
+            }
+
+            bundle.mRxInfoContentView.invalidate();
+        }
+
+        static private int getNumRunningTracks(Bundle bundle) {
+            int cnt = 0;
+            for (String type : bundle.mRunningUsecases.keySet()) {
+                SparseArray<JSONObject> dummy = bundle.mRunningUsecases.get(type);
+                if (dummy == null)
+                    continue;
+
+                cnt += dummy.size();
+            }
+
+            return cnt;
+        }
+
+        static <T extends WorkerFragment & AudioFragment.RxSupport>
+        void appendTrackInfoView(T fragment, LinearLayout configContainer, JSONObject jsonInfo) {
+            try {
+                if (jsonInfo == null || jsonInfo.getJSONObject(ParameterizedWorkerFunction.KEY_PARAMS) == null)
+                    return;
+
+                JSONObject jsonConfig = jsonInfo.getJSONObject(ParameterizedWorkerFunction.KEY_PARAMS);
+                Iterator<String> iterator = jsonConfig.keys();
+
+                while (iterator.hasNext()) {
+                    String key = iterator.next();
+                    if (key.equals(PlaybackStartFunction.ATTR_TYPE))
+                        continue;
+
+                    LinearLayout container = new LinearLayout(fragment.mActivityRef.get());
+                    container.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                    container.setOrientation(LinearLayout.HORIZONTAL);
+
+                    TextView tv = new TextView(fragment.mActivityRef.get());
+                    tv.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+                    tv.setGravity(Gravity.CENTER);
+                    tv.setTextSize(16);
+                    tv.setText(key);
+                    container.addView(tv);
+
+                    EditText et = new EditText(fragment.mActivityRef.get());
+                    et.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+                    et.setGravity(Gravity.CENTER);
+                    et.setTextSize(16);
+                    et.setEnabled(false);
+                    et.setText(jsonConfig.get(key).toString());
+                    container.addView(et);
+
+                    configContainer.addView(container);
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+
+        static <T extends WorkerFragment & AudioFragment.RxSupport>
+        void hideRxAuxView(T fragment) {
+            LinearLayout container = fragment.getRxAuxViewContainer();
+            if (container == null)
+                return;
+
+            container.setVisibility(View.GONE);
+            container.removeAllViews();
+            container.invalidate();
+        }
+
+        static <T extends WorkerFragment & AudioFragment.RxSupport>
+        void showRxAuxView(T fragment, Bundle bundle, String action, HashMap<String, WorkerFunctionView.ParameterView> views) {
+            LinearLayout container = fragment.getRxAuxViewContainer();
+            if (container == null)
+                return;
+
+            switch (action) {
+                case Constants.MasterInterface.INTENT_PLAYBACK_START:
+                    container.setVisibility(View.VISIBLE);
+                    Factory.updateRxAuxViewForStart(fragment, views);
+                    return;
+                case Constants.MasterInterface.INTENT_PLAYBACK_STOP:
+                    container.setVisibility(View.VISIBLE);
+                    Factory.updateRxAuxViewForStop(fragment, bundle, views);
+                    return;
+
+                default:
+                    break;
+            }
+        }
+
+        static <T extends WorkerFragment & AudioFragment.RxSupport>
+        void updateRxAuxViewForStart(T fragment, final HashMap<String, WorkerFunctionView.ParameterView> views) {
+            if (!views.containsKey(PlaybackStartFunction.ATTR_TYPE) || fragment.mActivityRef.get() == null)
+                return;
+
+            LinearLayout container = fragment.getRxAuxViewContainer();
+            if (container == null)
+                return;
+
+            container.removeAllViews();
+            container.setOrientation(LinearLayout.VERTICAL);
+            final ArrayList<String> selections = new ArrayList<>();
+            selections.add("");
+            selections.add(PlaybackFunction.TASK_OFFLOAD);
+            selections.add(PlaybackFunction.TASK_NONOFFLOAD);
+            Spinner spinner = ViewUtils.getSimpleSpinner(fragment.mActivityRef.get(), selections, new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    if (position == 0)
+                        return;
+
+                    WorkerFunctionView.ParameterView pv = views.get(PlaybackStartFunction.ATTR_TYPE);
+                    if (pv == null)
+                        return;
+                    pv.requestValue.setText(selections.get(position));
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {
+                }
+            });
+            spinner.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, fragment.getPxByDp(40)));
+
+            container.addView(spinner);
+            container.invalidate();
+        }
+
+        static <T extends WorkerFragment & AudioFragment.RxSupport>
+        void updateRxAuxViewForStop(T fragment, Bundle bundle, final HashMap<String, WorkerFunctionView.ParameterView> views) {
+            if (!views.containsKey(PlaybackStartFunction.ATTR_TYPE) ||
+                    !views.containsKey(PlaybackStartFunction.ATTR_PLAYBACK_ID) || fragment.mActivityRef.get() == null)
+                return;
+
+            LinearLayout container = fragment.getRxAuxViewContainer();
+            if (container == null)
+                return;
+
+            container.removeAllViews();
+            container.setOrientation(LinearLayout.VERTICAL);
+            final ArrayList<String> selections = new ArrayList<>();
+            selections.add("");
+            for (String type : bundle.mRunningUsecases.keySet()) {
+                SparseArray<JSONObject> usecases = bundle.mRunningUsecases.get(type);
                 if (usecases == null || usecases.size() == 0)
                     continue;
 
-                {
-                    TextView tv = new TextView(mActivityRef.get());
-                    tv.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, getPxByDp(40)));
-                    tv.setGravity(Gravity.CENTER_VERTICAL);
-                    tv.setTextSize(16);
-                    tv.setText(usecases.size() + " running " + type + " tracks");
-                    mRxInfoContentView.addView(tv);
+                for (int i = 0; i < usecases.size(); i++)
+                    selections.add(type + "@" + usecases.keyAt(i));
+            }
+            Spinner spinner = ViewUtils.getSimpleSpinner(fragment.mActivityRef.get(), selections, new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    if (position == 0)
+                        return;
+
+                    WorkerFunctionView.ParameterView pv1 = views.get(PlaybackStartFunction.ATTR_TYPE);
+                    WorkerFunctionView.ParameterView pv2 = views.get(PlaybackStartFunction.ATTR_PLAYBACK_ID);
+                    if (pv1 == null || pv2 == null)
+                        return;
+
+                    String s = selections.get(position);
+                    String[] patterns = s.split("@");
+                    pv1.requestValue.setText(patterns[0]);
+                    pv2.requestValue.setText(patterns[1]);
                 }
 
-                LinearLayout configContainer = new LinearLayout(mActivityRef.get());
-                configContainer.setOrientation(LinearLayout.VERTICAL);
-                configContainer.setPadding(getPxByDp(6), getPxByDp(6), getPxByDp(6), getPxByDp(6));
-                configContainer.setBackgroundResource(R.drawable.border2);
-                configContainer.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-
-                for (int i = 0; i < usecases.size(); i++) {
-                    if (i > 0) {
-                        View border = ViewUtils.getHorizontalBorder(mActivityRef.get(), getPxByDp(2));
-                        border.setBackgroundColor(Color.argb(64, 0, 0, 0));
-                        configContainer.addView(border);
-                    }
-                    int idx = usecases.keyAt(i);
-                    appendTrackInfoView(configContainer, usecases.get(idx));
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {
                 }
+            });
 
-                mRxInfoContentView.addView(configContainer);
-            }
+            spinner.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, fragment.getPxByDp(40)));
+
+            container.addView(spinner);
+            container.invalidate();
         }
-
-        mRxInfoContentView.invalidate();
-    }
-
-    private int getNumRunningTracks() {
-        int cnt = 0;
-        for (String type : mRunningUsecases.keySet()) {
-            SparseArray<JSONObject> dummy = mRunningUsecases.get(type);
-            if (dummy == null)
-                continue;
-
-            cnt += dummy.size();
-        }
-
-        return cnt;
-    }
-
-    private void appendTrackInfoView(LinearLayout configContainer, JSONObject jsonInfo) {
-        try {
-            if (jsonInfo == null || jsonInfo.getJSONObject(ParameterizedWorkerFunction.KEY_PARAMS) == null)
-                return;
-
-            JSONObject jsonConfig = jsonInfo.getJSONObject(ParameterizedWorkerFunction.KEY_PARAMS);
-            Iterator<String> iterator = jsonConfig.keys();
-
-            while (iterator.hasNext()) {
-                String key = iterator.next();
-                if (key.equals(PlaybackStartFunction.ATTR_TYPE))
-                    continue;
-
-                LinearLayout container = new LinearLayout(mActivityRef.get());
-                container.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-                container.setOrientation(LinearLayout.HORIZONTAL);
-
-                TextView tv = new TextView(mActivityRef.get());
-                tv.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-                tv.setGravity(Gravity.CENTER);
-                tv.setTextSize(16);
-                tv.setText(key);
-                container.addView(tv);
-
-                EditText et = new EditText(mActivityRef.get());
-                et.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-                et.setGravity(Gravity.CENTER);
-                et.setTextSize(16);
-                et.setEnabled(false);
-                et.setText(jsonConfig.get(key).toString());
-                container.addView(et);
-
-                configContainer.addView(container);
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-    }
-
-    protected void hideRxAuxView() {
-        LinearLayout container = getRxAuxViewContainer();
-        if (container == null)
-            return;
-
-        container.setVisibility(View.GONE);
-        container.removeAllViews();
-        container.invalidate();
-    }
-
-    protected void showRxAuxView(String action, HashMap<String, WorkerFunctionView.ParameterView> views) {
-        LinearLayout container = getRxAuxViewContainer();
-        if (container == null)
-            return;
-
-        switch (action) {
-            case Constants.MasterInterface.INTENT_PLAYBACK_START:
-                container.setVisibility(View.VISIBLE);
-                updateRxAuxViewForStart(views);
-                return;
-            case Constants.MasterInterface.INTENT_PLAYBACK_STOP:
-                container.setVisibility(View.VISIBLE);
-                updateRxAuxViewForStop(views);
-                return;
-
-            default:
-                break;
-        }
-    }
-
-    private void updateRxAuxViewForStart(final HashMap<String, WorkerFunctionView.ParameterView> views) {
-        if (!views.containsKey(PlaybackStartFunction.ATTR_TYPE) || mActivityRef.get() == null)
-            return;
-
-        LinearLayout container = getRxAuxViewContainer();
-        if (container == null)
-            return;
-
-        container.removeAllViews();
-        container.setOrientation(LinearLayout.VERTICAL);
-        final ArrayList<String> selections = new ArrayList<>();
-        selections.add("");
-        selections.add(PlaybackFunction.TASK_OFFLOAD);
-        selections.add(PlaybackFunction.TASK_NONOFFLOAD);
-        Spinner spinner = ViewUtils.getSimpleSpinner(mActivityRef.get(), selections, new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (position == 0)
-                    return;
-
-                WorkerFunctionView.ParameterView pv = views.get(PlaybackStartFunction.ATTR_TYPE);
-                if (pv == null)
-                    return;
-                pv.requestValue.setText(selections.get(position));
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
-        spinner.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, getPxByDp(40)));
-
-        container.addView(spinner);
-        container.invalidate();
-    }
-
-    private void updateRxAuxViewForStop(final HashMap<String, WorkerFunctionView.ParameterView> views) {
-        if (!views.containsKey(PlaybackStartFunction.ATTR_TYPE) ||
-                !views.containsKey(PlaybackStartFunction.ATTR_PLAYBACK_ID) || mActivityRef.get() == null)
-            return;
-
-        LinearLayout container = getRxAuxViewContainer();
-        if (container == null)
-            return;
-
-        container.removeAllViews();
-        container.setOrientation(LinearLayout.VERTICAL);
-        final ArrayList<String> selections = new ArrayList<>();
-        selections.add("");
-        for (String type : mRunningUsecases.keySet()) {
-            SparseArray<JSONObject> usecases = mRunningUsecases.get(type);
-            if (usecases == null || usecases.size() == 0)
-                continue;
-
-            for (int i = 0; i < usecases.size(); i++)
-                selections.add(type + "@" + usecases.keyAt(i));
-        }
-        Spinner spinner = ViewUtils.getSimpleSpinner(mActivityRef.get(), selections, new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (position == 0)
-                    return;
-
-                WorkerFunctionView.ParameterView pv1 = views.get(PlaybackStartFunction.ATTR_TYPE);
-                WorkerFunctionView.ParameterView pv2 = views.get(PlaybackStartFunction.ATTR_PLAYBACK_ID);
-                if (pv1 == null || pv2 == null)
-                    return;
-
-                String s = selections.get(position);
-                String[] patterns = s.split("@");
-                pv1.requestValue.setText(patterns[0]);
-                pv2.requestValue.setText(patterns[1]);
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
-
-        spinner.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, getPxByDp(40)));
-
-        container.addView(spinner);
-        container.invalidate();
     }
 }
