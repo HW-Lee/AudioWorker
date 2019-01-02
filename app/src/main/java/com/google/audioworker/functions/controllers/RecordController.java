@@ -269,8 +269,13 @@ public class RecordController extends AudioController.AudioTxController {
         return mDetectors.get(handle);
     }
 
-    public boolean isRecording() {
+    @Override
+    public boolean isTxRunning() {
         return mMainRunningTask != null && !mMainRunningTask.hasDone();
+    }
+
+    private boolean isRecording() {
+        return isTxRunning();
     }
 
     @Override

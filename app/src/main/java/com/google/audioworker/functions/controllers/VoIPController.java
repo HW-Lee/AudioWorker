@@ -35,7 +35,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-public class VoIPController extends AudioController.AudioTxController {
+public class VoIPController extends AudioController.AudioRxTxController {
     private final static String TAG = Constants.packageTag("VoIPController");
 
     private WeakReference<Context> mContextRef;
@@ -363,6 +363,10 @@ public class VoIPController extends AudioController.AudioTxController {
 
     public boolean isRxRunning() {
         return mRxRunnable != null && !mRxRunnable.hasDone();
+    }
+
+    public int getNumRxRunning() {
+        return isRxRunning() ? 1 : 0;
     }
 
     public boolean isVoIPRunning() {

@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 import jaygoo.library.converter.Mp3Converter;
 
-public class PlaybackController extends ControllerBase {
+public class PlaybackController extends AudioController.AudioRxController {
     private final static String TAG = Constants.packageTag("PlaybackController");
 
     private ThreadPoolExecutor mPoolExecuter;
@@ -138,6 +138,33 @@ public class PlaybackController extends ControllerBase {
                 l.onAckReceived(ack);
             }
         }
+    }
+
+    @Override
+    public boolean isRxRunning() {
+        for (SparseArray<PlaybackRunnable> tasks : mRunningPlaybackTasks.values()) {
+            for (int i = 0; i < tasks.size(); i++) {
+                PlaybackRunnable task = tasks.get(tasks.keyAt(i));
+                if (task != null && !task.hasDone())
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    @Override
+    public int getNumRxRunning() {
+        int cnt = 0;
+        for (SparseArray<PlaybackRunnable> tasks : mRunningPlaybackTasks.values()) {
+            for (int i = 0; i < tasks.size(); i++) {
+                PlaybackRunnable task = tasks.get(tasks.keyAt(i));
+                if (task != null && !task.hasDone())
+                    cnt++;
+            }
+        }
+
+        return cnt;
     }
 
     public static class PlaybackRunnable implements Runnable {
@@ -467,7 +494,7 @@ public class PlaybackController extends ControllerBase {
                     if (task == null) {
                         continue;
                     }
-                    save_put(info, String.valueOf(idx), task.mStartFunction.toString());
+                    save_put(info, String.valueOf(idx), task.mStartFunction.toJson());
                 }
                 save_put(obj, type, info);
             }

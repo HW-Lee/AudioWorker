@@ -16,7 +16,31 @@ public class AudioController extends ManagerController {
         DetectorBase getDetectorByHandle(String handle);
     }
 
-    public static abstract class AudioTxController extends ControllerBase implements TxCallback {
+    public interface RxCallback {
+    }
+
+    public interface TxSupport {
+        boolean isTxRunning();
+    }
+
+    public interface RxSupport {
+        boolean isRxRunning();
+        int getNumRxRunning();
+    }
+
+    public interface RxTxCallback extends RxCallback, TxCallback {
+    }
+
+    public interface RxTxSupport extends RxSupport, TxSupport {
+    }
+
+    public static abstract class AudioRxTxController extends ControllerBase implements RxTxCallback, RxTxSupport {
+    }
+
+    public static abstract class AudioTxController extends ControllerBase implements TxCallback, TxSupport {
+    }
+
+    public static abstract class AudioRxController extends ControllerBase implements RxCallback, RxSupport {
     }
 
     public AudioController() {

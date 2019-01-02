@@ -18,7 +18,7 @@ public abstract class WorkerFunction {
         boolean isValueAccepted(String attr, Object value);
     }
 
-    abstract protected JSONObject toJson();
+    abstract public JSONObject toJson();
     abstract public boolean isValid();
 
     protected String mCommandId;

@@ -41,7 +41,7 @@ public abstract class ParameterizedWorkerFunction extends WorkerFunction impleme
     }
 
     @Override
-    protected JSONObject toJson() {
+    public JSONObject toJson() {
         JSONObject info = new JSONObject();
         JSONObject params = new JSONObject();
         JSONArray requiedNotDefined = new JSONArray();

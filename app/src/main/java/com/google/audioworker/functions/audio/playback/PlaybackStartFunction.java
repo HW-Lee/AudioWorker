@@ -6,13 +6,13 @@ import com.google.audioworker.utils.Constants;
 public class PlaybackStartFunction extends PlaybackFunction {
     private final static String TAG = Constants.packageTag("PlaybackStartFunction");
 
-    private final static String ATTR_TYPE = "type";
-    private final static String ATTR_TARGET_FREQ = "target-freq";
-    private final static String ATTR_PLAYBACK_ID = "playback-id";
-    private final static String ATTR_AMPLITUDE = "amplitude";
-    private final static String ATTR_FS = "sampling-freq";
-    private final static String ATTR_NCH = "num-channels";
-    private final static String ATTR_BPS = "pcm-bit-width";
+    public final static String ATTR_TYPE = "type";
+    public final static String ATTR_TARGET_FREQ = "target-freq";
+    public final static String ATTR_PLAYBACK_ID = "playback-id";
+    public final static String ATTR_AMPLITUDE = "amplitude";
+    public final static String ATTR_FS = "sampling-freq";
+    public final static String ATTR_NCH = "num-channels";
+    public final static String ATTR_BPS = "pcm-bit-width";
 
     private final static String[] ATTRS = {
             ATTR_TYPE,

@@ -5,8 +5,8 @@ import com.google.audioworker.utils.Constants;
 public class PlaybackStopFunction extends PlaybackFunction {
     private final static String TAG = Constants.packageTag("PlaybackStopFunction");
 
-    private final static String ATTR_TYPE = "type";
-    private final static String ATTR_PLAYBACK_ID = "playback-id";
+    private final static String ATTR_TYPE = PlaybackStartFunction.ATTR_TYPE;
+    private final static String ATTR_PLAYBACK_ID = PlaybackStartFunction.ATTR_PLAYBACK_ID;
 
     private final static String[] ATTRS = {
             ATTR_TYPE,
