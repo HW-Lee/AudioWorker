@@ -1,6 +1,7 @@
 package com.google.audioworker.functions.controllers;
 
 import android.content.Context;
+import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.MediaRecorder;
 import android.support.annotation.NonNull;
@@ -119,7 +120,10 @@ public class VoIPController extends AudioController.AudioRxTxController {
                 initTxStartFunction((VoIPStartFunction) function, txStartFunction);
 
                 ProxyListener listener = new ProxyListener(function, l);
-                mRxRunnable = new PlaybackController.PlaybackRunnable(rxStartFunction, listener, this);
+                AudioAttributes attr = new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                        .build();
+                mRxRunnable = new PlaybackController.PlaybackRunnable(rxStartFunction, listener, this, attr);
                 mTxRunnable = new RecordController.RecordRunnable(txStartFunction, listener, this);
                 mTxRunnable.setRecordRunner(new RecordController.RecordInternalRunnable(mTxRunnable, MediaRecorder.AudioSource.VOICE_COMMUNICATION));
                 if (mContextRef.get() != null) {

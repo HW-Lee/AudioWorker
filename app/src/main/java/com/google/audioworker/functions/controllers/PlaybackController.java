@@ -171,15 +171,27 @@ public class PlaybackController extends AudioController.AudioRxController {
     public static class PlaybackRunnable implements Runnable {
         private PlaybackStartFunction mStartFunction;
         private PlaybackStopFunction mStopFunction;
+        private AudioAttributes mAttributes;
         private WorkerFunction.WorkerFunctionListener mListener;
         private ControllerBase mController;
         private AudioTrack mTrack;
         private boolean exitPending;
 
         public PlaybackRunnable(PlaybackStartFunction function, WorkerFunction.WorkerFunctionListener l, ControllerBase controller) {
+            this(function, l, controller, null);
+        }
+
+        public PlaybackRunnable(PlaybackStartFunction function, WorkerFunction.WorkerFunctionListener l, ControllerBase controller, AudioAttributes attributes) {
             mStartFunction = function;
             mListener = l;
             mController = controller;
+            mAttributes = attributes;
+
+            if (mAttributes == null)
+                mAttributes = new AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .build();
         }
 
         private int parseEncodingFormat(int bits) {
@@ -244,10 +256,6 @@ public class PlaybackController extends AudioController.AudioRxController {
         }
 
         private void run_nonoffload() {
-            AudioAttributes attr = new AudioAttributes.Builder()
-                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                    .setUsage(AudioAttributes.USAGE_MEDIA)
-                    .build();
             AudioFormat format = new AudioFormat.Builder()
                     .setSampleRate(mStartFunction.getSamplingFreq())
                     .setEncoding(parseEncodingFormat(mStartFunction.getBitWidth()))
@@ -257,7 +265,7 @@ public class PlaybackController extends AudioController.AudioRxController {
                     mStartFunction.getSamplingFreq(), parseChannelMask(mStartFunction.getNumChannels()), parseEncodingFormat(mStartFunction.getBitWidth()));
 
             mTrack = new AudioTrack.Builder()
-                    .setAudioAttributes(attr).setAudioFormat(format)
+                    .setAudioAttributes(mAttributes).setAudioFormat(format)
                     .setBufferSizeInBytes(minBuffsize).setTransferMode(AudioTrack.MODE_STREAM).build();
             mTrack.play();
 
