@@ -30,6 +30,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -128,9 +129,7 @@ public class RecordController extends AudioController.AudioTxController {
                 WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
                 if (isRecording()) {
                     ArrayList<Object> returns = new ArrayList<>();
-
-                    returns.add(mMainRunningTask.mStartFunction.toString());
-                    returns.add(RecordController.getDetectorAckString(mDetectors));
+                    returns.addAll(RecordController.getRecordInfoAckStrings(mMainRunningTask.getStartFunction(), mDetectors));
                     ack.setReturns(returns);
                 }
                 ack.setReturnCode(0);
@@ -251,7 +250,7 @@ public class RecordController extends AudioController.AudioTxController {
         }
     }
 
-    static String getDetectorAckString(HashMap<String, DetectorBase> detectors) {
+    static Collection<? extends String> getRecordInfoAckStrings(RecordStartFunction function, HashMap<String, DetectorBase> detectors) {
         JSONObject detectionInfo = new JSONObject();
 
         for (String handle : detectors.keySet()) {
@@ -266,7 +265,10 @@ public class RecordController extends AudioController.AudioTxController {
             }
         }
 
-        return detectionInfo.toString();
+        ArrayList<String> returns = new ArrayList<>();
+        returns.add(function.toString());
+        returns.add(detectionInfo.toString());
+        return returns;
     }
 
     @Override

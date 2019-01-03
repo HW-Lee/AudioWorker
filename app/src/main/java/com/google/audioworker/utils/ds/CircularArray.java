@@ -83,16 +83,17 @@ public class CircularArray<T> implements List<T> {
         if (a == null)
             return null;
 
+        ArrayList<T1> arr = new ArrayList<>();
         for (int i = 0; i < len; i++) {
             try {
-                a[i] = (T1) get(i);
+                arr.add((T1) get(i));
             } catch (ClassCastException e) {
                 e.printStackTrace();
-                a[i] = null;
+                arr.add(null);
             }
         }
 
-        return a;
+        return arr.toArray(a);
     }
 
     @Override

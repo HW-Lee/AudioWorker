@@ -122,6 +122,7 @@ public class VoIPController extends AudioController.AudioRxTxController {
                 ProxyListener listener = new ProxyListener(function, l);
                 AudioAttributes attr = new AudioAttributes.Builder()
                         .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                        .setLegacyStreamType(AudioManager.STREAM_VOICE_CALL)
                         .build();
                 mRxRunnable = new PlaybackController.PlaybackRunnable(rxStartFunction, listener, this, attr);
                 mTxRunnable = new RecordController.RecordRunnable(txStartFunction, listener, this);
@@ -272,8 +273,7 @@ public class VoIPController extends AudioController.AudioRxTxController {
                     functions.add(mRxRunnable.getStartFunction());
 
                     returns.add(PlaybackController.getPlaybackInfoAckString(functions));
-                    returns.add(mTxRunnable.getStartFunction().toString());
-                    returns.add(RecordController.getDetectorAckString(mDetectors));
+                    returns.addAll(RecordController.getRecordInfoAckStrings(mTxRunnable.getStartFunction(), mDetectors));
                     ack.setReturns(returns);
                 }
                 ack.setReturnCode(0);

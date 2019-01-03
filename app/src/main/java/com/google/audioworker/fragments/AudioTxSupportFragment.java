@@ -566,7 +566,7 @@ public abstract class AudioTxSupportFragment extends WorkerFragment
             if (action == null || !fragment.needToShowAuxView(action)) {
                 Factory.hideTxAuxView(fragment, bundle);
             } else {
-                updateTxAuxView(fragment, bundle, action, views);
+                Factory.updateTxAuxView(fragment, bundle, action, views);
             }
         }
     }

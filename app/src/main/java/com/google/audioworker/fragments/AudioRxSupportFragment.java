@@ -189,10 +189,14 @@ public abstract class AudioRxSupportFragment extends WorkerFragment
                 JSONObject rxInfo = new JSONObject(returns[0].toString());
                 for (String type : bundle.mRunningUsecases.keySet()) {
                     SparseArray<JSONObject> array = bundle.mRunningUsecases.get(type);
-                    if (!rxInfo.has(type) || rxInfo.getJSONObject(type) == null || array == null)
+                    if (array == null)
                         continue;
 
                     array.clear();
+
+                    if (!rxInfo.has(type) || rxInfo.getJSONObject(type) == null)
+                        continue;
+
                     JSONObject jsonOffload = rxInfo.getJSONObject(type);
                     Iterator<String> iterator = jsonOffload.keys();
                     while (iterator.hasNext()) {

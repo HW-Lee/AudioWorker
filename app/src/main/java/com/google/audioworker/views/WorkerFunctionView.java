@@ -254,12 +254,8 @@ public class WorkerFunctionView extends LinearLayout {
             LayoutParams params;
 
             params = new LayoutParams(0, LayoutParams.MATCH_PARENT, 1);
-            params.gravity = Gravity.BOTTOM;
             attrLabel.setLayoutParams(params);
             defaultValue.setLayoutParams(params);
-
-            params = new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1);
-            params.gravity = Gravity.BOTTOM;
             requestValue.setLayoutParams(params);
 
             attrLabel.setGravity(Gravity.CENTER);

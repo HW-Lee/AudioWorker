@@ -3,6 +3,7 @@ package com.google.audioworker.functions.controllers;
 import android.content.Context;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
+import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.media.MediaPlayer;
 import android.util.Log;
@@ -191,6 +192,7 @@ public class PlaybackController extends AudioController.AudioRxController {
                 mAttributes = new AudioAttributes.Builder()
                         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                         .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setLegacyStreamType(AudioManager.STREAM_MUSIC)
                         .build();
         }
 
@@ -339,6 +341,7 @@ public class PlaybackController extends AudioController.AudioRxController {
 
             exitPending = false;
             MediaPlayer player = new MediaPlayer();
+            player.setAudioAttributes(mAttributes);
             try {
                 player.setDataSource(mp3Path);
                 player.setLooping(true);
