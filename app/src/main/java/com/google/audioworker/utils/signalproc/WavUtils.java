@@ -48,7 +48,7 @@ public class WavUtils {
             }
 
             public WavConfig build() {
-                int length = (int) (samplingRate * numChannels * bitPerSample/8 * durationMillis/1000.0);
+                int length = (int) (samplingRate * numChannels * (bitPerSample/8) * (durationMillis/1000.0));
                 return new WavConfig(samplingRate, numChannels, bitPerSample, length);
             }
         }
@@ -68,8 +68,8 @@ public class WavUtils {
         writeShort(output, (short) 1); // audio format (1 = PCM)
         writeShort(output, (short) config.numChannels); // number of channels
         writeInt(output, config.samplingRate); // sample rate
-        writeInt(output, config.samplingRate * config.bitPerSample/8 * config.numChannels); // byte rate: SampleRate * NumChannels * BitsPerSample/8
-        writeShort(output, (short) (config.bitPerSample/8 * config.numChannels)); // block align: NumChannels * BitsPerSample/8
+        writeInt(output, config.samplingRate * (config.bitPerSample/8) * config.numChannels); // byte rate: SampleRate * NumChannels * BitsPerSample/8
+        writeShort(output, (short) ((config.bitPerSample/8) * config.numChannels)); // block align: NumChannels * BitsPerSample/8
         writeShort(output, (short) config.bitPerSample); // bits per sample
         writeString(output, "data"); // subchunk 2 id
         writeInt(output, config.dataLength); // subchunk 2 size
@@ -92,8 +92,8 @@ public class WavUtils {
         writeShort(output, (short) 1); // audio format (1 = PCM)
         writeShort(output, (short) config.numChannels); // number of channels
         writeInt(output, config.samplingRate); // sample rate
-        writeInt(output, config.samplingRate * config.bitPerSample/8 * config.numChannels); // byte rate: SampleRate * NumChannels * BitsPerSample/8
-        writeShort(output, (short) (config.bitPerSample/8 * config.numChannels)); // block align: NumChannels * BitsPerSample/8
+        writeInt(output, config.samplingRate * (config.bitPerSample/8) * config.numChannels); // byte rate: SampleRate * NumChannels * BitsPerSample/8
+        writeShort(output, (short) ((config.bitPerSample/8) * config.numChannels)); // block align: NumChannels * BitsPerSample/8
         writeShort(output, (short) config.bitPerSample); // bits per sample
         writeString(output, "data"); // subchunk 2 id
         writeInt(output, rawData.length); // subchunk 2 size
@@ -105,15 +105,15 @@ public class WavUtils {
     }
 
     static private void writeInt(final DataOutputStream output, final int value) throws IOException {
-        output.write(value);
-        output.write(value >> 8);
-        output.write(value >> 16);
-        output.write(value >> 24);
+        for (int i = 0; i < 4; i++) {
+            output.write((value >> (8 * i)) & 0xFF);
+        }
     }
 
     static private void writeShort(final DataOutputStream output, final short value) throws IOException {
-        output.write(value);
-        output.write(value >> 8);
+        for (int i = 0; i < 2; i++) {
+            output.write((value >> (8 * i)) & 0xFF);
+        }
     }
 
     static private void writeString(final DataOutputStream output, final String value) throws IOException {

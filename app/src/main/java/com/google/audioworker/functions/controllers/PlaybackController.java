@@ -15,6 +15,7 @@ import com.google.audioworker.functions.audio.playback.PlaybackStartFunction;
 import com.google.audioworker.functions.audio.playback.PlaybackStopFunction;
 import com.google.audioworker.functions.common.WorkerFunction;
 import com.google.audioworker.utils.Constants;
+import com.google.audioworker.utils.signalproc.AudioConverter;
 import com.google.audioworker.utils.signalproc.SinusoidalGenerator;
 import com.google.audioworker.utils.signalproc.WavUtils;
 
@@ -24,6 +25,7 @@ import org.json.JSONObject;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -32,11 +34,12 @@ import java.util.HashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import jaygoo.library.converter.Mp3Converter;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class PlaybackController extends AudioController.AudioRxController {
     private final static String TAG = Constants.packageTag("PlaybackController");
+
+    private WeakReference<Context> mContextRef;
 
     private ThreadPoolExecutor mPoolExecuter;
     private HashMap<String, SparseArray<PlaybackRunnable>> mRunningPlaybackTasks;
@@ -58,6 +61,7 @@ public class PlaybackController extends AudioController.AudioRxController {
         else
             _dataPath = Constants.EnvironmentPaths.SDCARD_PATH;
 
+        mContextRef = new WeakReference<>(ctx);
         Log.i(TAG, "create data folder: " + _dataPath);
     }
 
@@ -339,13 +343,13 @@ public class PlaybackController extends AudioController.AudioRxController {
 
             String wavPath = new File(mController.getDataDir(), getTempName() + ".wav").getAbsolutePath();
             String mp3Path = new File(mController.getDataDir(), getTempName() + ".mp3").getAbsolutePath();
-            convertToMp3(wavPath, mp3Path);
+            String path = convertToMp3(wavPath, mp3Path) ? mp3Path:wavPath;
 
             exitPending = false;
             MediaPlayer player = new MediaPlayer();
             player.setAudioAttributes(mAttributes);
             try {
-                player.setDataSource(mp3Path);
+                player.setDataSource(path);
                 player.setLooping(true);
                 player.prepare();
                 player.start();
@@ -381,19 +385,34 @@ public class PlaybackController extends AudioController.AudioRxController {
             }
         }
 
-        private void convertToMp3(String wavPath, String mp3Path) {
-            synchronized (Mp3Converter.class) {
-                Mp3Converter.init(mStartFunction.getSamplingFreq(),
-                        mStartFunction.getNumChannels(),
-                        Constants.Controllers.Config.Playback.MP3_ENCODE.MODE_CBR,
-                        mStartFunction.getSamplingFreq(),
-                        Constants.Controllers.Config.Playback.MP3_ENCODE.COMPRESSION_RATIO_KHZ,
-                        Constants.Controllers.Config.Playback.MP3_ENCODE.QUALITY);
+        private boolean convertToMp3(String wavPath, String mp3Path) {
+            boolean success;
+            if (!(mController instanceof PlaybackController) || ((PlaybackController) mController).mContextRef.get() == null)
+                return false;
 
-                Log.d(TAG, "Convert " + wavPath + " to " + mp3Path + "...");
-                Mp3Converter.convertMp3(wavPath, mp3Path);
-                Log.d(TAG, "Convert successfully");
+            AudioConverter converter = new AudioConverter.Builder()
+                    .with(((PlaybackController) mController).mContextRef.get())
+                    .withSource(wavPath)
+                    .convertTo(mp3Path).build();
+
+            Log.d(TAG, "load converter...");
+            success = converter.load(null, true);
+            if (!success) {
+                Log.w(TAG, "load converter failed");
+                return false;
             }
+
+            AudioConverter.Config config = new AudioConverter.Config.Builder()
+                    .withBitrate(Constants.Controllers.Config.Playback.MP3_ENCODE.COMPRESSION_RATIO_KHZ).build();
+
+            Log.d(TAG, "convert " + wavPath + " to " + mp3Path + "....");
+            success = converter.convert(null, true, null);
+            if (success)
+                Log.d(TAG, "convert successfully");
+            else
+                Log.w(TAG, "convert failed");
+
+            return success;
         }
 
         private boolean genAudioFile() {
@@ -415,12 +434,13 @@ public class PlaybackController extends AudioController.AudioRxController {
                     signalGenerator.render(signal, info, mStartFunction.getSamplingFreq());
                     switch ((mStartFunction.getBitWidth())) {
                         case 8: {
-                            byte[] raw = new byte[signal.length];
+                            byte[] raw = new byte[signal.length * mStartFunction.getNumChannels()];
                             for (int i = 0; i < signal.length; i++)
-                                raw[i] = (byte) ((1 << 7 - 1) * signal[i]);
+                                for (int c = 0; c < mStartFunction.getNumChannels(); c++)
+                                    raw[i*mStartFunction.getNumChannels() + c] = (byte) ((1 << 7 - 1) * signal[i]);
                             data.write(raw);
                         }
-                        break;
+                            break;
                         case 32: {
                             int[] raw = new int[signal.length * mStartFunction.getNumChannels()];
                             byte[] buffer = new byte[raw.length * 4];
