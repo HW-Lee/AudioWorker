@@ -9,6 +9,7 @@ public class PlaybackStartFunction extends PlaybackFunction {
     public final static String ATTR_TYPE = "type";
     public final static String ATTR_TARGET_FREQ = "target-freq";
     public final static String ATTR_PLAYBACK_ID = "playback-id";
+    public final static String ATTR_PLAYBACK_USE_LL = "low-latency-mode";
     public final static String ATTR_AMPLITUDE = "amplitude";
     public final static String ATTR_FS = "sampling-freq";
     public final static String ATTR_NCH = "num-channels";
@@ -18,6 +19,7 @@ public class PlaybackStartFunction extends PlaybackFunction {
             ATTR_TYPE,
             ATTR_TARGET_FREQ,
             ATTR_PLAYBACK_ID,
+            ATTR_PLAYBACK_USE_LL,
             ATTR_AMPLITUDE,
             ATTR_FS,
             ATTR_NCH,
@@ -27,6 +29,7 @@ public class PlaybackStartFunction extends PlaybackFunction {
     private Parameter<String> PARAM_TYPE = new AudioFunction.Parameter<>(ATTR_TYPE, true, null);
     private Parameter<Float> PARAM_TARGET_FREQ = new AudioFunction.Parameter<>(ATTR_TARGET_FREQ, true, -1f);
     private Parameter<Integer> PARAM_PLAYBACK_ID = new AudioFunction.Parameter<>(ATTR_PLAYBACK_ID, true, -1);
+    private Parameter<Boolean> PARAM_PLAYBACK_USE_LL = new Parameter<>(ATTR_PLAYBACK_USE_LL, false, false);
     private Parameter<Float> PARAM_AMPLITUDE = new AudioFunction.Parameter<>(ATTR_AMPLITUDE, false, Constants.PlaybackDefaultConfig.AMPLITUDE);
     private Parameter<Integer> PARAM_FS = new AudioFunction.Parameter<>(ATTR_FS, false, Constants.PlaybackDefaultConfig.SAMPLINGFREQ);
     private Parameter<Integer> PARAM_NCH = new AudioFunction.Parameter<>(ATTR_NCH, false, Constants.PlaybackDefaultConfig.NUMCHANNELS);
@@ -35,6 +38,7 @@ public class PlaybackStartFunction extends PlaybackFunction {
             PARAM_TYPE,
             PARAM_TARGET_FREQ,
             PARAM_PLAYBACK_ID,
+            PARAM_PLAYBACK_USE_LL,
             PARAM_AMPLITUDE,
             PARAM_FS,
             PARAM_NCH,
@@ -56,6 +60,8 @@ public class PlaybackStartFunction extends PlaybackFunction {
                     return checkTargetFreq((Float.valueOf(value.toString())));
                 case ATTR_PLAYBACK_ID:
                     return checkPlaybackId((int) value);
+                case ATTR_PLAYBACK_USE_LL:
+                    return true;
                 case ATTR_AMPLITUDE:
                     return checkAmplitude(Float.valueOf(value.toString()));
                 case ATTR_FS:
@@ -81,6 +87,9 @@ public class PlaybackStartFunction extends PlaybackFunction {
                     return;
                 case ATTR_AMPLITUDE:
                     PARAM_AMPLITUDE.setValue(Float.valueOf(value.toString()));
+                    return;
+                case ATTR_PLAYBACK_USE_LL:
+                    PARAM_PLAYBACK_USE_LL.setValue(Boolean.valueOf(value.toString()));
                     return;
                 default:
                     int idx = toIndex(attr);
@@ -176,6 +185,10 @@ public class PlaybackStartFunction extends PlaybackFunction {
         return PARAM_BPS.getValue();
     }
 
+    public boolean isLowLatencyMode() {
+        return PARAM_PLAYBACK_USE_LL.getValue();
+    }
+
     public void setPlaybackType(String type) {
         setParameter(ATTR_TYPE, type);
     }
@@ -190,6 +203,10 @@ public class PlaybackStartFunction extends PlaybackFunction {
 
     public void setPlaybackId(int id) {
         setParameter(ATTR_PLAYBACK_ID, id);
+    }
+
+    public void setUseLowLatency(boolean b) {
+        setParameter(ATTR_PLAYBACK_USE_LL, b);
     }
 
     public void setSamplingFreq(int freq) {

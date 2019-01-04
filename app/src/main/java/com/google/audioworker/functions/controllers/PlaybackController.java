@@ -268,7 +268,9 @@ public class PlaybackController extends AudioController.AudioRxController {
 
             mTrack = new AudioTrack.Builder()
                     .setAudioAttributes(mAttributes).setAudioFormat(format)
-                    .setBufferSizeInBytes(minBuffsize).setTransferMode(AudioTrack.MODE_STREAM).build();
+                    .setBufferSizeInBytes(minBuffsize)
+                    .setPerformanceMode(mStartFunction.isLowLatencyMode() ? AudioTrack.PERFORMANCE_MODE_NONE : AudioTrack.PERFORMANCE_MODE_POWER_SAVING)
+                    .setTransferMode(AudioTrack.MODE_STREAM).build();
             mTrack.play();
 
             SinusoidalGenerator signalGenerator = new SinusoidalGenerator();
