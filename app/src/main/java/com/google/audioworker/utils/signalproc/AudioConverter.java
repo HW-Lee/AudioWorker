@@ -23,6 +23,8 @@ public class AudioConverter {
     private String mSource;
     private String mDestination;
 
+    private boolean isLoaded;
+
     public interface LoadListener {
         void onSuccess();
         void onFailure(Exception e);
@@ -91,7 +93,17 @@ public class AudioConverter {
         }
 
         public AudioConverter build() {
-            return new AudioConverter(context, source, destination);
+            return buildWith(null);
+        }
+
+        public AudioConverter buildWith(AudioConverter converter) {
+            if (converter == null)
+                return new AudioConverter(context, source, destination);
+
+            converter.mContext = context;
+            converter.mSource = source;
+            converter.mDestination = destination;
+            return converter;
         }
     }
 
@@ -99,9 +111,17 @@ public class AudioConverter {
         mContext = ctx;
         mSource = src;
         mDestination = dst;
+        isLoaded = false;
+    }
+
+    public boolean isLoaded() {
+        return isLoaded;
     }
 
     public boolean load(final LoadListener l, final boolean blocking) {
+        if (isLoaded)
+            return true;
+
         final AtomicBoolean done = new AtomicBoolean(false);
         final AtomicBoolean success = new AtomicBoolean(true);
         try {
@@ -124,6 +144,7 @@ public class AudioConverter {
                 public void onSuccess() {
                     done.set(true);
                     success.set(true);
+                    isLoaded = true;
                     if (blocking) {
                         synchronized (AudioConverter.this) {
                             AudioConverter.this.notify();

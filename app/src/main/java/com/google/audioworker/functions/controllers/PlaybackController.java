@@ -40,6 +40,7 @@ public class PlaybackController extends AudioController.AudioRxController {
     private final static String TAG = Constants.packageTag("PlaybackController");
 
     private WeakReference<Context> mContextRef;
+    private AudioConverter mConverter;
 
     private ThreadPoolExecutor mPoolExecuter;
     private HashMap<String, SparseArray<PlaybackRunnable>> mRunningPlaybackTasks;
@@ -393,20 +394,26 @@ public class PlaybackController extends AudioController.AudioRxController {
             AudioConverter converter = new AudioConverter.Builder()
                     .with(((PlaybackController) mController).mContextRef.get())
                     .withSource(wavPath)
-                    .convertTo(mp3Path).build();
+                    .convertTo(mp3Path).buildWith(((PlaybackController) mController).mConverter);
 
-            Log.d(TAG, "load converter...");
-            success = converter.load(null, true);
-            if (!success) {
-                Log.w(TAG, "load converter failed");
-                return false;
+            if (((PlaybackController) mController).mConverter == null)
+                ((PlaybackController) mController).mConverter = converter;
+
+            if (!converter.isLoaded()) {
+                Log.d(TAG, "load converter...");
+                success = converter.load(null, true);
+                if (!success) {
+                    Log.w(TAG, "load converter failed");
+                    return false;
+                }
             }
 
             AudioConverter.Config config = new AudioConverter.Config.Builder()
-                    .withBitrate(Constants.Controllers.Config.Playback.MP3_ENCODE.COMPRESSION_RATIO_KHZ).build();
+                    .withBitrate(Constants.Controllers.Config.Playback.MP3_ENCODE.COMPRESSION_RATIO_KHZ)
+                    .withQuality(Constants.Controllers.Config.Playback.MP3_ENCODE.QUALITY).build();
 
             Log.d(TAG, "convert " + wavPath + " to " + mp3Path + "....");
-            success = converter.convert(null, true, null);
+            success = converter.convert(null, true, config);
             if (success)
                 Log.d(TAG, "convert successfully");
             else

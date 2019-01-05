@@ -59,11 +59,11 @@ public class VoIPConfigFunction extends VoIPFunction {
     }
 
     private boolean checkTargetFrequency(float freq) {
-        return freq > 0;
+        return freq > 0 || freq == -1f;
     }
 
     private boolean checkAmplitude(float amp) {
-        return amp >= 0.0 && amp <= 1.0;
+        return amp >= 0.0 && amp <= 1.0 || amp == -1f;
     }
 
     public float getTargetFrequency() {
