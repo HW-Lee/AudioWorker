@@ -27,7 +27,7 @@ public class AudioFragment extends WorkerFragment {
 
     public interface TxSupport extends TxRxSupportCommon {
         void initTxSupport();
-        DataView[] getTxDataViews();
+        DataView getTxDataView();
         LinearLayout getTxAuxViewContainer();
         LinearLayout getTxInfoContainer();
         String getTxInfoTitle();

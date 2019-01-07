@@ -1,6 +1,7 @@
 package com.google.audioworker.fragments;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -26,7 +27,7 @@ import java.util.Collections;
 public class AudioVoIPFragment extends AudioRxTxSupportFragment implements ControllerBase.ControllerStateListener {
     private final static String TAG = Constants.packageTag("AudioVoIPFragment");
 
-    private DataView[] mSignalViews;
+    private DataView mSignalView;
     private LinearLayout mTxAuxViewContainer;
     private LinearLayout mRxAuxViewContainer;
     private LinearLayout mTxInfoContainer;
@@ -67,17 +68,16 @@ public class AudioVoIPFragment extends AudioRxTxSupportFragment implements Contr
         if (mActivityRef.get() == null)
             return;
 
-        mSignalViews = new DataView[2];
-        mSignalViews[0] = mActivityRef.get().findViewById(R.id.voip_tx_signal_1);
-        mSignalViews[1] = mActivityRef.get().findViewById(R.id.voip_tx_signal_2);
+        mSignalView = mActivityRef.get().findViewById(R.id.voip_tx_signal);
+        mSignalView.setDataPaint(1, Color.RED);
 
         mTxAuxViewContainer = mActivityRef.get().findViewById(R.id.voip_tx_aux_view_container);
         mTxInfoContainer = mActivityRef.get().findViewById(R.id.voip_tx_info_container);
     }
 
     @Override
-    public DataView[] getTxDataViews() {
-        return mSignalViews;
+    public DataView getTxDataView() {
+        return mSignalView;
     }
 
     @Override
@@ -183,8 +183,8 @@ public class AudioVoIPFragment extends AudioRxTxSupportFragment implements Contr
             statusView.setText("VoIP Tx: running");
         } else {
             statusView.setText("VoIP Tx: idle");
-            for (DataView v : getTxDataViews())
-                v.reset();
+            if (getTxDataView() != null)
+                getTxDataView().reset();
         }
 
         statusView = mActivityRef.get().findViewById(R.id.voip_rx_status);

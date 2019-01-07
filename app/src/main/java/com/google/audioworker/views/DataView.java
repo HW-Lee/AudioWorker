@@ -22,11 +22,11 @@ public class DataView extends View {
 
     private int mBgColor;
     private Paint mGridPaint;
-    private Paint mDataPaint;
     private int mGridSlotsX;
     private int mGridSlotsY;
 
-    private final ArrayList<Double> mDataBuffer = new ArrayList<>(0);;
+    private final ArrayList<Paint> mDataPaints = new ArrayList<>();
+    private final ArrayList<ArrayList<Double>> mDataBuffer = new ArrayList<>(0);;
 
     public DataView(Context context) {
         super(context);
@@ -51,13 +51,14 @@ public class DataView extends View {
     private void init() {
         mBgColor = Color.BLACK;
         mGridPaint = new Paint();
-        mDataPaint = new Paint();
+        Paint paint = new Paint();
 
         mGridPaint.setStrokeWidth(5.0f);
         mGridPaint.setColor(Color.GRAY);
 
-        mDataPaint.setStrokeWidth(5.0f);
-        mDataPaint.setColor(Color.GREEN);
+        paint.setStrokeWidth(5.0f);
+        paint.setColor(Color.GREEN);
+        mDataPaints.add(paint);
 
         mGridSlotsX = 0;
         mGridSlotsY = 0;
@@ -67,8 +68,20 @@ public class DataView extends View {
         return mGridPaint;
     }
 
-    public Paint getDataPaint() {
-        return mDataPaint;
+    public void setDataPaint(int idx, int color) {
+        synchronized (mDataPaints) {
+            if (idx < mDataPaints.size() && idx >= 0 && mDataPaints.get(idx) != null) {
+                mDataPaints.get(idx).setColor(color);
+                return;
+            }
+            if (idx != mDataPaints.size())
+                return;
+
+            Paint paint = new Paint();
+            paint.setStrokeWidth(5.0f);
+            paint.setColor(color);
+            mDataPaints.add(paint);
+        }
     }
 
     public void setGridSlotsX(int gridSlotsX) {
@@ -87,10 +100,13 @@ public class DataView extends View {
         this.postInvalidate();
     }
 
-    public void plot(Collection<? extends Double> data) {
+    public void plot(Collection<? extends Double>[] data) {
         synchronized (mDataBuffer) {
             mDataBuffer.clear();
-            mDataBuffer.addAll(data);
+            for (Collection<? extends Double> each : data) {
+                ArrayList<Double> array = new ArrayList<>(each);
+                mDataBuffer.add(array);
+            }
         }
 
         this.postInvalidate();
@@ -127,13 +143,20 @@ public class DataView extends View {
         }
 
         synchronized (mDataBuffer) {
-            for (int i = 0; i < mDataBuffer.size() - 1; i++) {
-                float startX = (float) viewWidth / mDataBuffer.size() * i;
-                float endX = (float) viewWidth / mDataBuffer.size() * (i + 1);
-                float startY = this.convertToViewPosition(mDataBuffer.get(i), viewHeight);
-                float endY = this.convertToViewPosition(mDataBuffer.get(i + 1), viewHeight);
+            for (int j = 0; j < mDataBuffer.size(); j++) {
+                ArrayList<Double> data = mDataBuffer.get(j);
+                Paint paint = mDataPaints.get(j);
+                if (data == null || paint == null)
+                    continue;
 
-                canvas.drawLine(startX, startY, endX, endY, mDataPaint);
+                for (int i = 0; i < data.size() - 1; i++) {
+                    float startX = (float) viewWidth / data.size() * i;
+                    float endX = (float) viewWidth / data.size() * (i + 1);
+                    float startY = this.convertToViewPosition(data.get(i), viewHeight);
+                    float endY = this.convertToViewPosition(data.get(i + 1), viewHeight);
+
+                    canvas.drawLine(startX, startY, endX, endY, paint);
+                }
             }
         }
     }

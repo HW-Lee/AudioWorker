@@ -47,9 +47,7 @@ public abstract class AudioRxTxSupportFragment extends WorkerFragment
 
     @Override
     public void onDataUpdated(List<? extends Double>[] signal, RecordStartFunction function) {
-        for (int i = 0; i < signal.length; i++) {
-            getTxDataViews()[i].plot(signal[i]);
-        }
+        getTxDataView().plot(signal);
     }
 
     @CallSuper

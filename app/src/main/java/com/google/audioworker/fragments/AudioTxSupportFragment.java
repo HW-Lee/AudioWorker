@@ -72,9 +72,7 @@ public abstract class AudioTxSupportFragment extends WorkerFragment
 
     @Override
     public void onDataUpdated(List<? extends Double>[] signal, RecordStartFunction function) {
-        for (int i = 0; i < signal.length; i++) {
-            getTxDataViews()[i].plot(signal[i]);
-        }
+        getTxDataView().plot(signal);
     }
 
     @CallSuper
@@ -136,9 +134,9 @@ public abstract class AudioTxSupportFragment extends WorkerFragment
                 workerFunctionView.setController(fragment.mActivityRef.get().getMainController().getSubControllerByName(fragment.getControllerName()));
             }
 
-            for (DataView v : fragment.getTxDataViews()) {
-                v.setGridSlotsY(4);
-                v.setGridSlotsX(10);
+            if (fragment.getTxDataView() != null) {
+                fragment.getTxDataView().setGridSlotsY(4);
+                fragment.getTxDataView().setGridSlotsX(10);
             }
 
             bundle.mDetectorParameterViews = new HashMap<>();

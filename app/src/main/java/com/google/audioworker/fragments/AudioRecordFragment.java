@@ -1,5 +1,6 @@
 package com.google.audioworker.fragments;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.view.LayoutInflater;
@@ -23,7 +24,7 @@ import java.util.Collection;
 public class AudioRecordFragment extends AudioTxSupportFragment implements ControllerBase.ControllerStateListener {
     private final static String TAG = Constants.packageTag("AudioRecordFragment");
 
-    private DataView[] mSignalViews;
+    private DataView mSignalView;
     private LinearLayout mAuxViewContainer;
     private LinearLayout mInfoContainer;
     private WorkerFunctionView mWorkerFunctionView;
@@ -48,9 +49,8 @@ public class AudioRecordFragment extends AudioTxSupportFragment implements Contr
         if (mActivityRef.get() == null)
             return;
 
-        mSignalViews = new DataView[2];
-        mSignalViews[0] = mActivityRef.get().findViewById(R.id.record_signal_1);
-        mSignalViews[1] = mActivityRef.get().findViewById(R.id.record_signal_2);
+        mSignalView = mActivityRef.get().findViewById(R.id.record_signal);
+        mSignalView.setDataPaint(1, Color.RED);
 
         mAuxViewContainer = mActivityRef.get().findViewById(R.id.record_aux_view_container);
         mInfoContainer = mActivityRef.get().findViewById(R.id.record_info_container);
@@ -60,8 +60,8 @@ public class AudioRecordFragment extends AudioTxSupportFragment implements Contr
     }
 
     @Override
-    public DataView[] getTxDataViews() {
-        return mSignalViews;
+    public DataView getTxDataView() {
+        return mSignalView;
     }
 
     @Override
@@ -132,12 +132,14 @@ public class AudioRecordFragment extends AudioTxSupportFragment implements Contr
 
         ControllerBase controller = mActivityRef.get().getMainController().getSubControllerByName(getControllerName());
         TextView v = mActivityRef.get().findViewById(R.id.record_status);
+        if (v == null)
+            return;
+
         if (controller instanceof AudioController.TxSupport && ((AudioController.TxSupport) controller).isTxRunning()) {
             v.setText("Status: running");
         } else {
             v.setText("Status: idle");
-            for (DataView dv : getTxDataViews())
-                dv.reset();
+            getTxDataView().reset();
         }
     }
 
