@@ -27,7 +27,7 @@ import org.json.JSONObject;
 import java.lang.ref.WeakReference;
 import java.util.Iterator;
 
-public class ToneDetectorView extends LinearLayout {
+public class ToneDetectorView extends LinearLayout implements DetectorBase.DetectionListener {
     private final static String TAG = Constants.packageTag("ToneDetectorView");
 
     private SparseArray<View> mIsDetectedOrNotViews;
@@ -235,10 +235,17 @@ public class ToneDetectorView extends LinearLayout {
         if (mIsDetectedOrNotViews.get(id) == null || mIsDetectedOrNot.get(id) == detected)
             return;
 
+        Log.d(TAG, "View[" + id + "] is changed to " + detected + ".");
+        mIsDetectedOrNot.put(id, detected);
         if (detected)
             mIsDetectedOrNotViews.get(id).setBackgroundColor(Color.argb(255, 0, 255, 0));
         else
             mIsDetectedOrNotViews.get(id).setBackgroundColor(Color.argb(100, 0, 0, 0));
+    }
+
+    @Override
+    public void onTargetDetected(DetectorBase detector, SparseArray<? extends DetectorBase.Target> targets) {
+        mHandler.onTargetDetected(detector, targets);
     }
 
     private static class ToneDetectorViewHandler extends Handler implements DetectorBase.DetectionListener {
@@ -249,7 +256,7 @@ public class ToneDetectorView extends LinearLayout {
         }
 
         @Override
-        public void onTargetDetected(SparseArray<? extends DetectorBase.Target> targets) {
+        public void onTargetDetected(DetectorBase detector, SparseArray<? extends DetectorBase.Target> targets) {
             SparseBooleanArray results = new SparseBooleanArray();
             for (int i = 0; i < targets.size(); i++)
                 results.put(targets.keyAt(i), true);

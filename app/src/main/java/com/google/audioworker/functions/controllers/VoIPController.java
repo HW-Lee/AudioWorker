@@ -39,6 +39,7 @@ public class VoIPController extends AudioController.AudioRxTxController {
     private WeakReference<Context> mContextRef;
 
     private HashMap<String, DetectorBase> mDetectors;
+    private HashMap<String, DetectorBase.DetectionListener> mDetectionListeners;
     private final ArrayList<RecordController.RecordRunnable.RecordDataListener> mDataListeners = new ArrayList<>();
 
     private ThreadPoolExecutor mPoolExecuter;
@@ -48,6 +49,7 @@ public class VoIPController extends AudioController.AudioRxTxController {
     @Override
     public void activate(Context ctx) {
         mDetectors = new HashMap<>();
+        mDetectionListeners = new HashMap<>();
         mContextRef = new WeakReference<>(ctx);
         mPoolExecuter = new ThreadPoolExecutor(
                 Constants.Controllers.Config.Common.MAX_THREAD_COUNT,
@@ -74,6 +76,7 @@ public class VoIPController extends AudioController.AudioRxTxController {
         mPoolExecuter.shutdown();
         mPoolExecuter = null;
         mDetectors.clear();
+        mDetectionListeners.clear();
         mDataListeners.clear();
     }
 
@@ -200,8 +203,8 @@ public class VoIPController extends AudioController.AudioRxTxController {
                         String params = RecordController.processDetectorParams(mTxRunnable, className, ((VoIPDetectFunction) function).getDetectorParams());
                         DetectorBase detector = DetectorBase.getDetectorByClassName(className, new DetectorBase.DetectionListener() {
                             @Override
-                            public void onTargetDetected(SparseArray<? extends DetectorBase.Target> targets) {
-                                VoIPController.this.onTargetDetected(function.getCommandId(), targets);
+                            public void onTargetDetected(DetectorBase detector, SparseArray<? extends DetectorBase.Target> targets) {
+                                VoIPController.this.onTargetDetected(detector.getHandle(), targets);
                             }
                         }, params);
 
@@ -231,6 +234,7 @@ public class VoIPController extends AudioController.AudioRxTxController {
                         if (mDetectors.containsKey(((VoIPDetectFunction) function).getClassHandle())) {
                             mTxRunnable.unregisterDetector(mDetectors.get(((VoIPDetectFunction) function).getClassHandle()));
                             mDetectors.remove(((VoIPDetectFunction) function).getClassHandle());
+                            mDetectionListeners.remove(((VoIPDetectFunction) function).getClassHandle());
                             if (l != null) {
                                 ack.setReturnCode(0);
                                 ack.setDescription("detector has been unregistered");
@@ -339,12 +343,29 @@ public class VoIPController extends AudioController.AudioRxTxController {
         txFunction.setCommandId(function.getCommandId() + "c-stop");
     }
 
-    public void onTargetDetected(final String commandId, SparseArray<? extends DetectorBase.Target> targets) {
+    private void onTargetDetected(String detectorHandle, SparseArray<? extends DetectorBase.Target> targets) {
+        if (!mDetectionListeners.containsKey(detectorHandle))
+            return;
+
+        DetectorBase detector = mDetectors.get(detectorHandle);
+        DetectorBase.DetectionListener l = mDetectionListeners.get(detectorHandle);
+        if (detector == null || l == null)
+            return;
+
+        l.onTargetDetected(detector, targets);
     }
 
     @Override
     public DetectorBase getDetectorByHandle(String handle) {
         return mDetectors.get(handle);
+    }
+
+    @Override
+    public void setDetectionListener(String detectorHandle, DetectorBase.DetectionListener l) {
+        if (!mDetectors.containsKey(detectorHandle))
+            return;
+
+        mDetectionListeners.put(detectorHandle, l);
     }
 
     public boolean isTxRunning() {

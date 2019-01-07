@@ -42,6 +42,7 @@ public class RecordController extends AudioController.AudioTxController {
     private final static String TAG = Constants.packageTag("RecordController");
 
     private HashMap<String, DetectorBase> mDetectors;
+    private HashMap<String, DetectorBase.DetectionListener> mDetectionListeners;
     private final ArrayList<RecordRunnable.RecordDataListener> mDataListeners = new ArrayList<>();
     private RecordRunnable mMainRunningTask;
     private ThreadPoolExecutor mPoolExecuter;
@@ -49,6 +50,7 @@ public class RecordController extends AudioController.AudioTxController {
     @Override
     public void activate(Context ctx) {
         mDetectors = new HashMap<>();
+        mDetectionListeners = new HashMap<>();
         mPoolExecuter = new ThreadPoolExecutor(
                 Constants.Controllers.Config.Common.MAX_THREAD_COUNT,
                 Constants.Controllers.Config.Common.MAX_THREAD_COUNT,
@@ -74,6 +76,7 @@ public class RecordController extends AudioController.AudioTxController {
         mPoolExecuter.shutdown();
         mPoolExecuter = null;
         mDetectors.clear();
+        mDetectionListeners.clear();
         mDataListeners.clear();
     }
 
@@ -159,8 +162,8 @@ public class RecordController extends AudioController.AudioTxController {
                         String params = processDetectorParams(mMainRunningTask, className, ((RecordDetectFunction) function).getDetectorParams());
                         DetectorBase detector = ToneDetector.getDetectorByClassName(className, new DetectorBase.DetectionListener() {
                             @Override
-                            public void onTargetDetected(SparseArray<? extends DetectorBase.Target> targets) {
-                                RecordController.this.onTargetDetected(function.getCommandId(), targets);
+                            public void onTargetDetected(DetectorBase detector, SparseArray<? extends DetectorBase.Target> targets) {
+                                RecordController.this.onTargetDetected(detector.getHandle(), targets);
                             }
                         }, params);
 
@@ -191,6 +194,7 @@ public class RecordController extends AudioController.AudioTxController {
                         if (mDetectors.containsKey(((RecordDetectFunction) function).getClassHandle())) {
                             mMainRunningTask.unregisterDetector(mDetectors.get(((RecordDetectFunction) function).getClassHandle()));
                             mDetectors.remove(((RecordDetectFunction) function).getClassHandle());
+                            mDetectionListeners.remove(((RecordDetectFunction) function).getClassHandle());
                             if (l != null) {
                                 ack.setReturnCode(0);
                                 ack.setDescription("detector has been unregistered");
@@ -326,7 +330,24 @@ public class RecordController extends AudioController.AudioTxController {
         return params;
     }
 
-    public void onTargetDetected(final String commandId, SparseArray<? extends DetectorBase.Target> targets) {
+    @Override
+    public void setDetectionListener(final String detectorHandle, DetectorBase.DetectionListener l) {
+        if (!mDetectors.containsKey(detectorHandle))
+            return;
+
+        mDetectionListeners.put(detectorHandle, l);
+    }
+
+    private void onTargetDetected(String detectorHandle, SparseArray<? extends DetectorBase.Target> targets) {
+        if (!mDetectionListeners.containsKey(detectorHandle))
+            return;
+
+        DetectorBase detector = mDetectors.get(detectorHandle);
+        DetectorBase.DetectionListener l = mDetectionListeners.get(detectorHandle);
+        if (detector == null || l == null)
+            return;
+
+        l.onTargetDetected(detector, targets);
     }
 
     public static class RecordSharedBuffer {

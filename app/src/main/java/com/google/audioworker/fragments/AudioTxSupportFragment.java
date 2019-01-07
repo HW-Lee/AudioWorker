@@ -25,7 +25,6 @@ import com.google.audioworker.functions.controllers.AudioController;
 import com.google.audioworker.functions.controllers.ControllerBase;
 import com.google.audioworker.functions.controllers.RecordController;
 import com.google.audioworker.utils.Constants;
-import com.google.audioworker.views.DataView;
 import com.google.audioworker.views.ViewUtils;
 import com.google.audioworker.views.WorkerFunctionView;
 
@@ -276,6 +275,7 @@ public abstract class AudioTxSupportFragment extends WorkerFragment
 
                         View v = ((DetectorBase.Visualizable) detector).getVisualizedView(fragment.mActivityRef.get(), jsonDetectors.getString(key), detector);
                         if (v != null) {
+                            ((AudioController.TxCallback) controller).setDetectionListener(key, (DetectorBase.DetectionListener) v);
                             v.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
                             container.addView(v);
                         }

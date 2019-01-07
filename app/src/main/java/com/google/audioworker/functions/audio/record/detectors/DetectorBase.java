@@ -24,10 +24,10 @@ public abstract class DetectorBase {
         abstract public JSONObject toJson();
     }
     public interface Visualizable {
-        View getVisualizedView(Context ctx, String token, DetectorBase detector);
+        <T extends View & DetectionListener> T getVisualizedView(Context ctx, String token, DetectorBase detector);
     }
     public interface DetectionListener {
-        void onTargetDetected(SparseArray<? extends Target> targets);
+        void onTargetDetected(DetectorBase detector, SparseArray<? extends Target> targets);
     }
 
     abstract public Target getTargetById(int id);
@@ -93,7 +93,7 @@ public abstract class DetectorBase {
     protected void broadcastTargetDetected(SparseArray<? extends Target> targets) {
         for (WeakReference<DetectionListener> ref : mListeners) {
             if (ref.get() != null)
-                ref.get().onTargetDetected(targets);
+                ref.get().onTargetDetected(this, targets);
         }
     }
 
@@ -104,7 +104,7 @@ public abstract class DetectorBase {
     static public DetectorBase getDetectorByClassName(String className) {
         return getDetectorByClassName(className, new DetectorBase.DetectionListener() {
             @Override
-            public void onTargetDetected(SparseArray<? extends DetectorBase.Target> targets) {
+            public void onTargetDetected(DetectorBase detector, SparseArray<? extends Target> targets) {
             }
         }, null);
     }

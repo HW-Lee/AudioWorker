@@ -4,7 +4,6 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import android.util.SparseArray;
-import android.view.View;
 
 import com.google.audioworker.functions.common.WorkerFunction;
 import com.google.audioworker.utils.Constants;
@@ -94,8 +93,9 @@ public class ToneDetector extends VisualizableDetector implements WorkerFunction
         return false;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public View getVisualizedView(Context ctx, String token, DetectorBase detector) {
+    public ToneDetectorView getVisualizedView(Context ctx, String token, DetectorBase detector) {
         return ToneDetectorView.createView(ctx, token, detector);
     }
 

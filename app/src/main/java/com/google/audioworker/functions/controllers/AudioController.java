@@ -14,6 +14,7 @@ public class AudioController extends ManagerController {
         void registerDataListener(RecordController.RecordRunnable.RecordDataListener l);
         void unregisterDataListener(RecordController.RecordRunnable.RecordDataListener l);
         DetectorBase getDetectorByHandle(String handle);
+        void setDetectionListener(String detectorHandle, DetectorBase.DetectionListener l);
     }
 
     public interface RxCallback {
