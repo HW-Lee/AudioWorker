@@ -43,6 +43,7 @@ public class ShellController extends ControllerBase {
     @Override
     public void execute(WorkerFunction function, WorkerFunction.WorkerFunctionListener l) {
         if (function instanceof ShellFunction) {
+            pushFunctionBeingExecuted(function);
             mPoolExecuter.execute(new ShellRunnable((ShellFunction) function, l));
         } else {
             Log.e(TAG, "The function: " + function + " is not shell function");
@@ -78,6 +79,7 @@ public class ShellController extends ControllerBase {
             ArrayList<Object> returns = new ArrayList<>(2);
 
             if (mContextRef.get() == null) {
+                notifyFunctionHasBeenExecuted(mFunction);
                 if (mListener != null) {
                     ack.setReturnCode(-1);
                     ack.setDescription("No context to send broadcast");
@@ -87,6 +89,7 @@ public class ShellController extends ControllerBase {
             }
 
             mContextRef.get().sendBroadcast(mFunction.getBroadcastIntent());
+            notifyFunctionHasBeenExecuted(mFunction);
             if (mListener != null) {
                 returns.add(mFunction.getCommand());
                 returns.add("" + CommandHelper.getFunction(mFunction.getBroadcastIntent()));
@@ -139,6 +142,7 @@ public class ShellController extends ControllerBase {
                     ack.setDescription("got exception on App");
                 }
             } finally {
+                notifyFunctionHasBeenExecuted(mFunction);
                 if (mListener != null) {
                     ack.setReturns(returns);
                     mListener.onAckReceived(ack);

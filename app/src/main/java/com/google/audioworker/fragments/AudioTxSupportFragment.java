@@ -114,7 +114,8 @@ public abstract class AudioTxSupportFragment extends WorkerFragment
             bundle.mDetectorParameterViews.clear();
         }
 
-        static <T extends WorkerFragment & AudioFragment.TxSupport> void init(final T fragment, Bundle bundle) {
+        static <T extends WorkerFragment & AudioFragment.TxSupport>
+        void init(final T fragment, Bundle bundle) {
             if (fragment == null || fragment.mActivityRef.get() == null)
                 return;
 
@@ -154,7 +155,7 @@ public abstract class AudioTxSupportFragment extends WorkerFragment
                     public void onAckReceived(WorkerFunction.Ack ack) {
                         ((WorkerFunctionView.ActionSelectedListener) fragment).onFunctionAckReceived(ack);
                     }
-                });
+                }, true);
             }
         }
 
@@ -194,7 +195,8 @@ public abstract class AudioTxSupportFragment extends WorkerFragment
             bundle.mTxInfoCollapseToggleView.addView(toggle);
         }
 
-        static <T extends WorkerFragment & AudioFragment.TxSupport> void updateTxInfoContent(T fragment, Bundle bundle, Object[] returns) {
+        static <T extends WorkerFragment & AudioFragment.TxSupport>
+        void updateTxInfoContent(T fragment, Bundle bundle, Object[] returns) {
             bundle.mTxInfoContentView.removeAllViews();
             if (returns.length < 2 || fragment.mActivityRef.get() == null)
                 return;
@@ -489,7 +491,7 @@ public abstract class AudioTxSupportFragment extends WorkerFragment
             fragment.getTxAuxViewContainer().invalidate();
         }
 
-        static <T extends WorkerFragment & AudioFragment.TxSupport & WorkerFunctionView.ActionSelectedListener>
+        static <T extends WorkerFragment & AudioFragment.TxSupport>
         void onFunctionAckReceived(final T fragment, final Bundle bundle, WorkerFunction.Ack ack) {
             if (fragment.mActivityRef.get() == null)
                 return;
@@ -498,6 +500,9 @@ public abstract class AudioTxSupportFragment extends WorkerFragment
             controller.execute(fragment.getInfoRequestFunction(), new WorkerFunction.WorkerFunctionListener() {
                 @Override
                 public void onAckReceived(WorkerFunction.Ack ack) {
+                    if (fragment.mActivityRef.get() == null)
+                        return;
+
                     final Object[] returns = fragment.getTxReturns(ack);
 
                     Factory.updateDetectors(bundle, returns);
@@ -505,10 +510,14 @@ public abstract class AudioTxSupportFragment extends WorkerFragment
                         @Override
                         public void run() {
                             Factory.updateTxInfoContent(fragment, bundle, returns);
+                            if (fragment instanceof AudioFragment.WorkerFunctionAuxSupport &&
+                                    ((AudioFragment.WorkerFunctionAuxSupport) fragment).getWorkerFunctionView() != null) {
+                                ((AudioFragment.WorkerFunctionAuxSupport) fragment).getWorkerFunctionView().updateParameterView();
+                            }
                         }
                     });
                 }
-            });
+            }, true);
         }
 
         static private void updateDetectors(Bundle bundle, Object[] returns) {
@@ -561,9 +570,10 @@ public abstract class AudioTxSupportFragment extends WorkerFragment
             fragment.getTxAuxViewContainer().invalidate();
         }
 
-        static <T extends WorkerFragment & AudioFragment.TxSupport & AudioFragment.WorkerFunctionAuxSupport>
+        static <T extends WorkerFragment & AudioFragment.TxSupport>
         void onActionSelected(T fragment, Bundle bundle, String action, HashMap<String, WorkerFunctionView.ParameterView> views) {
-            if (action == null || !fragment.needToShowAuxView(action)) {
+            if (action == null || !(fragment instanceof AudioFragment.WorkerFunctionAuxSupport) ||
+                    !((AudioFragment.WorkerFunctionAuxSupport) fragment).needToShowAuxView(action)) {
                 Factory.hideTxAuxView(fragment, bundle);
             } else {
                 Factory.updateTxAuxView(fragment, bundle, action, views);

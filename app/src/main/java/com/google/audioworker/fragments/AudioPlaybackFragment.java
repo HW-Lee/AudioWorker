@@ -20,7 +20,7 @@ import com.google.audioworker.views.WorkerFunctionView;
 import java.util.ArrayList;
 import java.util.Collection;
 
-public class AudioPlaybackFragment extends AudioRxSupportFragment {
+public class AudioPlaybackFragment extends AudioRxSupportFragment implements ControllerBase.ControllerStateListener {
     private final static String TAG = Constants.packageTag("AudioPlaybackFragment");
 
     private WorkerFunctionView mWorkerFunctionView;
@@ -50,6 +50,11 @@ public class AudioPlaybackFragment extends AudioRxSupportFragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
+
+        if (mActivityRef.get() == null)
+            return;
+
+        mActivityRef.get().getMainController().unregisterStateListener(this);
     }
 
     @Override
@@ -60,6 +65,8 @@ public class AudioPlaybackFragment extends AudioRxSupportFragment {
         mWorkerFunctionView = mActivityRef.get().findViewById(R.id.playback_func_attr_container);
         mRxAuxViewContainer = mActivityRef.get().findViewById(R.id.playback_aux_view_container);
         mRxInfoContainer = mActivityRef.get().findViewById(R.id.playback_info_container);
+
+        mActivityRef.get().getMainController().registerStateListener(this);
     }
 
     @Override
@@ -125,9 +132,18 @@ public class AudioPlaybackFragment extends AudioRxSupportFragment {
             return;
 
         ControllerBase controller = mActivityRef.get().getMainController().getSubControllerByName(getControllerName());
+        TextView statusView = mActivityRef.get().findViewById(R.id.playback_status);
+        if (statusView == null)
+            return;
+
         if (controller instanceof AudioController.RxSupport && ((AudioController.RxSupport) controller).isRxRunning())
-            ((TextView) mActivityRef.get().findViewById(R.id.playback_status)).setText("Status: running (" + ((AudioController.RxSupport) controller).getNumRxRunning() + " tracks)");
+            statusView.setText("Status: running (" + ((AudioController.RxSupport) controller).getNumRxRunning() + " tracks)");
         else
-            ((TextView) mActivityRef.get().findViewById(R.id.playback_status)).setText("Status: idle");
+            statusView.setText("Status: idle");
+    }
+
+    @Override
+    public void onStateChanged(ControllerBase controller) {
+        onFunctionAckReceived(null);
     }
 }

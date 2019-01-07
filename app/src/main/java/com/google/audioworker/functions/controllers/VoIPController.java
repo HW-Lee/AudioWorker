@@ -124,6 +124,8 @@ public class VoIPController extends AudioController.AudioRxTxController {
                         .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
                         .setLegacyStreamType(AudioManager.STREAM_VOICE_CALL)
                         .build();
+                pushFunctionBeingExecuted(rxStartFunction);
+                pushFunctionBeingExecuted(txStartFunction);
                 mRxRunnable = new PlaybackController.PlaybackRunnable(rxStartFunction, listener, this, attr);
                 mTxRunnable = new RecordController.RecordRunnable(txStartFunction, listener, this);
                 mTxRunnable.setRecordRunner(new RecordController.RecordInternalRunnable(mTxRunnable, MediaRecorder.AudioSource.VOICE_COMMUNICATION));
@@ -290,6 +292,7 @@ public class VoIPController extends AudioController.AudioRxTxController {
                     return;
                 }
 
+                pushFunctionBeingExecuted(function);
                 String path = new File(getDataDir(), ((VoIPTxDumpFunction) function).getFileName()).getAbsolutePath();
                 mTxRunnable.dumpBufferTo(path, function);
             }

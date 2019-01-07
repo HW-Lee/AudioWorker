@@ -2,7 +2,6 @@ package com.google.audioworker.fragments;
 
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -131,17 +130,7 @@ public class AudioRecordFragment extends AudioTxSupportFragment implements Contr
         if (mActivityRef.get() == null)
             return;
 
-        TextView v = mActivityRef.get().findViewById(R.id.record_status);
         ControllerBase controller = mActivityRef.get().getMainController().getSubControllerByName(getControllerName());
-        if (controller instanceof AudioController.AudioTxController && ((AudioController.AudioTxController) controller).isTxRunning())
-            v.setText("Status: running");
-        else
-            v.setText("Status: idle");
-    }
-
-    @Override
-    public void onStateChanged(ControllerBase controller) {
-        Log.d(TAG, "onStateChanged(" + controller + ")");
         TextView v = mActivityRef.get().findViewById(R.id.record_status);
         if (controller instanceof AudioController.TxSupport && ((AudioController.TxSupport) controller).isTxRunning()) {
             v.setText("Status: running");
@@ -150,5 +139,10 @@ public class AudioRecordFragment extends AudioTxSupportFragment implements Contr
             for (DataView dv : getTxDataViews())
                 dv.reset();
         }
+    }
+
+    @Override
+    public void onStateChanged(ControllerBase controller) {
+        onFunctionAckReceived(null);
     }
 }

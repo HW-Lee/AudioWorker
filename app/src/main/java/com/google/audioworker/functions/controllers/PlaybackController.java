@@ -34,7 +34,6 @@ import java.util.HashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class PlaybackController extends AudioController.AudioRxController {
     private final static String TAG = Constants.packageTag("PlaybackController");
@@ -110,6 +109,7 @@ public class PlaybackController extends AudioController.AudioRxController {
                     playbackRunnable.tryStop(stopFunction);
                     tasks.delete(playbackId);
                 }
+                pushFunctionBeingExecuted(function);
                 playbackRunnable = new PlaybackRunnable((PlaybackStartFunction) function, l, this);
                 tasks.put(playbackId, playbackRunnable);
                 mPoolExecuter.execute(playbackRunnable);
@@ -121,7 +121,8 @@ public class PlaybackController extends AudioController.AudioRxController {
                     return;
                 }
                 PlaybackRunnable playbackRunnable = tasks.get(playbackId);
-                if (playbackRunnable != null) {
+                if (playbackRunnable != null && !playbackRunnable.hasDone()) {
+                    pushFunctionBeingExecuted(function);
                     playbackRunnable.tryStop((PlaybackStopFunction) function, l);
                     tasks.delete(playbackId);
                 } else if (l != null) {
@@ -131,6 +132,7 @@ public class PlaybackController extends AudioController.AudioRxController {
                     l.onAckReceived(ack);
                 }
             } else if (function instanceof PlaybackInfoFunction) {
+                pushFunctionBeingExecuted(function);
                 mPoolExecuter.execute(new PlaybackInfoRunnable((PlaybackInfoFunction) function, l));
             }
         } else {
@@ -284,6 +286,7 @@ public class PlaybackController extends AudioController.AudioRxController {
             exitPending = false;
             Log.d(TAG, "run_nonoffload: start running (id: " + mStartFunction.getPlaybackId() + ")");
             returnAck(mStartFunction, 0);
+            mController.broadcastStateChange(mController);
             switch (mStartFunction.getBitWidth()) {
                 case 8: {
                     byte[] buffer = new byte[minBuffsize];
@@ -320,6 +323,7 @@ public class PlaybackController extends AudioController.AudioRxController {
                 default:
                     break;
             }
+            mController.broadcastStateChange(mController);
             if (mStopFunction != null) {
                 Log.d(TAG, "run_nonoffload: terminated (id: " + mStopFunction.getPlaybackId() + ")");
                 if (mStopFunction.getCommandId() == null)
@@ -349,6 +353,7 @@ public class PlaybackController extends AudioController.AudioRxController {
             exitPending = false;
             MediaPlayer player = new MediaPlayer();
             player.setAudioAttributes(mAttributes);
+            mController.broadcastStateChange(mController);
             try {
                 player.setDataSource(path);
                 player.setLooping(true);
@@ -371,6 +376,7 @@ public class PlaybackController extends AudioController.AudioRxController {
             }
             player.stop();
             player.release();
+            mController.broadcastStateChange(mController);
             if (mStopFunction != null) {
                 Log.d(TAG, "run_offload: terminated (id: " + mStopFunction.getPlaybackId() + ")");
                 returnAck(mStopFunction, 0);
@@ -486,6 +492,7 @@ public class PlaybackController extends AudioController.AudioRxController {
         }
 
         private void returnAck(PlaybackFunction function, int ret) {
+            mController.notifyFunctionHasBeenExecuted(function);
             if (mListener == null)
                 return;
 
@@ -537,6 +544,7 @@ public class PlaybackController extends AudioController.AudioRxController {
 
         @Override
         public void run() {
+            notifyFunctionHasBeenExecuted(mFunction);
             if (mListener == null)
                 return;
 
@@ -549,7 +557,7 @@ public class PlaybackController extends AudioController.AudioRxController {
                 for (int i = 0; i < tasks.size(); i++) {
                     int idx = tasks.keyAt(i);
                     PlaybackRunnable task = tasks.get(idx);
-                    if (task == null) {
+                    if (task == null || _functionsBeingExecuted.contains(task.mStartFunction)) {
                         continue;
                     }
                     functions.add(task.mStartFunction);

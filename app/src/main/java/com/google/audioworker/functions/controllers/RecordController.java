@@ -90,12 +90,12 @@ public class RecordController extends AudioController.AudioTxController {
     private void executeBackground(final WorkerFunction function, WorkerFunction.WorkerFunctionListener l) {
         if (function instanceof RecordFunction && function.isValid()) {
             if (function instanceof RecordStartFunction) {
-                if (isRecording()) {
+                if (isTxRunning()) {
                     for (RecordRunnable.RecordDataListener dl : mDataListeners)
                         mMainRunningTask.unregisterDataListener(dl);
                     mMainRunningTask.tryStop(new RecordStopFunction());
 
-                    while (isRecording()) {
+                    while (isTxRunning()) {
                         try {
                             Thread.sleep(1000);
                         } catch (InterruptedException e) {
@@ -104,6 +104,7 @@ public class RecordController extends AudioController.AudioTxController {
                     }
                 }
 
+                pushFunctionBeingExecuted(function);
                 mMainRunningTask = new RecordRunnable((RecordStartFunction) function, l, this);
                 mMainRunningTask.setRecordRunner(new RecordInternalRunnable(mMainRunningTask));
                 for (RecordRunnable.RecordDataListener dl : mDataListeners)
@@ -113,7 +114,8 @@ public class RecordController extends AudioController.AudioTxController {
                 mPoolExecuter.execute(mMainRunningTask);
                 mPoolExecuter.execute(mMainRunningTask.slave);
             } else if (function instanceof RecordStopFunction) {
-                if (isRecording()) {
+                if (isTxRunning()) {
+                    pushFunctionBeingExecuted(function);
                     mMainRunningTask.tryStop((RecordStopFunction) function, l);
                     mMainRunningTask = null;
                 } else if (l != null) {
@@ -127,7 +129,7 @@ public class RecordController extends AudioController.AudioTxController {
                 if (l == null)
                     return;
                 WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
-                if (isRecording()) {
+                if (isTxRunning()) {
                     ArrayList<Object> returns = new ArrayList<>();
                     returns.addAll(RecordController.getRecordInfoAckStrings(mMainRunningTask.getStartFunction(), mDetectors));
                     ack.setReturns(returns);
@@ -137,7 +139,7 @@ public class RecordController extends AudioController.AudioTxController {
                 l.onAckReceived(ack);
             } else if (function instanceof RecordDetectFunction) {
                 WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
-                if (!isRecording()) {
+                if (!isTxRunning()) {
                     if (l != null) {
                         ack.setReturnCode(-1);
                         ack.setDescription("no recording process running");
@@ -163,6 +165,7 @@ public class RecordController extends AudioController.AudioTxController {
                         }, params);
 
                         if (detector == null) {
+                            notifyFunctionHasBeenExecuted(function);
                             if (l != null) {
                                 ack.setReturnCode(-1);
                                 ack.setDescription("invalid detector class name");
@@ -224,7 +227,7 @@ public class RecordController extends AudioController.AudioTxController {
                 }
             } else if (function instanceof RecordDumpFunction) {
                 WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
-                if (!isRecording()) {
+                if (!isTxRunning()) {
                     if (l != null) {
                         ack.setReturnCode(-1);
                         ack.setDescription("no recording process running");
@@ -233,6 +236,7 @@ public class RecordController extends AudioController.AudioTxController {
                     return;
                 }
 
+                pushFunctionBeingExecuted(function);
                 String path = new File(getDataDir(), ((RecordDumpFunction) function).getFileName()).getAbsolutePath();
                 mMainRunningTask.dumpBufferTo(path, function);
             }
@@ -281,10 +285,6 @@ public class RecordController extends AudioController.AudioTxController {
         return mMainRunningTask != null && !mMainRunningTask.hasDone();
     }
 
-    private boolean isRecording() {
-        return isTxRunning();
-    }
-
     @Override
     public void registerDataListener(@NonNull RecordRunnable.RecordDataListener l) {
         synchronized (mDataListeners) {
@@ -292,7 +292,7 @@ public class RecordController extends AudioController.AudioTxController {
                 mDataListeners.add(l);
         }
 
-        if (!isRecording())
+        if (!isTxRunning())
             return;
 
         mMainRunningTask.registerDataListener(l);
@@ -304,7 +304,7 @@ public class RecordController extends AudioController.AudioTxController {
             mDataListeners.remove(l);
         }
 
-        if (!isRecording())
+        if (!isTxRunning())
             return;
 
         mMainRunningTask.unregisterDataListener(l);
@@ -507,6 +507,7 @@ public class RecordController extends AudioController.AudioTxController {
         }
 
         private void returnAck(RecordFunction function, int ret) {
+            mController.notifyFunctionHasBeenExecuted(function);
             if (mListener == null)
                 return;
 
@@ -633,8 +634,10 @@ public class RecordController extends AudioController.AudioTxController {
         }
 
         public void dumpBufferTo(final String path, final WorkerFunction function) {
-            if (dumpBufferSize <= 0)
+            if (dumpBufferSize <= 0) {
+                mController.notifyFunctionHasBeenExecuted(function);
                 return;
+            }
 
             new Thread(new Runnable() {
                 @Override
@@ -678,6 +681,7 @@ public class RecordController extends AudioController.AudioTxController {
                 ack.setReturns(returns);
             }
 
+            mController.notifyFunctionHasBeenExecuted(function);
             if (mListener != null) {
                 mListener.onAckReceived(ack);
             }

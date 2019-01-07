@@ -14,6 +14,12 @@ public abstract class ControllerBase {
     abstract public void activate(Context ctx);
     abstract public void execute(final WorkerFunction function, final WorkerFunction.WorkerFunctionListener l);
 
+    private boolean mSuppressStateChange;
+    public void execute(final WorkerFunction function, final WorkerFunction.WorkerFunctionListener l, boolean suppressStateChange) {
+        mSuppressStateChange = suppressStateChange;
+        execute(function, l);
+    }
+
     public interface ControllerStateListener {
         void onStateChanged(ControllerBase controller);
     }
@@ -21,10 +27,12 @@ public abstract class ControllerBase {
     protected ManagerController mManager;
     protected String _dataPath;
     protected final ArrayList<WeakReference<ControllerStateListener>> _stateListeners = new ArrayList<>();
+    protected final ArrayList<WorkerFunction> _functionsBeingExecuted = new ArrayList<>();
 
     @CallSuper
     public void destroy() {
         _stateListeners.clear();
+        _functionsBeingExecuted.clear();
     }
 
     public void receiveAck(WorkerFunction.Ack ack) {
@@ -83,6 +91,9 @@ public abstract class ControllerBase {
     }
 
     protected void broadcastStateChange(final ControllerBase controller) {
+        if (mSuppressStateChange)
+            return;
+
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -99,5 +110,26 @@ public abstract class ControllerBase {
                 }
             }
         }).start();
+    }
+
+    protected void pushFunctionBeingExecuted(WorkerFunction function) {
+        synchronized (_functionsBeingExecuted) {
+            _functionsBeingExecuted.add(function);
+        }
+    }
+
+    protected void notifyFunctionHasBeenExecuted(WorkerFunction function) {
+        synchronized (_functionsBeingExecuted) {
+            _functionsBeingExecuted.remove(function);
+        }
+    }
+
+    public boolean hasFunctionBeingExecuted() {
+        int size;
+        synchronized (_functionsBeingExecuted) {
+            size = _functionsBeingExecuted.size();
+        }
+
+        return size > 0;
     }
 }

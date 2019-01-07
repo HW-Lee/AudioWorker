@@ -110,7 +110,7 @@ public abstract class AudioRxSupportFragment extends WorkerFragment
                     public void onAckReceived(WorkerFunction.Ack ack) {
                         ((WorkerFunctionView.ActionSelectedListener) fragment).onFunctionAckReceived(ack);
                     }
-                });
+                }, true);
             }
         }
 
@@ -150,9 +150,10 @@ public abstract class AudioRxSupportFragment extends WorkerFragment
             bundle.mRxInfoCollapseToggleView.addView(toggle);
         }
 
-        static <T extends WorkerFragment & AudioFragment.RxSupport & AudioFragment.WorkerFunctionAuxSupport>
+        static <T extends WorkerFragment & AudioFragment.RxSupport>
         void onActionSelected(final T fragment, final Bundle bundle, String action, HashMap<String, WorkerFunctionView.ParameterView> views) {
-            if (action == null || !fragment.needToShowAuxView(action))
+            if (action == null || !(fragment instanceof AudioFragment.WorkerFunctionAuxSupport) ||
+                    !((AudioFragment.WorkerFunctionAuxSupport) fragment).needToShowAuxView(action))
                 Factory.hideRxAuxView(fragment);
             else
                 Factory.showRxAuxView(fragment, bundle, action, views);
@@ -167,16 +168,23 @@ public abstract class AudioRxSupportFragment extends WorkerFragment
             controller.execute(fragment.getInfoRequestFunction(), new WorkerFunction.WorkerFunctionListener() {
                 @Override
                 public void onAckReceived(WorkerFunction.Ack ack) {
+                    if (fragment.mActivityRef.get() == null)
+                        return;
+
                     final Object[] returns = fragment.getRxReturns(ack);
 
                     fragment.mActivityRef.get().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             Factory.updateRxInfoContent(fragment, bundle, returns);
+                            if (fragment instanceof AudioFragment.WorkerFunctionAuxSupport &&
+                                    ((AudioFragment.WorkerFunctionAuxSupport) fragment).getWorkerFunctionView() != null) {
+                                ((AudioFragment.WorkerFunctionAuxSupport) fragment).getWorkerFunctionView().updateParameterView();
+                            }
                         }
                     });
                 }
-            });
+            }, true);
         }
 
         static <T extends WorkerFragment & AudioFragment.RxSupport>

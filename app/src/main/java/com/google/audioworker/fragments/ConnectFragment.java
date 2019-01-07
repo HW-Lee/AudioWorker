@@ -154,7 +154,9 @@ public class ConnectFragment extends WorkerFragment implements Communicator.Comm
                 }
             });
             mPeerListAdapter.updatePeers(peers);
-            ((ArrayAdapter) ((Spinner) mActivityRef.get().findViewById(R.id.send_to_spinner)).getAdapter()).notifyDataSetChanged();
+            Spinner spinner = mActivityRef.get().findViewById(R.id.send_to_spinner);
+            if (spinner != null)
+                ((ArrayAdapter) spinner.getAdapter()).notifyDataSetChanged();
             if (mConnectedPeers.size() > 0)
                 mSelectedReceiver = mConnectedPeers.get(0);
         }

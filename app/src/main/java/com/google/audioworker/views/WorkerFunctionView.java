@@ -119,7 +119,7 @@ public class WorkerFunctionView extends LinearLayout {
         return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, getResources().getDisplayMetrics());
     }
 
-    private void updateParameterView() {
+    public void updateParameterView() {
         mParameterViewContainer.removeAllViews();
         mParameterViewContainer.invalidate();
         mParameterViews.clear();
@@ -160,8 +160,8 @@ public class WorkerFunctionView extends LinearLayout {
             mParameterViews.put(p.getAttribute(), v);
         }
 
-        mSendFunctionBtn.setText("Send Function");
-        mSendFunctionBtn.setEnabled(true);
+        mSendFunctionBtn.setText(mController.hasFunctionBeingExecuted() ? "Sending..." : "Send Function");
+        mSendFunctionBtn.setEnabled(!mController.hasFunctionBeingExecuted());
         mSendFunctionBtn.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
