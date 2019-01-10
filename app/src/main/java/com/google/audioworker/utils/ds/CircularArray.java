@@ -98,6 +98,9 @@ public class CircularArray<T> implements List<T> {
 
     @Override
     public boolean add(T t) {
+        if (size == 0)
+            return true;
+
         raw[(head + len) % size] = t;
         if (len < size) {
             len++;

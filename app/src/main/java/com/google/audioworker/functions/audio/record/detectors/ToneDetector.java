@@ -4,11 +4,14 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import android.util.SparseArray;
+import android.view.View;
 
+import com.google.audioworker.functions.audio.record.RecordStartFunction;
 import com.google.audioworker.functions.common.WorkerFunction;
 import com.google.audioworker.utils.Constants;
 import com.google.audioworker.utils.ds.CircularArray;
 import com.google.audioworker.utils.signalproc.FFT;
+import com.google.audioworker.utils.signalproc.PeakDetector;
 import com.google.audioworker.views.ToneDetectorView;
 
 import org.json.JSONArray;
@@ -16,15 +19,21 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class ToneDetector extends VisualizableDetector implements WorkerFunction.Parameterizable {
     private final static String TAG = Constants.packageTag("ToneDetector");
 
     private int mSamplingFreq;
-    private int mProcessFrameMillis = Constants.Detectors.ToneDetector.Config.PROCESS_FRAME_MILLIS;
+    private int mProcessFrameMillis;
     private CircularArray<Double> mBuffer;
-    final private ArrayList<Target> mTargets;
+
+    private class TargetStorage {
+        final ArrayList<Target> content = new ArrayList<>();
+    }
+
+    private TargetStorage mTargetStorage;
 
     public final static String INFO_KEY_SAMPLING_FREQ = "Sampling Frequency";
     public final static String INFO_KEY_FRAME_SIZE = "Process Frame Size";
@@ -35,16 +44,18 @@ public class ToneDetector extends VisualizableDetector implements WorkerFunction
     private final static String ATTR_TARGETS = Constants.Detectors.ToneDetector.PARAM_TARGET_FREQ;
     private final static String ATTR_CLEAR_TARGETS = Constants.Detectors.ToneDetector.PARAM_CLEAR_TARGETS;
 
-    private final WorkerFunction.Parameter<String> PARAM_TARGETS = new WorkerFunction.Parameter<>(ATTR_TARGETS, false, "[]");
-    private final WorkerFunction.Parameter<Boolean> PARAM_CLEAR_TARGETS = new WorkerFunction.Parameter<>(ATTR_CLEAR_TARGETS, false, false);
+    private WorkerFunction.Parameter<String> PARAM_TARGETS;
+    private WorkerFunction.Parameter<Boolean> PARAM_CLEAR_TARGETS;
 
     @Override
     public WorkerFunction.Parameter[] getParameters() {
+        initParameters();
         return new WorkerFunction.Parameter[]{PARAM_TARGETS, PARAM_CLEAR_TARGETS};
     }
 
     @Override
     public void setParameter(String attr, Object value) {
+        initParameters();
         if (!isValueAccepted(attr, value))
             return;
 
@@ -95,8 +106,11 @@ public class ToneDetector extends VisualizableDetector implements WorkerFunction
 
     @SuppressWarnings("unchecked")
     @Override
-    public ToneDetectorView getVisualizedView(Context ctx, String token, DetectorBase detector) {
-        return ToneDetectorView.createView(ctx, token, detector);
+    public <T extends View & DetectionListener> T getVisualizedView(Context ctx, String token, DetectorBase detector) {
+        if (!(detector instanceof VisualizableDetector))
+            return null;
+
+        return (T) ToneDetectorView.createView(ctx, token, (VisualizableDetector) detector);
     }
 
     public static class Target extends DetectorBase.Target {
@@ -118,20 +132,43 @@ public class ToneDetector extends VisualizableDetector implements WorkerFunction
         }
     }
 
-    public ToneDetector(DetectionListener l, String params) {
-        super(l, params);
+    @Override
+    public <T extends View & DetectionListener & DetectorBindable> void bindDetectorView(T v) {
+        if (!(v instanceof ToneDetectorView))
+            return;
+
+        ToneDetectorView view = (ToneDetectorView) v;
+        registerDetectionListener((DetectionListener) view.getDetectorViewHandler());
+    }
+
+    public ToneDetector(DetectionListener l, RecordStartFunction function, String params) {
+        super(l, function, params);
+    }
+
+    private void initParameters() {
+        mProcessFrameMillis = Constants.Detectors.ToneDetector.Config.PROCESS_FRAME_MILLIS;
+        if (mTargetStorage == null)
+            mTargetStorage = new TargetStorage();
+
+        if (PARAM_TARGETS == null)
+            PARAM_TARGETS = new WorkerFunction.Parameter<>(ATTR_TARGETS, false, "[]");
+
+        if (PARAM_CLEAR_TARGETS == null)
+            PARAM_CLEAR_TARGETS = new WorkerFunction.Parameter<>(ATTR_CLEAR_TARGETS, false, false);
+    }
+
+    private void setSamplingFreq(int fs) {
+        mSamplingFreq = fs;
         int numSamples = mProcessFrameMillis * mSamplingFreq / 1000;
         mBuffer = new CircularArray<>(numSamples);
         for (int i = 0; i < numSamples; i++)
             mBuffer.add(0.);
-        mTargets = new ArrayList<>();
-        setDetectorParameters(params);
     }
 
     @Override
     public Target getTargetById(int id) {
-        if (id < mTargets.size())
-            return mTargets.get(id);
+        if (id < mTargetStorage.content.size())
+            return mTargetStorage.content.get(id);
 
         return null;
     }
@@ -139,8 +176,8 @@ public class ToneDetector extends VisualizableDetector implements WorkerFunction
     @Override
     public void registerTarget(DetectorBase.Target target) {
         if (target instanceof Target) {
-            synchronized (mTargets) {
-                mTargets.add((Target) target);
+            synchronized (mTargetStorage.content) {
+                mTargetStorage.content.add((Target) target);
             }
         } else {
             Log.w(TAG, "The invalid registered target");
@@ -150,6 +187,9 @@ public class ToneDetector extends VisualizableDetector implements WorkerFunction
     @Override
     public void feed(List<? extends Double>[] data) {
         mBuffer.addAll(data[0]);
+
+        if (mBuffer.size() == 0)
+            return;
 
         final double[] signal = new double[mBuffer.size()];
         for (int i = 0; i < signal.length; i++)
@@ -165,20 +205,22 @@ public class ToneDetector extends VisualizableDetector implements WorkerFunction
 
     @Override
     public boolean parseParameters(String params) {
+        if (_function != null)
+            mSamplingFreq = _function.getSamplingFreq();
+
         if (params == null)
             return true;
-        try {
-            JSONObject jsonParams = new JSONObject(params);
-            mSamplingFreq = jsonParams.getInt(Constants.Detectors.ToneDetector.PARAM_FS);
-        } catch (JSONException e) {
-            e.printStackTrace();
+
+        if (!setDetectorParameters(params))
             return false;
-        }
+
+        setSamplingFreq(mSamplingFreq);
         return true;
     }
 
     @Override
     public boolean setDetectorParameters(String params) {
+        initParameters();
         if (params == null)
             return true;
 
@@ -233,8 +275,8 @@ public class ToneDetector extends VisualizableDetector implements WorkerFunction
             obj.put(INFO_KEY_UNIT, unitObj);
 
             JSONArray targets = new JSONArray();
-            synchronized (mTargets) {
-                for (Target t : mTargets)
+            synchronized (mTargetStorage.content) {
+                for (Target t : mTargetStorage.content)
                     targets.put(t.toJson());
             }
             obj.put(INFO_KEY_TARGETS, targets);
@@ -252,12 +294,18 @@ public class ToneDetector extends VisualizableDetector implements WorkerFunction
         sb.append("Handle: ").append(getHandle()).append("\n");
         sb.append("Sampling Frequency: ").append(mSamplingFreq).append(" Hz\n");
         sb.append("Process Frame Size: ").append(mProcessFrameMillis).append(" ms\n");
-        synchronized (mTargets) {
-            sb.append("Targets: ").append(mTargets.size()).append(" target(s)").append("\n");
-            for (int i = 0; i < mTargets.size(); i++)
-                sb.append("\t").append(i).append(": ").append(mTargets.get(i).toJson()).append("\n");
+        synchronized (mTargetStorage.content) {
+            sb.append("Targets: ").append(mTargetStorage.content.size()).append(" target(s)").append("\n");
+            for (int i = 0; i < mTargetStorage.content.size(); i++)
+                sb.append("\t").append(i).append(": ").append(mTargetStorage.content.get(i).toJson()).append("\n");
         }
         return sb.toString();
+    }
+
+    @Override
+    public void notifySettingChanged() {
+        if (_function != null)
+            setSamplingFreq(_function.getSamplingFreq());
     }
 
     private void processParamsIfClearTargets(JSONObject jsonParams) throws JSONException {
@@ -281,8 +329,8 @@ public class ToneDetector extends VisualizableDetector implements WorkerFunction
 
     private void syncParameters() {
         if (PARAM_CLEAR_TARGETS.getValue()) {
-            synchronized (mTargets) {
-                mTargets.clear();
+            synchronized (mTargetStorage.content) {
+                mTargetStorage.content.clear();
             }
         }
 
@@ -291,14 +339,14 @@ public class ToneDetector extends VisualizableDetector implements WorkerFunction
             for (int i = 0; i < targetFreqs.length(); i++) {
                 Target t = new Target((float) targetFreqs.getDouble(i));
                 Target dummy = null;
-                synchronized (mTargets) {
-                    for (int j = 0; j < mTargets.size(); j++) {
-                        dummy = mTargets.get(j);
+                synchronized (mTargetStorage.content) {
+                    for (int j = 0; j < mTargetStorage.content.size(); j++) {
+                        dummy = mTargetStorage.content.get(j);
                         if (dummy.targetFreq == t.targetFreq)
                             break;
                     }
                     if (dummy == null || dummy.targetFreq != t.targetFreq) {
-                        mTargets.add(t);
+                        mTargetStorage.content.add(t);
                     }
                 }
             }
@@ -308,14 +356,45 @@ public class ToneDetector extends VisualizableDetector implements WorkerFunction
     }
 
     private void process(double[] signal) {
-        synchronized (mTargets) {
-            if (mTargets.size() == 0)
+        synchronized (mTargetStorage.content) {
+            if (mTargetStorage.content.size() == 0)
                 return;
         }
 
         SparseArray<Target> targets = new SparseArray<>();
         double[] spectrum = FFT.transformAbs(signal);
 
+        ArrayList<Double> targetFreqs = new ArrayList<>();
+        for (Target t : mTargetStorage.content)
+            targetFreqs.add((double) t.targetFreq);
+
+        double minNormFactor = Math.sqrt(spectrum.length/2) / 20.0;
+        double stepFreq = (double) mSamplingFreq / spectrum.length;
+        PeakDetector.Config config = new PeakDetector.Config.Builder()
+                .withMinNormFactor(minNormFactor)
+                .withNumPoints(5)
+                .withStep(1)
+                .withStepFreq(stepFreq)
+                .addTargetFreqs(targetFreqs).build();
+
+        ArrayList<double[]> features = PeakDetector.extractFeature(Arrays.copyOf(spectrum, spectrum.length/2), config);
+        for (int i = 0; i < features.size(); i++) {
+            PeakDetector.QuadraticFeature feature = new PeakDetector.QuadraticFeature(features.get(i), config);
+            if (feature.coeffs[0] < 0 && feature.coeffs[2] > 0.5 && feature.dataDensity() > 0.4) {
+                double tfreq = targetFreqs.get(i);
+                double freq = tfreq - (feature.coeffs[1] / (2 * feature.coeffs[0])) * stepFreq;
+                double amp = Math.pow(feature.coeffs[1], 2) / (4 * feature.coeffs[0]) + feature.coeffs[2];
+
+                if (amp > 0.5 && freq > 0 &&
+                        ToneDetector.toneDetected(freq, tfreq, Constants.Detectors.ToneDetector.Config.TOL_DIFF_SEMI))
+                    targets.put(i, mTargetStorage.content.get(i));
+            }
+        }
+
         broadcastTargetDetected(targets);
+    }
+
+    static public boolean toneDetected(double freq, double tfreq, double diffInSemiTone) {
+        return Math.abs(Math.log(freq / tfreq) / Math.log(2)) * 12 < diffInSemiTone;
     }
 }

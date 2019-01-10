@@ -4,6 +4,8 @@ import android.content.Context;
 import android.util.SparseArray;
 import android.view.View;
 
+import com.google.audioworker.functions.audio.record.RecordStartFunction;
+
 import org.json.JSONObject;
 
 import java.lang.ref.WeakReference;
@@ -38,23 +40,36 @@ public abstract class DetectorBase {
     abstract public JSONObject getDetectorParameters();
     abstract public String getHandle();
     abstract public String getInfo();
+    abstract public void notifySettingChanged();
 
     protected final ArrayList<WeakReference<DetectionListener>> mListeners = new ArrayList<>();
     protected boolean isValid = true;
+    protected RecordStartFunction _function;
 
-    public DetectorBase(DetectionListener l) {
-        this(l, null);
+    public DetectorBase(DetectionListener l, RecordStartFunction function) {
+        this(l, function, null);
     }
 
-    public DetectorBase(DetectionListener l, String params) {
+    public DetectorBase(DetectionListener l, RecordStartFunction function, String params) {
         if (l == null)
             throw new IllegalArgumentException("The listener cannot be null");
+
+        _function = function;
 
         if (params != null && !parseParameters(params)) {
             isValid = false;
         }
 
         registerDetectionListener(l);
+    }
+
+    public RecordStartFunction getStartFunction() {
+        return _function;
+    }
+
+    public void updateStartFunction(RecordStartFunction function) {
+        _function = function;
+        notifySettingChanged();
     }
 
     public void registerDetectionListener(DetectionListener l) {
@@ -102,17 +117,21 @@ public abstract class DetectorBase {
     }
 
     static public DetectorBase getDetectorByClassName(String className) {
+        return getDetectorByClassName(className, null);
+    }
+
+    static public DetectorBase getDetectorByClassName(String className, RecordStartFunction function) {
         return getDetectorByClassName(className, new DetectorBase.DetectionListener() {
             @Override
             public void onTargetDetected(DetectorBase detector, SparseArray<? extends Target> targets) {
             }
-        }, null);
+        }, function, null);
     }
 
-    static public DetectorBase getDetectorByClassName(String className, DetectionListener l, String params) {
-        Class[] types = {DetectorBase.DetectionListener.class, String.class};
+    static public DetectorBase getDetectorByClassName(String className, DetectionListener l, RecordStartFunction function, String params) {
+        Class[] types = {DetectorBase.DetectionListener.class, RecordStartFunction.class, String.class};
         try {
-            Object obj = Class.forName(className).getConstructor(types).newInstance(l, params);
+            Object obj = Class.forName(className).getConstructor(types).newInstance(l, function, params);
             if (obj instanceof DetectorBase)
                 return (DetectorBase) obj;
         } catch (ClassNotFoundException | NoSuchMethodException |

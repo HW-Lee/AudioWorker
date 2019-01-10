@@ -206,7 +206,7 @@ public class VoIPController extends AudioController.AudioRxTxController {
                             public void onTargetDetected(DetectorBase detector, SparseArray<? extends DetectorBase.Target> targets) {
                                 VoIPController.this.onTargetDetected(detector.getHandle(), targets);
                             }
-                        }, params);
+                        }, mTxRunnable.getStartFunction(), params);
 
                         if (detector == null) {
                             if (l != null) {

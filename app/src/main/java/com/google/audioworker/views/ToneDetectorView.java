@@ -18,6 +18,7 @@ import android.widget.TextView;
 
 import com.google.audioworker.functions.audio.record.detectors.DetectorBase;
 import com.google.audioworker.functions.audio.record.detectors.ToneDetector;
+import com.google.audioworker.functions.audio.record.detectors.VisualizableDetector;
 import com.google.audioworker.utils.Constants;
 
 import org.json.JSONArray;
@@ -27,7 +28,7 @@ import org.json.JSONObject;
 import java.lang.ref.WeakReference;
 import java.util.Iterator;
 
-public class ToneDetectorView extends LinearLayout implements DetectorBase.DetectionListener {
+public class ToneDetectorView extends LinearLayout implements DetectorBase.DetectionListener, VisualizableDetector.DetectorBindable {
     private final static String TAG = Constants.packageTag("ToneDetectorView");
 
     private SparseArray<View> mIsDetectedOrNotViews;
@@ -56,7 +57,12 @@ public class ToneDetectorView extends LinearLayout implements DetectorBase.Detec
         mHandler = new ToneDetectorViewHandler(this);
     }
 
-    static public ToneDetectorView createView(Context ctx, String token, DetectorBase detector) {
+    @Override
+    public Handler getDetectorViewHandler() {
+        return mHandler;
+    }
+
+    static public ToneDetectorView createView(Context ctx, String token, VisualizableDetector detector) {
         if (ctx == null)
             return null;
 
@@ -211,7 +217,7 @@ public class ToneDetectorView extends LinearLayout implements DetectorBase.Detec
                 }
             }
 
-            detector.registerDetectionListener(view.mHandler);
+            detector.bindDetectorView(view);
             view.setPadding(view.getPxByDp(6), view.getPxByDp(6), view.getPxByDp(6), view.getPxByDp(6));
             return view;
         } catch (JSONException e) {

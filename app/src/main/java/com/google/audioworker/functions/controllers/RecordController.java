@@ -15,7 +15,6 @@ import com.google.audioworker.functions.audio.record.RecordInfoFunction;
 import com.google.audioworker.functions.audio.record.RecordStartFunction;
 import com.google.audioworker.functions.audio.record.RecordStopFunction;
 import com.google.audioworker.functions.audio.record.detectors.DetectorBase;
-import com.google.audioworker.functions.audio.record.detectors.ToneDetector;
 import com.google.audioworker.functions.common.WorkerFunction;
 import com.google.audioworker.utils.Constants;
 import com.google.audioworker.utils.signalproc.WavUtils;
@@ -114,6 +113,7 @@ public class RecordController extends AudioController.AudioTxController {
                     mMainRunningTask.registerDataListener(dl);
                 for (DetectorBase detector : mDetectors.values())
                     mMainRunningTask.registerDetector(detector);
+
                 mPoolExecuter.execute(mMainRunningTask);
                 mPoolExecuter.execute(mMainRunningTask.slave);
             } else if (function instanceof RecordStopFunction) {
@@ -160,12 +160,12 @@ public class RecordController extends AudioController.AudioTxController {
                             className = findings[0];
 
                         String params = processDetectorParams(mMainRunningTask, className, ((RecordDetectFunction) function).getDetectorParams());
-                        DetectorBase detector = ToneDetector.getDetectorByClassName(className, new DetectorBase.DetectionListener() {
+                        DetectorBase detector = DetectorBase.getDetectorByClassName(className, new DetectorBase.DetectionListener() {
                             @Override
                             public void onTargetDetected(DetectorBase detector, SparseArray<? extends DetectorBase.Target> targets) {
                                 RecordController.this.onTargetDetected(detector.getHandle(), targets);
                             }
-                        }, params);
+                        }, mMainRunningTask.getStartFunction(), params);
 
                         if (detector == null) {
                             notifyFunctionHasBeenExecuted(function);
@@ -317,15 +317,6 @@ public class RecordController extends AudioController.AudioTxController {
     static public String processDetectorParams(RecordRunnable runnable, String className, String params) {
         if (params == null)
             params = "{}";
-        if (className.equals(ToneDetector.class.getName())) {
-            try {
-                JSONObject obj = new JSONObject(params);
-                obj.put(Constants.Detectors.ToneDetector.PARAM_FS, runnable.mStartFunction.getSamplingFreq());
-                params = obj.toString();
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-        }
 
         return params;
     }
@@ -516,6 +507,9 @@ public class RecordController extends AudioController.AudioTxController {
         }
 
         public void registerDetector(DetectorBase detector) {
+            if (detector.getStartFunction() != mStartFunction)
+                detector.updateStartFunction(mStartFunction);
+
             synchronized (mDetectors) {
                 mDetectors.add(detector);
             }
