@@ -41,6 +41,7 @@ public abstract class DetectorBase {
     abstract public String getHandle();
     abstract public String getInfo();
     abstract public void notifySettingChanged();
+    abstract public void release();
 
     protected final ArrayList<WeakReference<DetectionListener>> mListeners = new ArrayList<>();
     protected boolean isValid = true;
