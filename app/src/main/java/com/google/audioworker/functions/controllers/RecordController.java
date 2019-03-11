@@ -15,6 +15,7 @@ import com.google.audioworker.functions.audio.record.RecordInfoFunction;
 import com.google.audioworker.functions.audio.record.RecordStartFunction;
 import com.google.audioworker.functions.audio.record.RecordStopFunction;
 import com.google.audioworker.functions.audio.record.detectors.DetectorBase;
+import com.google.audioworker.functions.commands.CommandHelper;
 import com.google.audioworker.functions.common.WorkerFunction;
 import com.google.audioworker.utils.Constants;
 import com.google.audioworker.utils.signalproc.WavUtils;
@@ -24,7 +25,9 @@ import org.json.JSONObject;
 
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -137,6 +140,30 @@ public class RecordController extends AudioController.AudioTxController {
                     returns.addAll(RecordController.getRecordInfoAckStrings(mMainRunningTask.getStartFunction(), mDetectors));
                     ack.setReturns(returns);
                 }
+
+                if (((RecordInfoFunction) function).getFileName().length() > 0) {
+                    String path = new File(getDataDir(), ((RecordInfoFunction) function).getFileName()).getAbsolutePath();
+                    ArrayList<String> returnStrs = new ArrayList<>();
+                    StringBuilder infoStr = new StringBuilder();
+                    for (Object obj : ack.getReturns())
+                        returnStrs.add(obj.toString());
+                    if (returnStrs.size() > 0) {
+                        infoStr.append("[");
+                        infoStr.append(String.join(",", returnStrs));
+                        infoStr.append("]\n");
+                    }
+                    try {
+                        PrintWriter pw = new PrintWriter(path);
+                        pw.write(CommandHelper.Command.genId() + "\n");
+                        pw.write(infoStr.toString());
+                        pw.close();
+                        Log.d(TAG, "successfully dump the info to " + path);
+                    } catch (FileNotFoundException e) {
+                        Log.d(TAG, "failed to dump the info to " + path);
+                        e.printStackTrace();
+                    }
+                }
+
                 ack.setReturnCode(0);
                 ack.setDescription("info returned");
                 l.onAckReceived(ack);

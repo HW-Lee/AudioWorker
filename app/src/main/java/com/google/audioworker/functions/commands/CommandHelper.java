@@ -56,7 +56,7 @@ public class CommandHelper {
         public Command(String s) throws JSONException {
             super(s);
             if (!has(Constants.MessageSpecification.COMMAND_ID)) {
-                put(Constants.MessageSpecification.COMMAND_ID, genId());
+                put(Constants.MessageSpecification.COMMAND_ID, Command.genId());
             }
         }
 
@@ -70,7 +70,7 @@ public class CommandHelper {
         }
 
         @SuppressLint("MissingPermission")
-        private String genId() {
+        static public String genId() {
             return Build.getSerial() + "::" + System.currentTimeMillis();
         }
     }

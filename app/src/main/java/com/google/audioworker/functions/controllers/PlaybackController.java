@@ -13,6 +13,7 @@ import com.google.audioworker.functions.audio.playback.PlaybackFunction;
 import com.google.audioworker.functions.audio.playback.PlaybackInfoFunction;
 import com.google.audioworker.functions.audio.playback.PlaybackStartFunction;
 import com.google.audioworker.functions.audio.playback.PlaybackStopFunction;
+import com.google.audioworker.functions.commands.CommandHelper;
 import com.google.audioworker.functions.common.WorkerFunction;
 import com.google.audioworker.utils.Constants;
 import com.google.audioworker.utils.signalproc.AudioConverter;
@@ -24,7 +25,9 @@ import org.json.JSONObject;
 
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -563,7 +566,22 @@ public class PlaybackController extends AudioController.AudioRxController {
                     functions.add(task.mStartFunction);
                 }
             }
-            returns.add(PlaybackController.getPlaybackInfoAckString(functions));
+            String infoStr = PlaybackController.getPlaybackInfoAckString(functions);
+            returns.add(infoStr);
+
+            if (mFunction.getFileName().length() > 0) {
+                String path = new File(getDataDir(), mFunction.getFileName()).getAbsolutePath();
+                try {
+                    PrintWriter pw = new PrintWriter(path);
+                    pw.write(CommandHelper.Command.genId() + "\n");
+                    pw.write(infoStr + "\n");
+                    pw.close();
+                    Log.d(TAG, "successfully dump the info to " + path);
+                } catch (FileNotFoundException e) {
+                    Log.d(TAG, "failed to dump the info to " + path);
+                    e.printStackTrace();
+                }
+            }
 
             WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(mFunction);
             ack.setReturnCode(0);

@@ -22,10 +22,13 @@ import com.google.audioworker.functions.audio.voip.VoIPInfoFunction;
 import com.google.audioworker.functions.audio.voip.VoIPStartFunction;
 import com.google.audioworker.functions.audio.voip.VoIPStopFunction;
 import com.google.audioworker.functions.audio.voip.VoIPTxDumpFunction;
+import com.google.audioworker.functions.commands.CommandHelper;
 import com.google.audioworker.functions.common.WorkerFunction;
 import com.google.audioworker.utils.Constants;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -282,6 +285,30 @@ public class VoIPController extends AudioController.AudioRxTxController {
                     returns.addAll(RecordController.getRecordInfoAckStrings(mTxRunnable.getStartFunction(), mDetectors));
                     ack.setReturns(returns);
                 }
+
+                if (((VoIPInfoFunction) function).getFileName().length() > 0) {
+                    String path = new File(getDataDir(), ((VoIPInfoFunction) function).getFileName()).getAbsolutePath();
+                    ArrayList<String> returnStrs = new ArrayList<>();
+                    StringBuilder infoStr = new StringBuilder();
+                    for (Object obj : ack.getReturns())
+                        returnStrs.add(obj.toString());
+                    if (returnStrs.size() > 0) {
+                        infoStr.append("[");
+                        infoStr.append(String.join(",", returnStrs));
+                        infoStr.append("]\n");
+                    }
+                    try {
+                        PrintWriter pw = new PrintWriter(path);
+                        pw.write(CommandHelper.Command.genId() + "\n");
+                        pw.write(infoStr.toString());
+                        pw.close();
+                        Log.d(TAG, "successfully dump the info to " + path);
+                    } catch (FileNotFoundException e) {
+                        Log.d(TAG, "failed to dump the info to " + path);
+                        e.printStackTrace();
+                    }
+                }
+
                 ack.setReturnCode(0);
                 ack.setDescription("info returned");
                 l.onAckReceived(ack);
