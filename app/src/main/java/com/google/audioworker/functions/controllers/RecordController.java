@@ -268,7 +268,9 @@ public class RecordController extends AudioController.AudioTxController {
                 }
 
                 pushFunctionBeingExecuted(function);
-                String path = new File(getDataDir(), ((RecordDumpFunction) function).getFileName()).getAbsolutePath();
+                String path = ((RecordDumpFunction) function).getFileName();
+                if (!path.startsWith("/"))
+                    path = new File(getDataDir(), path).getAbsolutePath();
                 mMainRunningTask.dumpBufferTo(path, function);
             }
         } else {
@@ -459,7 +461,7 @@ public class RecordController extends AudioController.AudioTxController {
             int minBuffsize = AudioRecord.getMinBufferSize(
                     mStartFunction.getSamplingFreq(), parseChannelMask(mStartFunction.getNumChannels()), parseEncodingFormat(mStartFunction.getBitWidth()));
             sharedBuffer = new RecordSharedBuffer(minBuffsize);
-            dumpBufferSize = mStartFunction.getBitWidth() / 8 * mStartFunction.getNumChannels() * mStartFunction.getSamplingFreq() * mStartFunction.getDumpBufferSizeMs() / 1000;
+            dumpBufferSize = (int) (mStartFunction.getBitWidth() / 8. * mStartFunction.getNumChannels() * mStartFunction.getSamplingFreq() * mStartFunction.getDumpBufferSizeMs() / 1000.);
             dumpBuffer = new RecordCircularBuffer(dumpBufferSize);
             needPush = new AtomicBoolean(true);
             mDetectors = new ArrayList<>();
