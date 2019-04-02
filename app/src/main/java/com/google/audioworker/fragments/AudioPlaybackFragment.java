@@ -131,15 +131,26 @@ public class AudioPlaybackFragment extends AudioRxSupportFragment implements Con
         if (mActivityRef.get() == null)
             return;
 
-        ControllerBase controller = mActivityRef.get().getMainController().getSubControllerByName(getControllerName());
-        TextView statusView = mActivityRef.get().findViewById(R.id.playback_status);
+        final ControllerBase controller = mActivityRef.get().getMainController().getSubControllerByName(getControllerName());
+        final TextView statusView = mActivityRef.get().findViewById(R.id.playback_status);
         if (statusView == null)
             return;
 
-        if (controller instanceof AudioController.RxSupport && ((AudioController.RxSupport) controller).isRxRunning())
-            statusView.setText("Status: running (" + ((AudioController.RxSupport) controller).getNumRxRunning() + " tracks)");
-        else
-            statusView.setText("Status: idle");
+        if (controller instanceof AudioController.RxSupport && ((AudioController.RxSupport) controller).isRxRunning()) {
+            mActivityRef.get().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    statusView.setText("Status: running (" + ((AudioController.RxSupport) controller).getNumRxRunning() + " tracks)");
+                }
+            });
+        } else {
+            mActivityRef.get().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    statusView.setText("Status: idle");
+                }
+            });
+        }
     }
 
     @Override

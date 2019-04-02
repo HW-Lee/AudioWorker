@@ -131,15 +131,25 @@ public class AudioRecordFragment extends AudioTxSupportFragment implements Contr
             return;
 
         ControllerBase controller = mActivityRef.get().getMainController().getSubControllerByName(getControllerName());
-        TextView v = mActivityRef.get().findViewById(R.id.record_status);
+        final TextView v = mActivityRef.get().findViewById(R.id.record_status);
         if (v == null)
             return;
 
         if (controller instanceof AudioController.TxSupport && ((AudioController.TxSupport) controller).isTxRunning()) {
-            v.setText("Status: running");
+            mActivityRef.get().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    v.setText("Status: running");
+                }
+            });
         } else {
-            v.setText("Status: idle");
-            getTxDataView().reset();
+            mActivityRef.get().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    v.setText("Status: running");
+                    getTxDataView().reset();
+                }
+            });
         }
     }
 

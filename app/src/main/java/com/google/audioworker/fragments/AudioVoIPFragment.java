@@ -175,34 +175,59 @@ public class AudioVoIPFragment extends AudioRxTxSupportFragment implements Contr
             return;
 
         ControllerBase controller = mActivityRef.get().getMainController().getSubControllerByName(getControllerName());
-        TextView statusView = mActivityRef.get().findViewById(R.id.voip_tx_status);
-        if (statusView == null)
+        final TextView statusTxView = mActivityRef.get().findViewById(R.id.voip_tx_status);
+        if (statusTxView == null)
             return;
 
         if (controller instanceof AudioController.TxSupport && ((AudioController.TxSupport) controller).isTxRunning()) {
-            statusView.setText("VoIP Tx: running");
+            mActivityRef.get().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    statusTxView.setText("VoIP Tx: running");
+                }
+            });
         } else {
-            statusView.setText("VoIP Tx: idle");
-            if (getTxDataView() != null)
-                getTxDataView().reset();
+            mActivityRef.get().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    statusTxView.setText("VoIP Tx: idle");
+                    if (getTxDataView() != null)
+                        getTxDataView().reset();
+                }
+            });
         }
 
-        statusView = mActivityRef.get().findViewById(R.id.voip_rx_status);
-        if (statusView == null)
+        final TextView statusRxView = mActivityRef.get().findViewById(R.id.voip_rx_status);
+        if (statusRxView == null)
             return;
 
         if (controller instanceof AudioController.RxSupport && ((AudioController.RxSupport) controller).isRxRunning()) {
-            statusView.setText("VoIP Rx: running");
+            mActivityRef.get().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    statusRxView.setText("VoIP Rx: running");
+                }
+            });
         } else {
-            statusView.setText("VoIP Rx: idle");
+            mActivityRef.get().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    statusRxView.setText("VoIP Rx: idle");
+                }
+            });
         }
 
-        statusView = mActivityRef.get().findViewById(R.id.voip_phone_state);
-        if (statusView == null)
+        final TextView statusPhoneStateView = mActivityRef.get().findViewById(R.id.voip_phone_state);
+        if (statusPhoneStateView == null)
             return;
 
-        int mode = ((AudioManager) mActivityRef.get().getSystemService(Context.AUDIO_SERVICE)).getMode();
-        statusView.setText("Phone state: " + mode);
+        final int mode = ((AudioManager) mActivityRef.get().getSystemService(Context.AUDIO_SERVICE)).getMode();
+        mActivityRef.get().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                statusPhoneStateView.setText("Phone state: " + mode);
+            }
+        });
     }
 
     @Override
