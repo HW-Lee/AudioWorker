@@ -203,6 +203,11 @@ public class VoIPController extends AudioController.AudioRxTxController {
                 switch (((VoIPDetectFunction) function).getOperationType()) {
                     case RecordDetectFunction.OP_REGISTER: {
                         String className = ((VoIPDetectFunction) function).getDetectorClassName();
+                        String[] findings = Constants.Detectors.getDetectorClassNamesByTag(className);
+
+                        if (findings.length > 0)
+                            className = findings[0];
+
                         String params = RecordController.processDetectorParams(mTxRunnable, className, ((VoIPDetectFunction) function).getDetectorParams());
                         DetectorBase detector = DetectorBase.getDetectorByClassName(className, new DetectorBase.DetectionListener() {
                             @Override
