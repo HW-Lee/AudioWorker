@@ -22,11 +22,11 @@ public class BufferLogger extends LoggerBase<LoggerBase.LogUnit> {
 
     @Override
     protected boolean saveLog(List<String> logs) {
-        boolean sucess;
+        boolean success;
         synchronized (mLogBuffer) {
-            sucess = mLogBuffer.addAll(logs);
+            success = mLogBuffer.addAll(logs);
         }
-        return sucess;
+        return success;
     }
 
     public String[] getDump() {
