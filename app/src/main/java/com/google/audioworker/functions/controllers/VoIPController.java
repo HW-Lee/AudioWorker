@@ -26,6 +26,9 @@ import com.google.audioworker.functions.commands.CommandHelper;
 import com.google.audioworker.functions.common.WorkerFunction;
 import com.google.audioworker.utils.Constants;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
@@ -135,8 +138,14 @@ public class VoIPController extends AudioController.AudioRxTxController {
                 mRxRunnable = new PlaybackController.PlaybackRunnable(rxStartFunction, listener, this, attr);
                 mTxRunnable = new RecordController.RecordRunnable(txStartFunction, listener, this);
                 mTxRunnable.setRecordRunner(new RecordController.RecordInternalRunnable(mTxRunnable, MediaRecorder.AudioSource.VOICE_COMMUNICATION));
+
+                AudioManager audioManager = (AudioManager) mContextRef.get().getSystemService(Context.AUDIO_SERVICE);
                 if (mContextRef.get() != null) {
-                    ((AudioManager) mContextRef.get().getSystemService(Context.AUDIO_SERVICE)).setMode(AudioManager.MODE_IN_COMMUNICATION);
+                    audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+                }
+
+                if (((VoIPStartFunction) function).switchSpeakerPhone() != audioManager.isSpeakerphoneOn()) {
+                    audioManager.setSpeakerphoneOn(((VoIPStartFunction) function).switchSpeakerPhone());
                 }
                 for (RecordController.RecordRunnable.RecordDataListener dl : mDataListeners)
                     mTxRunnable.registerDataListener(dl);
@@ -177,6 +186,12 @@ public class VoIPController extends AudioController.AudioRxTxController {
                     WorkerFunction f = mRxRunnable.setSignalConfig(((VoIPConfigFunction) function).getRxAmplitude(), ((VoIPConfigFunction) function).getTargetFrequency());
                     ArrayList<Object> returns = new ArrayList<>();
                     returns.add(f.toString());
+
+                    AudioManager audioManager = (AudioManager) mContextRef.get().getSystemService(Context.AUDIO_SERVICE);
+                    if (((VoIPConfigFunction) function).switchSpeakerPhone() != audioManager.isSpeakerphoneOn()) {
+                        audioManager.setSpeakerphoneOn(((VoIPConfigFunction) function).switchSpeakerPhone());
+                        returns.add("change to " + (audioManager.isSpeakerphoneOn() ? "speakerphone" : "default"));
+                    }
 
                     ack.setReturnCode(0);
                     ack.setDescription("VoIP config sent");
@@ -286,7 +301,16 @@ public class VoIPController extends AudioController.AudioRxTxController {
                     ArrayList<PlaybackStartFunction> functions = new ArrayList<>();
                     functions.add(mRxRunnable.getStartFunction());
 
-                    returns.add(PlaybackController.getPlaybackInfoAckString(functions));
+                    String rxInfoStr = PlaybackController.getPlaybackInfoAckString(functions);
+                    AudioManager audioManager = (AudioManager) mContextRef.get().getSystemService(Context.AUDIO_SERVICE);
+                    try {
+                        JSONObject rxInfoObj = new JSONObject(rxInfoStr);
+                        rxInfoObj.put("use-speakerphone", audioManager.isSpeakerphoneOn());
+                        rxInfoStr = rxInfoObj.toString();
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    returns.add(rxInfoStr);
                     returns.addAll(RecordController.getRecordInfoAckStrings(mTxRunnable.getStartFunction(), mDetectors));
                     ack.setReturns(returns);
                 }

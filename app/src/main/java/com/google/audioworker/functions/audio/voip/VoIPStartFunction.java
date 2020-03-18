@@ -10,6 +10,7 @@ public class VoIPStartFunction extends VoIPFunction {
     private final static String ATTR_RX_FS = "rx-sampling-freq";
     private final static String ATTR_RX_NCH = "rx-num-channels";
     private final static String ATTR_RX_BPS = "rx-pcm-bit-width";
+    private final static String ATTR_RX_USE_SPKR = "rx-use-spkr";
     private final static String ATTR_TX_FS = "tx-sampling-freq";
     private final static String ATTR_TX_NCH = "tx-num-channels";
     private final static String ATTR_TX_BPS = "tx-pcm-bit-width";
@@ -21,6 +22,7 @@ public class VoIPStartFunction extends VoIPFunction {
             ATTR_RX_FS,
             ATTR_RX_NCH,
             ATTR_RX_BPS,
+            ATTR_RX_USE_SPKR,
             ATTR_TX_FS,
             ATTR_TX_NCH,
             ATTR_TX_BPS,
@@ -32,6 +34,7 @@ public class VoIPStartFunction extends VoIPFunction {
     private Parameter<Integer> PARAM_RX_FS = new Parameter<>(ATTR_RX_FS, false, Constants.VoIPDefaultConfig.Rx.SAMPLINGFREQ);
     private Parameter<Integer> PARAM_RX_NCH = new Parameter<>(ATTR_RX_NCH, false, Constants.VoIPDefaultConfig.Rx.NUMCHANNELS);
     private Parameter<Integer> PARAM_RX_BPS = new Parameter<>(ATTR_RX_BPS, false, Constants.VoIPDefaultConfig.Rx.BITPERSAMPLE);
+    private Parameter<Boolean> PARAM_RX_USE_SPKR = new Parameter<>(ATTR_RX_USE_SPKR, false, false);
     private Parameter<Integer> PARAM_TX_FS = new Parameter<>(ATTR_TX_FS, false, Constants.VoIPDefaultConfig.Tx.SAMPLINGFREQ);
     private Parameter<Integer> PARAM_TX_NCH = new Parameter<>(ATTR_TX_NCH, false, Constants.VoIPDefaultConfig.Tx.NUMCHANNELS);
     private Parameter<Integer> PARAM_TX_BPS = new Parameter<>(ATTR_TX_BPS, false, Constants.VoIPDefaultConfig.Tx.BITPERSAMPLE);
@@ -42,6 +45,7 @@ public class VoIPStartFunction extends VoIPFunction {
             PARAM_RX_FS,
             PARAM_RX_NCH,
             PARAM_RX_BPS,
+            PARAM_RX_USE_SPKR,
             PARAM_TX_FS,
             PARAM_TX_NCH,
             PARAM_TX_BPS,
@@ -72,6 +76,8 @@ public class VoIPStartFunction extends VoIPFunction {
                     return checkBitPerSample((int) value);
                 case ATTR_TX_DUMP_BUFFER_SIZE_MS:
                     return (int) value >= 0;
+                case ATTR_RX_USE_SPKR:
+                    return true;
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -84,8 +90,16 @@ public class VoIPStartFunction extends VoIPFunction {
     public void setParameter(String attr, Object value) {
         if (isValueAccepted(attr, value)) {
             int idx = toIndex(attr);
-            if (idx >= 0)
-                PARAMS[idx].setValue(value);
+            if (idx < 0)
+                return;
+
+            switch(attr) {
+                case ATTR_RX_USE_SPKR:
+                    PARAMS[idx].setValue(Boolean.valueOf(value.toString()));
+                    return;
+                default:
+                    PARAMS[idx].setValue(value);
+            }
         }
     }
 
@@ -157,6 +171,10 @@ public class VoIPStartFunction extends VoIPFunction {
 
     public int getRxBitWidth() {
         return PARAM_RX_BPS.getValue();
+    }
+
+    public boolean switchSpeakerPhone() {
+        return PARAM_RX_USE_SPKR.getValue();
     }
 
     public int getTxSamplingFreq() {
