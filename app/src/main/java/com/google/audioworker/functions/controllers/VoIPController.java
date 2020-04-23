@@ -139,13 +139,21 @@ public class VoIPController extends AudioController.AudioRxTxController {
                 mTxRunnable = new RecordController.RecordRunnable(txStartFunction, listener, this);
                 mTxRunnable.setRecordRunner(new RecordController.RecordInternalRunnable(mTxRunnable, MediaRecorder.AudioSource.VOICE_COMMUNICATION));
 
-                AudioManager audioManager = (AudioManager) mContextRef.get().getSystemService(Context.AUDIO_SERVICE);
                 if (mContextRef.get() != null) {
+                    AudioManager audioManager = (AudioManager) mContextRef.get().getSystemService(Context.AUDIO_SERVICE);
                     audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
-                }
 
-                if (((VoIPStartFunction) function).switchSpeakerPhone() != audioManager.isSpeakerphoneOn()) {
-                    audioManager.setSpeakerphoneOn(((VoIPStartFunction) function).switchSpeakerPhone());
+                    if (((VoIPStartFunction) function).bluetoothScoOn()) {
+                        audioManager.setBluetoothScoOn(true);
+                    }
+
+                    if (((VoIPStartFunction) function).switchSpeakerPhone() != audioManager.isSpeakerphoneOn()) {
+                        audioManager.setSpeakerphoneOn(((VoIPStartFunction) function).switchSpeakerPhone());
+                    }
+
+                    if (!audioManager.isSpeakerphoneOn() && audioManager.isBluetoothScoOn()) {
+                        audioManager.startBluetoothSco();
+                    }
                 }
                 for (RecordController.RecordRunnable.RecordDataListener dl : mDataListeners)
                     mTxRunnable.registerDataListener(dl);
@@ -527,7 +535,12 @@ public class VoIPController extends AudioController.AudioRxTxController {
                     oack.setDescription("VoIP unexpected failed");
 
                 if (mContextRef.get() != null) {
-                    ((AudioManager) mContextRef.get().getSystemService(Context.AUDIO_SERVICE)).setMode(AudioManager.MODE_NORMAL);
+                    AudioManager audioManager = (AudioManager) mContextRef.get().getSystemService(Context.AUDIO_SERVICE);
+                    audioManager.setMode(AudioManager.MODE_NORMAL);
+                    if (audioManager.isBluetoothScoOn()) {
+                        audioManager.stopBluetoothSco();
+                        audioManager.setBluetoothScoOn(false);
+                    }
                 }
 
                 mListener.onAckReceived(oack);

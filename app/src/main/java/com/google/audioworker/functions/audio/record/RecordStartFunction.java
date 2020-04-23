@@ -9,23 +9,27 @@ public class RecordStartFunction extends RecordFunction {
     private final static String ATTR_NCH = "num-channels";
     private final static String ATTR_BPS = "pcm-bit-width";
     private final static String ATTR_DUMP_BUFFER_SIZE_MS = "dump-buffer-ms";
+    private final static String ATTR_BTSCO_ON = "btsco-on";
 
     private final static String[] ATTRS = {
             ATTR_FS,
             ATTR_NCH,
             ATTR_BPS,
-            ATTR_DUMP_BUFFER_SIZE_MS
+            ATTR_DUMP_BUFFER_SIZE_MS,
+            ATTR_BTSCO_ON
     };
 
     private Parameter<Integer> PARAM_FS = new Parameter<>(ATTR_FS, false, Constants.RecordDefaultConfig.SAMPLINGFREQ);
     private Parameter<Integer> PARAM_NCH = new Parameter<>(ATTR_NCH, false, Constants.RecordDefaultConfig.NUMCHANNELS);
     private Parameter<Integer> PARAM_BPS = new Parameter<>(ATTR_BPS, false, Constants.RecordDefaultConfig.BITPERSAMPLE);
     private Parameter<Integer> PARAM_DUMP_BUFFER_SIZE_MS = new Parameter<>(ATTR_DUMP_BUFFER_SIZE_MS, false, Constants.RecordDefaultConfig.BUFFERSIZEMILLIS);
+    private Parameter<Boolean> PARAM_BTSCO_ON = new Parameter<>(ATTR_BTSCO_ON, false, true);
     private Parameter[] PARAMS = {
             PARAM_FS,
             PARAM_NCH,
             PARAM_BPS,
-            PARAM_DUMP_BUFFER_SIZE_MS
+            PARAM_DUMP_BUFFER_SIZE_MS,
+            PARAM_BTSCO_ON
     };
 
     @Override
@@ -45,6 +49,8 @@ public class RecordStartFunction extends RecordFunction {
                     return checkBitPerSample((int) value);
                 case ATTR_DUMP_BUFFER_SIZE_MS:
                     return (int) value >= 0;
+                case ATTR_BTSCO_ON:
+                    return true;
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -57,8 +63,18 @@ public class RecordStartFunction extends RecordFunction {
     public void setParameter(String attr, Object value) {
         if (isValueAccepted(attr, value)) {
             int idx = toIndex(attr);
-            if (idx >= 0)
-                PARAMS[idx].setValue(value);
+            if (idx < 0)
+                return;
+
+            switch(attr) {
+                case ATTR_BTSCO_ON:
+                    PARAMS[idx].setValue(
+                            "true".equals(value.toString()) | "1".equals(value.toString())
+                    );
+                    return;
+                default:
+                    PARAMS[idx].setValue(value);
+            }
         }
     }
 
@@ -134,5 +150,9 @@ public class RecordStartFunction extends RecordFunction {
 
     public void setDumpBufferSizeMs(int ms) {
         setParameter(ATTR_DUMP_BUFFER_SIZE_MS, ms);
+    }
+
+    public boolean bluetoothScoOn() {
+        return PARAM_BTSCO_ON.getValue();
     }
 }

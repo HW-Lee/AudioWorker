@@ -2,6 +2,7 @@ package com.google.audioworker.functions.controllers;
 
 import android.content.Context;
 import android.media.AudioFormat;
+import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.support.annotation.NonNull;
@@ -28,6 +29,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -43,6 +45,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class RecordController extends AudioController.AudioTxController {
     private final static String TAG = Constants.packageTag("RecordController");
 
+    private WeakReference<Context> mContextRef;
     private HashMap<String, DetectorBase> mDetectors;
     private HashMap<String, DetectorBase.DetectionListener> mDetectionListeners;
     private final ArrayList<RecordRunnable.RecordDataListener> mDataListeners = new ArrayList<>();
@@ -52,6 +55,7 @@ public class RecordController extends AudioController.AudioTxController {
     @Override
     public void activate(Context ctx) {
         mDetectors = new HashMap<>();
+        mContextRef = new WeakReference<>(ctx);
         mDetectionListeners = new HashMap<>();
         mPoolExecuter = new ThreadPoolExecutor(
                 Constants.Controllers.Config.Common.MAX_THREAD_COUNT,
@@ -777,6 +781,15 @@ public class RecordController extends AudioController.AudioTxController {
                     .setAudioSource(inputSource)
                     .setBufferSizeInBytes(minBuffsize).build();
 
+            if (master.mController instanceof RecordController &&
+                ((RecordController) master.mController).mContextRef.get() != null) {
+                AudioManager audioManager =
+                        (AudioManager) ((RecordController) master.mController).mContextRef.get().getSystemService(Context.AUDIO_SERVICE);
+                audioManager.setBluetoothScoOn(master.mStartFunction.bluetoothScoOn());
+                if (audioManager.isBluetoothScoOn()) {
+                    audioManager.startBluetoothSco();
+                }
+            }
             record.startRecording();
             byte[] buffer = new byte[master.sharedBuffer.raw.length];
 
@@ -790,6 +803,16 @@ public class RecordController extends AudioController.AudioTxController {
             }
             record.stop();
             record.release();
+
+            if (master.mController instanceof RecordController &&
+                    ((RecordController) master.mController).mContextRef.get() != null) {
+                AudioManager audioManager =
+                        (AudioManager) ((RecordController) master.mController).mContextRef.get().getSystemService(Context.AUDIO_SERVICE);
+                if (audioManager.isBluetoothScoOn()) {
+                    audioManager.setBluetoothScoOn(false);
+                    audioManager.stopBluetoothSco();
+                }
+            }
             Log.d(TAG, "RecordInternalRunnable: terminated");
         }
     }

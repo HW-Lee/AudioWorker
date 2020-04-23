@@ -89,7 +89,9 @@ public class PlaybackStartFunction extends PlaybackFunction {
                     PARAM_AMPLITUDE.setValue(Float.valueOf(value.toString()));
                     return;
                 case ATTR_PLAYBACK_USE_LL:
-                    PARAM_PLAYBACK_USE_LL.setValue(Boolean.valueOf(value.toString()));
+                    PARAM_PLAYBACK_USE_LL.setValue(
+                            "true".equals(value.toString()) | "1".equals(value.toString())
+                    );
                     return;
                 default:
                     int idx = toIndex(attr);
