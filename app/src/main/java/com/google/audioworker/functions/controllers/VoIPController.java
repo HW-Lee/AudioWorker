@@ -541,6 +541,10 @@ public class VoIPController extends AudioController.AudioRxTxController {
                         audioManager.stopBluetoothSco();
                         audioManager.setBluetoothScoOn(false);
                     }
+
+                    if (audioManager.isSpeakerphoneOn()) {
+                        audioManager.setSpeakerphoneOn(false);
+                    }
                 }
 
                 mListener.onAckReceived(oack);
