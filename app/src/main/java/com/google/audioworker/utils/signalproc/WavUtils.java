@@ -22,9 +22,9 @@ public class WavUtils {
         }
 
         public static class Builder {
-            private int samplingRate = Constants.PlaybackDefaultConfig.SAMPLINGFREQ;
-            private int numChannels = Constants.PlaybackDefaultConfig.NUMCHANNELS;
-            private int bitPerSample = Constants.PlaybackDefaultConfig.BITPERSAMPLE;
+            private int samplingRate = Constants.PlaybackDefaultConfig.SAMPLING_FREQ;
+            private int numChannels = Constants.PlaybackDefaultConfig.NUM_CHANNELS;
+            private int bitPerSample = Constants.PlaybackDefaultConfig.BIT_PER_SAMPLE;
             private int durationMillis = Constants.Controllers.Config.Playback.TONE_FILE_DURATION_SECONDS;
 
             public Builder withSamplingFrequency(int freq) {

@@ -33,15 +33,15 @@ public class VoIPStartFunction extends VoIPFunction {
 
     private Parameter<Float> PARAM_TARGET_FREQ = new Parameter<>(ATTR_TARGET_FREQ, true, -1f);
     private Parameter<Float> PARAM_RX_AMP = new Parameter<>(ATTR_RX_AMP, false, Constants.VoIPDefaultConfig.Rx.AMPLITUDE);
-    private Parameter<Integer> PARAM_RX_FS = new Parameter<>(ATTR_RX_FS, false, Constants.VoIPDefaultConfig.Rx.SAMPLINGFREQ);
-    private Parameter<Integer> PARAM_RX_NCH = new Parameter<>(ATTR_RX_NCH, false, Constants.VoIPDefaultConfig.Rx.NUMCHANNELS);
-    private Parameter<Integer> PARAM_RX_BPS = new Parameter<>(ATTR_RX_BPS, false, Constants.VoIPDefaultConfig.Rx.BITPERSAMPLE);
+    private Parameter<Integer> PARAM_RX_FS = new Parameter<>(ATTR_RX_FS, false, Constants.VoIPDefaultConfig.Rx.SAMPLING_FREQ);
+    private Parameter<Integer> PARAM_RX_NCH = new Parameter<>(ATTR_RX_NCH, false, Constants.VoIPDefaultConfig.Rx.NUM_CHANNELS);
+    private Parameter<Integer> PARAM_RX_BPS = new Parameter<>(ATTR_RX_BPS, false, Constants.VoIPDefaultConfig.Rx.BIT_PER_SAMPLE);
     private Parameter<Boolean> PARAM_RX_USE_SPKR = new Parameter<>(ATTR_RX_USE_SPKR, false, false);
     private Parameter<Boolean> PARAM_BTSCO_ON = new Parameter<>(ATTR_BTSCO_ON, false, true);
-    private Parameter<Integer> PARAM_TX_FS = new Parameter<>(ATTR_TX_FS, false, Constants.VoIPDefaultConfig.Tx.SAMPLINGFREQ);
-    private Parameter<Integer> PARAM_TX_NCH = new Parameter<>(ATTR_TX_NCH, false, Constants.VoIPDefaultConfig.Tx.NUMCHANNELS);
-    private Parameter<Integer> PARAM_TX_BPS = new Parameter<>(ATTR_TX_BPS, false, Constants.VoIPDefaultConfig.Tx.BITPERSAMPLE);
-    private Parameter<Integer> PARAM_TX_DUMP_BUFFER_SIZE_MS = new Parameter<>(ATTR_TX_DUMP_BUFFER_SIZE_MS, false, Constants.VoIPDefaultConfig.Tx.BUFFERSIZEMILLIS);
+    private Parameter<Integer> PARAM_TX_FS = new Parameter<>(ATTR_TX_FS, false, Constants.VoIPDefaultConfig.Tx.SAMPLING_FREQ);
+    private Parameter<Integer> PARAM_TX_NCH = new Parameter<>(ATTR_TX_NCH, false, Constants.VoIPDefaultConfig.Tx.NUM_CHANNELS);
+    private Parameter<Integer> PARAM_TX_BPS = new Parameter<>(ATTR_TX_BPS, false, Constants.VoIPDefaultConfig.Tx.BIT_PER_SAMPLE);
+    private Parameter<Integer> PARAM_TX_DUMP_BUFFER_SIZE_MS = new Parameter<>(ATTR_TX_DUMP_BUFFER_SIZE_MS, false, Constants.VoIPDefaultConfig.Tx.BUFFER_SIZE_MILLIS);
     private Parameter[] PARAMS = {
             PARAM_TARGET_FREQ,
             PARAM_RX_AMP,

@@ -19,10 +19,10 @@ public class RecordStartFunction extends RecordFunction {
             ATTR_BTSCO_ON
     };
 
-    private Parameter<Integer> PARAM_FS = new Parameter<>(ATTR_FS, false, Constants.RecordDefaultConfig.SAMPLINGFREQ);
-    private Parameter<Integer> PARAM_NCH = new Parameter<>(ATTR_NCH, false, Constants.RecordDefaultConfig.NUMCHANNELS);
-    private Parameter<Integer> PARAM_BPS = new Parameter<>(ATTR_BPS, false, Constants.RecordDefaultConfig.BITPERSAMPLE);
-    private Parameter<Integer> PARAM_DUMP_BUFFER_SIZE_MS = new Parameter<>(ATTR_DUMP_BUFFER_SIZE_MS, false, Constants.RecordDefaultConfig.BUFFERSIZEMILLIS);
+    private Parameter<Integer> PARAM_FS = new Parameter<>(ATTR_FS, false, Constants.RecordDefaultConfig.SAMPLING_FREQ);
+    private Parameter<Integer> PARAM_NCH = new Parameter<>(ATTR_NCH, false, Constants.RecordDefaultConfig.NUM_CHANNELS);
+    private Parameter<Integer> PARAM_BPS = new Parameter<>(ATTR_BPS, false, Constants.RecordDefaultConfig.BIT_PER_SAMPLE);
+    private Parameter<Integer> PARAM_DUMP_BUFFER_SIZE_MS = new Parameter<>(ATTR_DUMP_BUFFER_SIZE_MS, false, Constants.RecordDefaultConfig.BUFFER_SIZE_MILLIS);
     private Parameter<Boolean> PARAM_BTSCO_ON = new Parameter<>(ATTR_BTSCO_ON, false, true);
     private Parameter[] PARAMS = {
             PARAM_FS,

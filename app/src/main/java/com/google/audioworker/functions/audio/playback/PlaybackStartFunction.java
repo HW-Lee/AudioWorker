@@ -3,11 +3,13 @@ package com.google.audioworker.functions.audio.playback;
 import com.google.audioworker.functions.audio.AudioFunction;
 import com.google.audioworker.utils.Constants;
 
+import java.util.ArrayList;
+
 public class PlaybackStartFunction extends PlaybackFunction {
     private final static String TAG = Constants.packageTag("PlaybackStartFunction");
 
     public final static String ATTR_TYPE = "type";
-    public final static String ATTR_TARGET_FREQ = "target-freq";
+    public final static String ATTR_TARGET_FREQS = "target-freqs";
     public final static String ATTR_PLAYBACK_ID = "playback-id";
     public final static String ATTR_PLAYBACK_USE_LL = "low-latency-mode";
     public final static String ATTR_AMPLITUDE = "amplitude";
@@ -17,7 +19,7 @@ public class PlaybackStartFunction extends PlaybackFunction {
 
     private final static String[] ATTRS = {
             ATTR_TYPE,
-            ATTR_TARGET_FREQ,
+            ATTR_TARGET_FREQS,
             ATTR_PLAYBACK_ID,
             ATTR_PLAYBACK_USE_LL,
             ATTR_AMPLITUDE,
@@ -27,16 +29,16 @@ public class PlaybackStartFunction extends PlaybackFunction {
     };
 
     private Parameter<String> PARAM_TYPE = new AudioFunction.Parameter<>(ATTR_TYPE, true, null);
-    private Parameter<Float> PARAM_TARGET_FREQ = new AudioFunction.Parameter<>(ATTR_TARGET_FREQ, true, -1f);
+    private Parameter<String> PARAM_TARGET_FREQS = new AudioFunction.Parameter<>(ATTR_TARGET_FREQS, true, null);
     private Parameter<Integer> PARAM_PLAYBACK_ID = new AudioFunction.Parameter<>(ATTR_PLAYBACK_ID, true, -1);
     private Parameter<Boolean> PARAM_PLAYBACK_USE_LL = new Parameter<>(ATTR_PLAYBACK_USE_LL, false, false);
     private Parameter<Float> PARAM_AMPLITUDE = new AudioFunction.Parameter<>(ATTR_AMPLITUDE, false, Constants.PlaybackDefaultConfig.AMPLITUDE);
-    private Parameter<Integer> PARAM_FS = new AudioFunction.Parameter<>(ATTR_FS, false, Constants.PlaybackDefaultConfig.SAMPLINGFREQ);
-    private Parameter<Integer> PARAM_NCH = new AudioFunction.Parameter<>(ATTR_NCH, false, Constants.PlaybackDefaultConfig.NUMCHANNELS);
-    private Parameter<Integer> PARAM_BPS = new AudioFunction.Parameter<>(ATTR_BPS, false, Constants.PlaybackDefaultConfig.BITPERSAMPLE);
+    private Parameter<Integer> PARAM_FS = new AudioFunction.Parameter<>(ATTR_FS, false, Constants.PlaybackDefaultConfig.SAMPLING_FREQ);
+    private Parameter<Integer> PARAM_NCH = new AudioFunction.Parameter<>(ATTR_NCH, false, Constants.PlaybackDefaultConfig.NUM_CHANNELS);
+    private Parameter<Integer> PARAM_BPS = new AudioFunction.Parameter<>(ATTR_BPS, false, Constants.PlaybackDefaultConfig.BIT_PER_SAMPLE);
     private Parameter[] PARAMS = {
             PARAM_TYPE,
-            PARAM_TARGET_FREQ,
+            PARAM_TARGET_FREQS,
             PARAM_PLAYBACK_ID,
             PARAM_PLAYBACK_USE_LL,
             PARAM_AMPLITUDE,
@@ -56,8 +58,8 @@ public class PlaybackStartFunction extends PlaybackFunction {
             switch (attr) {
                 case ATTR_TYPE:
                     return checkType((String) value);
-                case ATTR_TARGET_FREQ:
-                    return checkTargetFreq((Float.valueOf(value.toString())));
+                case ATTR_TARGET_FREQS:
+                    return checkTargetFreqs(value.toString());
                 case ATTR_PLAYBACK_ID:
                     return checkPlaybackId((int) value);
                 case ATTR_PLAYBACK_USE_LL:
@@ -82,8 +84,8 @@ public class PlaybackStartFunction extends PlaybackFunction {
     public void setParameter(String attr, Object value) {
         if (isValueAccepted(attr, value)) {
             switch (attr) {
-                case ATTR_TARGET_FREQ:
-                    PARAM_TARGET_FREQ.setValue((Float.valueOf(value.toString())));
+                case ATTR_TARGET_FREQS:
+                    PARAM_TARGET_FREQS.setValue(value.toString());
                     return;
                 case ATTR_AMPLITUDE:
                     PARAM_AMPLITUDE.setValue(Float.valueOf(value.toString()));
@@ -113,8 +115,19 @@ public class PlaybackStartFunction extends PlaybackFunction {
         return TASK_OFFLOAD.equals(type) || TASK_NONOFFLOAD.equals(type);
     }
 
-    private boolean checkTargetFreq(float freq) {
-        return freq > 0;
+    private boolean checkTargetFreqs(String freqs) {
+        if (freqs.split(",").length == 0)
+            return false;
+
+        for (String freqStr : freqs.split(",")) {
+            try {
+                Double.parseDouble(freqStr);
+            } catch (NumberFormatException e) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private boolean checkPlaybackId(int id) {
@@ -163,8 +176,18 @@ public class PlaybackStartFunction extends PlaybackFunction {
         return PARAM_TYPE.getValue();
     }
 
-    public float getTargetFrequency() {
-        return PARAM_TARGET_FREQ.getValue();
+    public String getTargetFrequenciesString() {
+        return PARAM_TARGET_FREQS.getValue();
+    }
+
+    public ArrayList<Double> getTargetFrequencies() {
+        ArrayList<Double> freqs = new ArrayList<>();
+
+        for (String freqStr : PARAM_TARGET_FREQS.getValue().split(",")) {
+            freqs.add(Double.parseDouble(freqStr));
+        }
+
+        return freqs;
     }
 
     public int getPlaybackId() {
@@ -200,7 +223,11 @@ public class PlaybackStartFunction extends PlaybackFunction {
     }
 
     public void setTargetFrequency(float freq) {
-        setParameter(ATTR_TARGET_FREQ, freq);
+        setTargetFrequencies(String.valueOf(freq));
+    }
+
+    public void setTargetFrequencies(String freqs) {
+        setParameter(ATTR_TARGET_FREQS, freqs);
     }
 
     public void setPlaybackId(int id) {

@@ -255,30 +255,30 @@ public class Constants {
 
     public static class PlaybackDefaultConfig {
         public final static float AMPLITUDE = 0.6f;
-        public final static int SAMPLINGFREQ = 44100;
-        public final static int NUMCHANNELS = 2;
-        public final static int BITPERSAMPLE = 16;
+        public final static int SAMPLING_FREQ = 44100;
+        public final static int NUM_CHANNELS = 2;
+        public final static int BIT_PER_SAMPLE = 16;
     }
 
     public static class RecordDefaultConfig {
-        public final static int SAMPLINGFREQ = 44100;
-        public final static int NUMCHANNELS = 2;
-        public final static int BITPERSAMPLE = 16;
-        public final static int BUFFERSIZEMILLIS = 0;
+        public final static int SAMPLING_FREQ = 44100;
+        public final static int NUM_CHANNELS = 2;
+        public final static int BIT_PER_SAMPLE = 16;
+        public final static int BUFFER_SIZE_MILLIS = 0;
     }
 
     public static class VoIPDefaultConfig {
         public static class Rx {
             public final static float AMPLITUDE = 0.6f;
-            public final static int SAMPLINGFREQ = 8000;
-            public final static int NUMCHANNELS = 1;
-            public final static int BITPERSAMPLE = 16;
+            public final static int SAMPLING_FREQ = 8000;
+            public final static int NUM_CHANNELS = 1;
+            public final static int BIT_PER_SAMPLE = 16;
         }
         public static class Tx {
-            public final static int SAMPLINGFREQ = 8000;
-            public final static int NUMCHANNELS = 1;
-            public final static int BITPERSAMPLE = 16;
-            public final static int BUFFERSIZEMILLIS = 0;
+            public final static int SAMPLING_FREQ = 8000;
+            public final static int NUM_CHANNELS = 1;
+            public final static int BIT_PER_SAMPLE = 16;
+            public final static int BUFFER_SIZE_MILLIS = 0;
         }
     }
 
@@ -287,6 +287,8 @@ public class Constants {
             private final static Class<?> CLASS_REF = com.google.audioworker.functions.audio.record.detectors.ToneDetector.class;
 
             public final static String PARAM_FS = "sampling-freq";
+            public final static String PARAM_PROCESS_FRAME_MILLIS = "process-frame-ms";
+            public final static String PARAM_TOL_DIFF_SEMI = "tolerance-semitone";
             public final static String PARAM_TARGET_FREQ = "target-freq";
             public final static String PARAM_CLEAR_TARGETS = "clear-target";
             public final static String PARAM_DUMP_HISTORY = "dump-history";

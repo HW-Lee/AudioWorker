@@ -4,6 +4,8 @@ import android.util.SparseArray;
 
 import com.google.audioworker.utils.Constants;
 
+import java.util.Arrays;
+
 public class SinusoidalGenerator {
     private final static String TAG = Constants.packageTag("SinusoidalGenerator");
     private double phaseOffset;
@@ -39,8 +41,7 @@ public class SinusoidalGenerator {
 
     public void render(double[] dest, SparseArray<ModelInfo> signalInfo, double samplingFreq, int interp) {
         if (signalInfo.size() == 0) {
-            for (int i = 0; i < dest.length; i++)
-                dest[i] = 0;
+            Arrays.fill(dest, 0);
             return;
         }
 
