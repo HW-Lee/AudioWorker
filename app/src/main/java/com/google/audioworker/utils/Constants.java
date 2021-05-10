@@ -248,7 +248,7 @@ public class Constants {
             }
 
             public static class Record {
-                public final static float TIMEOUT_MULTIPLIER = 1.2f;
+                public final static float TIMEOUT_MULTIPLIER = 5.0f;
             }
         }
     }

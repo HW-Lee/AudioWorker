@@ -603,6 +603,9 @@ public class RecordController extends AudioController.AudioTxController {
                 if (sharedBuffer.dataAvailable()) {
                     sharedBuffer.fetch(buffer);
                 } else {
+                    Log.w(TAG, "Timed out for the thread waiting the buffer from the framework. (buffer size: "
+                            + minBuffsizeMillis + " ms, timeout: "
+                            + (minBuffsizeMillis * Constants.Controllers.Config.Record.TIMEOUT_MULTIPLIER) + " ms.");
                     Arrays.fill(buffer, (byte) 0);
                 }
 
