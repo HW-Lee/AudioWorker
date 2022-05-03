@@ -741,17 +741,15 @@ public class RecordController extends AudioController.AudioTxController {
 
     public static class RecordInternalRunnable implements Runnable {
         private final RecordRunnable master;
-        private int inputSource;
-
         private boolean exitPending;
 
         public RecordInternalRunnable(RecordRunnable masterTask) {
-            this(masterTask, MediaRecorder.AudioSource.MIC);
+            master = masterTask;
         }
 
         public RecordInternalRunnable(RecordRunnable masterTask, int input) {
             master = masterTask;
-            inputSource = input;
+            master.mStartFunction.setInputSrc(input);
         }
 
         public void tryStop() {
@@ -766,7 +764,9 @@ public class RecordController extends AudioController.AudioTxController {
                     .setEncoding(master.parseEncodingFormat(startFunction.getBitWidth()))
                     .setChannelMask(master.parseChannelMask(startFunction.getNumChannels()))
                     .build();
+            int inputSource = startFunction.getInputSrc();
             int minBuffsize;
+
             while (master.sharedBuffer == null) {
                 try {
                     Thread.sleep(10);

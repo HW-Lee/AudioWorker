@@ -2,6 +2,7 @@ package com.google.audioworker.utils;
 
 import android.Manifest;
 import android.content.Intent;
+import android.media.MediaRecorder;
 import android.os.Environment;
 
 import com.google.audioworker.fragments.AudioFragment;
@@ -265,6 +266,7 @@ public class Constants {
         public final static int NUM_CHANNELS = 2;
         public final static int BIT_PER_SAMPLE = 16;
         public final static int BUFFER_SIZE_MILLIS = 0;
+        public final static int INPUT_SRC = MediaRecorder.AudioSource.MIC;
     }
 
     public static class VoIPDefaultConfig {
