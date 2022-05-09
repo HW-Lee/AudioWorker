@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 32
     defaultConfig {
         applicationId "com.google.audioworker"
         minSdkVersion 26
