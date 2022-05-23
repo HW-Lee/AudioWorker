@@ -52,6 +52,32 @@ public class RecordController extends AudioController.AudioTxController {
     private RecordRunnable mMainRunningTask;
     private ThreadPoolExecutor mPoolExecuter;
 
+    static {
+        System.loadLibrary("native-lib");
+    }
+
+    public native void openInput(int format,
+                                 int channel,
+                                 int sample_rate,
+                                 int input_source,
+                                 int perf, int bufferSize, int api);
+
+    public native void startRecording(int api);
+    public native void stopRecording(int api);
+    public native void releaseRecording(int api);
+    public native void saveWav(String filename, int api);
+
+    public void openInput(AudioFormat format, int source, int perf, int bufferSize, int api) {
+        openInput(
+            format.getEncoding(),
+            format.getChannelCount(),
+            format.getSampleRate(),
+            source,
+            perf,
+            bufferSize,
+            api);
+    }
+
     @Override
     public void activate(Context ctx) {
         mDetectors = new HashMap<>();
@@ -275,7 +301,14 @@ public class RecordController extends AudioController.AudioTxController {
                 String path = ((RecordDumpFunction) function).getFileName();
                 if (!path.startsWith("/"))
                     path = new File(getDataDir(), path).getAbsolutePath();
-                mMainRunningTask.dumpBufferTo(path, function);
+
+                if (mMainRunningTask.mStartFunction.usingExtApi())
+                    ((RecordController) mMainRunningTask.mController).saveWav(
+                        path, mMainRunningTask.mStartFunction.getAudioAPI());
+                else
+                    mMainRunningTask.dumpBufferTo(path, function);
+
+
             }
         } else {
             if (function.isValid())
@@ -505,6 +538,8 @@ public class RecordController extends AudioController.AudioTxController {
                     return AudioFormat.ENCODING_PCM_8BIT;
                 case 16:
                     return AudioFormat.ENCODING_PCM_16BIT;
+                case 32:
+                    return AudioFormat.ENCODING_PCM_32BIT;
                 default:
                     return AudioFormat.ENCODING_PCM_16BIT;
             }
@@ -591,6 +626,9 @@ public class RecordController extends AudioController.AudioTxController {
             exitPending = false;
             hasDone = false;
             while (!exitPending) {
+                if (mStartFunction.usingExtApi())
+                    continue;
+
                 try {
                     if (!sharedBuffer.dataAvailable()) {
                         synchronized (this) {
@@ -765,6 +803,11 @@ public class RecordController extends AudioController.AudioTxController {
                     .setChannelMask(master.parseChannelMask(startFunction.getNumChannels()))
                     .build();
             int inputSource = startFunction.getInputSrc();
+            int perfMode = startFunction.getAudioPerf();
+            boolean isAaudio = startFunction.checkAAudio();
+            boolean isOpensl = startFunction.checkOpenSL();
+            boolean isExtApi = startFunction.usingExtApi();
+            int audioAPI = startFunction.getAudioAPI();
             int minBuffsize;
 
             while (master.sharedBuffer == null) {
@@ -778,11 +821,19 @@ public class RecordController extends AudioController.AudioTxController {
                 minBuffsize = master.sharedBuffer.raw.length;
             }
 
-
-            AudioRecord record = new AudioRecord.Builder()
+            AudioRecord record = null;
+            if (isExtApi) {
+                Log.d(TAG, "Recording start by external API");
+                ((RecordController) master.mController).openInput(format, inputSource, perfMode,
+                                                                     master.dumpBufferSize,
+                                                                     audioAPI);
+            } else {
+                Log.d(TAG, "Recording start");
+                record = new AudioRecord.Builder()
                     .setAudioFormat(format)
                     .setAudioSource(inputSource)
                     .setBufferSizeInBytes(minBuffsize).build();
+            }
 
             if (master.mController instanceof RecordController &&
                 ((RecordController) master.mController).mContextRef.get() != null) {
@@ -793,19 +844,38 @@ public class RecordController extends AudioController.AudioTxController {
                     audioManager.startBluetoothSco();
                 }
             }
-            record.startRecording();
+
+            if (isExtApi) {
+                if (master.mController instanceof RecordController) {
+                    ((RecordController) master.mController).startRecording(audioAPI);
+                }
+            } else {
+                record.startRecording();
+            }
+
             byte[] buffer = new byte[master.sharedBuffer.raw.length];
 
             Log.d(TAG, "RecordInternalRunnable: start running");
+
             while (!exitPending) {
+                if (isExtApi)
+                    continue;
                 record.read(buffer, 0, minBuffsize);
                 master.sharedBuffer.put(buffer);
                 synchronized (master) {
                     master.notify();
                 }
             }
-            record.stop();
-            record.release();
+
+            if (isExtApi) {
+                if (master.mController instanceof RecordController) {
+                    ((RecordController) master.mController).stopRecording(audioAPI);
+                    ((RecordController) master.mController).releaseRecording(audioAPI);
+                }
+            } else {
+                record.stop();
+                record.release();
+            }
 
             if (master.mController instanceof RecordController &&
                     ((RecordController) master.mController).mContextRef.get() != null) {

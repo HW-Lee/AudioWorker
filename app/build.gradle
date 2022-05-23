@@ -4,7 +4,7 @@ android {
     compileSdkVersion 32
     defaultConfig {
         applicationId "com.google.audioworker"
-        minSdkVersion 26
+        minSdkVersion 28
         targetSdkVersion 28
         versionCode 1
         versionName "1.0"

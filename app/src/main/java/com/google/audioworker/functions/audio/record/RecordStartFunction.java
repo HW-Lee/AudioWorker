@@ -2,6 +2,8 @@ package com.google.audioworker.functions.audio.record;
 
 import android.media.MediaRecorder;
 import com.google.audioworker.utils.Constants;
+import com.google.audioworker.utils.Constants.Controllers.Config.AudioApi;
+import com.google.audioworker.utils.Constants.Controllers.Config.PerformanceMode;
 
 public class RecordStartFunction extends RecordFunction {
     private final static String TAG = Constants.packageTag("RecordStartFunction");
@@ -12,6 +14,8 @@ public class RecordStartFunction extends RecordFunction {
     private final static String ATTR_DUMP_BUFFER_SIZE_MS = "dump-buffer-ms";
     private final static String ATTR_BTSCO_ON = "btsco-on";
     private final static String ATTR_INPUT_SRC = "input-src";
+    private final static String ATTR_AUDIO_API = "audio-api";
+    private final static String ATTR_AUDIO_PERF = "audio-perf";
 
     private final static String[] ATTRS = {
             ATTR_FS,
@@ -19,7 +23,9 @@ public class RecordStartFunction extends RecordFunction {
             ATTR_BPS,
             ATTR_DUMP_BUFFER_SIZE_MS,
             ATTR_BTSCO_ON,
-            ATTR_INPUT_SRC
+            ATTR_INPUT_SRC,
+            ATTR_AUDIO_API,
+            ATTR_AUDIO_PERF
     };
 
     private Parameter<Integer> PARAM_FS = new Parameter<>(ATTR_FS, false, Constants.RecordDefaultConfig.SAMPLING_FREQ);
@@ -28,13 +34,17 @@ public class RecordStartFunction extends RecordFunction {
     private Parameter<Integer> PARAM_DUMP_BUFFER_SIZE_MS = new Parameter<>(ATTR_DUMP_BUFFER_SIZE_MS, false, Constants.RecordDefaultConfig.BUFFER_SIZE_MILLIS);
     private Parameter<Boolean> PARAM_BTSCO_ON = new Parameter<>(ATTR_BTSCO_ON, false, true);
     private Parameter<Integer> PARAM_INPUT_SRC = new Parameter<>(ATTR_INPUT_SRC, false, Constants.RecordDefaultConfig.INPUT_SRC);
+    private Parameter<Integer> PARAM_AUDIO_API = new Parameter<>(ATTR_AUDIO_API, false, Constants.RecordDefaultConfig.AUDIO_API);
+    private Parameter<Integer> PARAM_AUDIO_PERF = new Parameter<>(ATTR_AUDIO_PERF, false, Constants.RecordDefaultConfig.AUDIO_PERF);
     private Parameter[] PARAMS = {
             PARAM_FS,
             PARAM_NCH,
             PARAM_BPS,
             PARAM_DUMP_BUFFER_SIZE_MS,
             PARAM_BTSCO_ON,
-            PARAM_INPUT_SRC
+            PARAM_INPUT_SRC,
+            PARAM_AUDIO_API,
+            PARAM_AUDIO_PERF
     };
 
     @Override
@@ -56,6 +66,10 @@ public class RecordStartFunction extends RecordFunction {
                     return (int) value >= 0;
                 case ATTR_INPUT_SRC:
                     return checkInputSrc((int) value);
+                case ATTR_AUDIO_API:
+                    return checkAudioApi((int) value);
+                case ATTR_AUDIO_PERF:
+                    return checkAudioPerf((int) value);
                 case ATTR_BTSCO_ON:
                     return true;
             }
@@ -141,6 +155,26 @@ public class RecordStartFunction extends RecordFunction {
         return false;
     }
 
+    private boolean checkAudioApi(int api) {
+        switch (api) {
+            case AudioApi.NONE:
+            case AudioApi.OpenSLES:
+            case AudioApi.AAudio:
+                return true;
+        }
+        return false;
+    }
+
+    private boolean checkAudioPerf(int perf) {
+        switch (perf) {
+            case PerformanceMode.PowerSaving:
+            case PerformanceMode.LowLatency:
+            case PerformanceMode.None:
+                return true;
+        }
+        return false;
+    }
+
     public int getSamplingFreq() {
         return PARAM_FS.getValue();
     }
@@ -183,5 +217,33 @@ public class RecordStartFunction extends RecordFunction {
 
     public int getInputSrc() {
         return PARAM_INPUT_SRC.getValue();
+    }
+
+    public void setAudioAPI(int api) {
+        setParameter(ATTR_AUDIO_API, api);
+    }
+
+    public int getAudioAPI() {
+        return PARAM_AUDIO_API.getValue();
+    }
+
+    public void setAudioPerf(int perf) {
+        setParameter(ATTR_AUDIO_PERF, perf);
+    }
+
+    public int getAudioPerf() {
+        return PARAM_AUDIO_PERF.getValue();
+    }
+
+    public boolean checkOpenSL() {
+        return getAudioAPI() == AudioApi.OpenSLES;
+    }
+
+    public boolean checkAAudio() {
+        return getAudioAPI() == AudioApi.AAudio;
+    }
+
+    public boolean usingExtApi() {
+        return getAudioAPI() == AudioApi.AAudio || getAudioAPI() == AudioApi.OpenSLES;
     }
 }

@@ -13,6 +13,8 @@ import com.google.audioworker.fragments.ConnectFragment;
 import com.google.audioworker.fragments.GeneralInfoFragment;
 import com.google.audioworker.fragments.ShellFragment;
 
+import com.google.audioworker.utils.Constants.Controllers.Config.AudioApi;
+import com.google.audioworker.utils.Constants.Controllers.Config.PerformanceMode;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Locale;
@@ -251,6 +253,18 @@ public class Constants {
             public static class Record {
                 public final static float TIMEOUT_MULTIPLIER = 5.0f;
             }
+
+            public static class PerformanceMode {
+                    public final static int None = 10; // AAUDIO_PERFORMANCE_MODE_NONE,
+                    public final static int PowerSaving = 11; // AAUDIO_PERFORMANCE_MODE_POWER_SAVING,
+                    public final static int LowLatency = 12; // AAUDIO_PERFORMANCE_MODE_LOW_LATENCY
+            }
+
+            public static class AudioApi {
+                    public final static int NONE = 0;
+                    public final static int OpenSLES = 1;
+                    public final static int AAudio = 2;
+            }
         }
     }
 
@@ -267,6 +281,8 @@ public class Constants {
         public final static int BIT_PER_SAMPLE = 16;
         public final static int BUFFER_SIZE_MILLIS = 0;
         public final static int INPUT_SRC = MediaRecorder.AudioSource.MIC;
+        public final static int AUDIO_PERF = PerformanceMode.None;
+        public final static int AUDIO_API = AudioApi.NONE;
     }
 
     public static class VoIPDefaultConfig {

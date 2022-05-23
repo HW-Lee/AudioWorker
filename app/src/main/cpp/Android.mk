@@ -17,3 +17,12 @@ LOCAL_SRC_FILES := native-peak-detector.cpp Matrix.cpp PeakDetector.cpp
 LOCAL_LDLIBS    += -llog -ldl
 
 include $(BUILD_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+
+LOCAL_MODULE    := native-lib
+LOCAL_SRC_FILES := native-lib.cpp mmap-audio.cpp buffer.cpp opensl-audio.cpp
+
+LOCAL_LDLIBS    += -llog -ldl -laaudio -lOpenSLES
+
+include $(BUILD_SHARED_LIBRARY)
