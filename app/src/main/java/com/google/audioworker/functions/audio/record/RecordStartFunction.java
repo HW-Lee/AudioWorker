@@ -1,5 +1,6 @@
 package com.google.audioworker.functions.audio.record;
 
+import java.util.Arrays;
 import android.media.MediaRecorder;
 import com.google.audioworker.utils.Constants;
 import com.google.audioworker.utils.Constants.Controllers.Config.AudioApi;
@@ -47,13 +48,23 @@ public class RecordStartFunction extends RecordFunction {
             PARAM_AUDIO_PERF
     };
 
+    private Parameter[] mParams;
+
+    public RecordStartFunction() {
+        mParams = Arrays.copyOf(PARAMS, PARAMS.length + super.getParameters().length);
+        System.arraycopy(
+            super.getParameters(), 0, mParams, PARAMS.length, super.getParameters().length);
+    }
+
     @Override
     public Parameter[] getParameters() {
-        return PARAMS;
+        return mParams;
     }
 
     @Override
     public boolean isValueAccepted(String attr, Object value) {
+        if (super.isValueAccepted(attr, value)) return true;
+
         try {
             switch (attr) {
                 case ATTR_FS:
@@ -76,12 +87,14 @@ public class RecordStartFunction extends RecordFunction {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
         return false;
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public void setParameter(String attr, Object value) {
+        super.setParameter(attr, value);
         if (isValueAccepted(attr, value)) {
             int idx = toIndex(attr);
             if (idx < 0)
@@ -158,8 +171,8 @@ public class RecordStartFunction extends RecordFunction {
     private boolean checkAudioApi(int api) {
         switch (api) {
             case AudioApi.NONE:
-            case AudioApi.OpenSLES:
-            case AudioApi.AAudio:
+            case AudioApi.OPENSLES:
+            case AudioApi.AAUDIO:
                 return true;
         }
         return false;
@@ -167,9 +180,9 @@ public class RecordStartFunction extends RecordFunction {
 
     private boolean checkAudioPerf(int perf) {
         switch (perf) {
-            case PerformanceMode.PowerSaving:
-            case PerformanceMode.LowLatency:
-            case PerformanceMode.None:
+            case PerformanceMode.POWERSAVING:
+            case PerformanceMode.LOWLATENCY:
+            case PerformanceMode.NONE:
                 return true;
         }
         return false;
@@ -236,14 +249,14 @@ public class RecordStartFunction extends RecordFunction {
     }
 
     public boolean checkOpenSL() {
-        return getAudioAPI() == AudioApi.OpenSLES;
+        return getAudioAPI() == AudioApi.OPENSLES;
     }
 
     public boolean checkAAudio() {
-        return getAudioAPI() == AudioApi.AAudio;
+        return getAudioAPI() == AudioApi.AAUDIO;
     }
 
     public boolean usingExtApi() {
-        return getAudioAPI() == AudioApi.AAudio || getAudioAPI() == AudioApi.OpenSLES;
+        return getAudioAPI() == AudioApi.AAUDIO || getAudioAPI() == AudioApi.OPENSLES;
     }
 }

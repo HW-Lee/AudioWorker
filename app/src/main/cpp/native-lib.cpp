@@ -7,10 +7,10 @@
 #include "mmap-audio.h"
 #include "opensl-audio.h"
 
-static audio_record::AAudioRecord *mAAudioRecord =
-    new audio_record::AAudioRecord();
-static audio_record::OpenSLRecord *mOpenSLRecord =
-    new audio_record::OpenSLRecord();
+#define MAX_STREAM 10
+
+static audio_record::AAudioRecord mAAudioRecord[MAX_STREAM];
+static audio_record::OpenSLRecord mOpenSLRecord[MAX_STREAM];
 
 /*********************************************************************************/
 /**********************  JNI  Prototypes *****************************************/
@@ -20,15 +20,16 @@ extern "C" {
 JNIEXPORT void JNICALL
 Java_com_google_audioworker_functions_controllers_RecordController_openInput(
     JNIEnv *env, jobject instance, jint format, jint channel, jint sample_rate,
-    jint input_source, jint perf, jint dumpBufferSize, jint api) {
+    jint input_source, jint perf, jint dumpBufferSize, jint api, jint index) {
+  if (index >= MAX_STREAM) return;
   switch (api) {
     case AAUDIO:
-      mAAudioRecord->OpenInput((FORMAT_T)format, channel, sample_rate,
-                               input_source, perf, dumpBufferSize);
+      mAAudioRecord[index].OpenInput((FORMAT_T)format, channel, sample_rate,
+                                      input_source, perf, dumpBufferSize);
       break;
     case OPENSLES:
-      mOpenSLRecord->OpenInput((FORMAT_T)format, channel, sample_rate,
-                               input_source, perf, dumpBufferSize);
+      mOpenSLRecord[index].OpenInput((FORMAT_T)format, channel, sample_rate,
+                                      input_source, perf, dumpBufferSize);
       break;
     default:
       LOGE("Unsupported API %d", api);
@@ -37,13 +38,14 @@ Java_com_google_audioworker_functions_controllers_RecordController_openInput(
 
 JNIEXPORT void JNICALL
 Java_com_google_audioworker_functions_controllers_RecordController_startRecording(
-    JNIEnv *env, jobject instance, jint api) {
+    JNIEnv *env, jobject instance, jint api, jint index) {
+  if (index >= MAX_STREAM) return;
   switch (api) {
     case AAUDIO:
-      mAAudioRecord->StartRecord();
+      mAAudioRecord[index].StartRecord();
       break;
     case OPENSLES:
-      mOpenSLRecord->StartRecord();
+      mOpenSLRecord[index].StartRecord();
       break;
     default:
       LOGE("Unsupported API %d", api);
@@ -52,13 +54,14 @@ Java_com_google_audioworker_functions_controllers_RecordController_startRecordin
 
 JNIEXPORT void JNICALL
 Java_com_google_audioworker_functions_controllers_RecordController_stopRecording(
-    JNIEnv *env, jobject instance, jint api) {
+    JNIEnv *env, jobject instance, jint api, jint index) {
+  if (index >= MAX_STREAM) return;
   switch (api) {
     case AAUDIO:
-      mAAudioRecord->StopRecord();
+      mAAudioRecord[index].StopRecord();
       break;
     case OPENSLES:
-      mOpenSLRecord->StopRecord();
+      mOpenSLRecord[index].StopRecord();
       break;
     default:
       LOGE("Unsupported API %d", api);
@@ -67,13 +70,14 @@ Java_com_google_audioworker_functions_controllers_RecordController_stopRecording
 
 JNIEXPORT void JNICALL
 Java_com_google_audioworker_functions_controllers_RecordController_releaseRecording(
-    JNIEnv *env, jobject instance, jint api) {
+    JNIEnv *env, jobject instance, jint api, jint index) {
+  if (index >= MAX_STREAM) return;
   switch (api) {
     case AAUDIO:
-      mAAudioRecord->ReleaseRecord();
+      mAAudioRecord[index].ReleaseRecord();
       break;
     case OPENSLES:
-      mOpenSLRecord->ReleaseRecord();
+      mOpenSLRecord[index].ReleaseRecord();
       break;
     default:
       LOGE("Unsupported API %d", api);
@@ -82,15 +86,16 @@ Java_com_google_audioworker_functions_controllers_RecordController_releaseRecord
 
 JNIEXPORT void JNICALL
 Java_com_google_audioworker_functions_controllers_RecordController_saveWav(
-    JNIEnv *env, jobject instance, jstring filename, jint api) {
+    JNIEnv *env, jobject instance, jstring filename, jint api, jint index) {
+  if (index >= MAX_STREAM) return;
   const char *str = env->GetStringUTFChars(filename, 0);
   LOGD("Dump Save to %s", str);
   switch (api) {
     case AAUDIO:
-      mAAudioRecord->SaveFile(str);
+      mAAudioRecord[index].SaveFile(str);
       break;
     case OPENSLES:
-      mOpenSLRecord->SaveFile(str);
+      mOpenSLRecord[index].SaveFile(str);
       break;
     default:
       LOGE("Unsupported API %d", api);

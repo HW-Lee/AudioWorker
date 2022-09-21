@@ -19,6 +19,7 @@ import com.google.audioworker.functions.audio.record.detectors.DetectorBase;
 import com.google.audioworker.functions.commands.CommandHelper;
 import com.google.audioworker.functions.common.WorkerFunction;
 import com.google.audioworker.utils.Constants;
+import com.google.audioworker.utils.Constants.Controllers.Config.RecordTask;
 import com.google.audioworker.utils.signalproc.WavUtils;
 
 import org.json.JSONException;
@@ -49,7 +50,7 @@ public class RecordController extends AudioController.AudioTxController {
     private HashMap<String, DetectorBase> mDetectors;
     private HashMap<String, DetectorBase.DetectionListener> mDetectionListeners;
     private final ArrayList<RecordRunnable.RecordDataListener> mDataListeners = new ArrayList<>();
-    private RecordRunnable mMainRunningTask;
+    private RecordRunnable[] mMainRunningTasks = new RecordRunnable[RecordTask.MAX_NUM];
     private ThreadPoolExecutor mPoolExecuter;
 
     static {
@@ -60,14 +61,14 @@ public class RecordController extends AudioController.AudioTxController {
                                  int channel,
                                  int sample_rate,
                                  int input_source,
-                                 int perf, int bufferSize, int api);
+                                 int perf, int bufferSize, int api, int index);
 
-    public native void startRecording(int api);
-    public native void stopRecording(int api);
-    public native void releaseRecording(int api);
-    public native void saveWav(String filename, int api);
+    public native void startRecording(int api, int index);
+    public native void stopRecording(int api, int index);
+    public native void releaseRecording(int api, int index);
+    public native void saveWav(String filename, int api, int index);
 
-    public void openInput(AudioFormat format, int source, int perf, int bufferSize, int api) {
+    public void openInput(AudioFormat format, int source, int perf, int bufferSize, int api, int index) {
         openInput(
             format.getEncoding(),
             format.getChannelCount(),
@@ -75,7 +76,8 @@ public class RecordController extends AudioController.AudioTxController {
             source,
             perf,
             bufferSize,
-            api);
+            api,
+            index);
     }
 
     @Override
@@ -101,10 +103,14 @@ public class RecordController extends AudioController.AudioTxController {
     @Override
     public void destroy() {
         super.destroy();
-        if (mMainRunningTask != null && !mMainRunningTask.hasDone()) {
-            mMainRunningTask.tryStop();
-            mMainRunningTask = null;
+
+        for (RecordRunnable task : mMainRunningTasks) {
+            if (task != null && !task.hasDone()) {
+              task.tryStop();
+              task = null;
+            }
         }
+
         mPoolExecuter.shutdown();
         mPoolExecuter = null;
         mDetectors.clear();
@@ -125,12 +131,18 @@ public class RecordController extends AudioController.AudioTxController {
     private void executeBackground(final WorkerFunction function, WorkerFunction.WorkerFunctionListener l) {
         if (function instanceof RecordFunction && function.isValid()) {
             if (function instanceof RecordStartFunction) {
-                if (isTxRunning()) {
-                    for (RecordRunnable.RecordDataListener dl : mDataListeners)
-                        mMainRunningTask.unregisterDataListener(dl);
-                    mMainRunningTask.tryStop(new RecordStopFunction());
+                int taskIndex = ((RecordFunction) function).getIndex();
+                if (taskIndex == RecordTask.TASK_ALL) {
+                    Log.e(TAG, "Abnormal task index");
+                    return;
+                }
 
-                    while (isTxRunning()) {
+                if (isTxRunning(taskIndex)) {
+                    for (RecordRunnable.RecordDataListener dl : mDataListeners)
+                        mMainRunningTasks[taskIndex].unregisterDataListener(dl);
+                    mMainRunningTasks[taskIndex].tryStop(new RecordStopFunction());
+
+                    while (isTxRunning(taskIndex)) {
                         try {
                             Thread.sleep(1000);
                         } catch (InterruptedException e) {
@@ -140,34 +152,56 @@ public class RecordController extends AudioController.AudioTxController {
                 }
 
                 pushFunctionBeingExecuted(function);
-                mMainRunningTask = new RecordRunnable((RecordStartFunction) function, l, this);
-                mMainRunningTask.setRecordRunner(new RecordInternalRunnable(mMainRunningTask));
-                for (RecordRunnable.RecordDataListener dl : mDataListeners)
-                    mMainRunningTask.registerDataListener(dl);
-                for (DetectorBase detector : mDetectors.values())
-                    mMainRunningTask.registerDetector(detector);
 
-                mPoolExecuter.execute(mMainRunningTask);
-                mPoolExecuter.execute(mMainRunningTask.slave);
+                mMainRunningTasks[taskIndex] = new RecordRunnable((RecordStartFunction) function, l, this);
+                mMainRunningTasks[taskIndex].setRecordRunner(new RecordInternalRunnable(mMainRunningTasks[taskIndex]));
+                for (RecordRunnable.RecordDataListener dl : mDataListeners)
+                    mMainRunningTasks[taskIndex].registerDataListener(dl);
+                for (DetectorBase detector : mDetectors.values())
+                    mMainRunningTasks[taskIndex].registerDetector(detector);
+
+                mPoolExecuter.execute(mMainRunningTasks[taskIndex]);
+                mPoolExecuter.execute(mMainRunningTasks[taskIndex].slave);
             } else if (function instanceof RecordStopFunction) {
-                if (isTxRunning()) {
-                    pushFunctionBeingExecuted(function);
-                    mMainRunningTask.tryStop((RecordStopFunction) function, l);
-                    mMainRunningTask = null;
-                } else if (l != null) {
+                int taskIndex = ((RecordFunction) function).getIndex();
+                if (l != null) {
                     WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
                     ack.setReturnCode(-1);
                     ack.setDescription("no recording process running");
                     l.onAckReceived(ack);
                 }
+                int start = (taskIndex == RecordTask.TASK_ALL) ? 0 : taskIndex;
+                int target =
+                    (taskIndex == RecordTask.TASK_ALL) ? RecordTask.MAX_NUM : taskIndex + 1;
+                for (int i = start; i < target; i++) {
+                    if (isTxRunning(i)) {
+                        pushFunctionBeingExecuted(function);
+                        mMainRunningTasks[i].tryStop((RecordStopFunction) function, l);
+                        mMainRunningTasks[i] = null;
+                    }
+                }
                 mDetectors.clear();
             } else if (function instanceof RecordInfoFunction) {
+                int taskIndex = ((RecordFunction) function).getIndex();
                 if (l == null)
                     return;
                 WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
-                if (isTxRunning()) {
+
+                // Dump all active recording tasks
+                if (taskIndex == RecordTask.TASK_ALL) {
+                    Log.e(TAG, "execute all active tasks");
                     ArrayList<Object> returns = new ArrayList<>();
-                    returns.addAll(RecordController.getRecordInfoAckStrings(mMainRunningTask.getStartFunction(), mDetectors));
+                    for (int i = 0; i < RecordTask.MAX_NUM; i++) {
+                        if (isTxRunning(i)) {
+                            returns.addAll(RecordController.getRecordInfoAckStrings(
+                                mMainRunningTasks[i].getStartFunction(), mDetectors));
+                            ack.setReturns(returns);
+                         }
+                    }
+                }  else if (isTxRunning(taskIndex)) {
+                    ArrayList<Object> returns = new ArrayList<>();
+                    returns.addAll(RecordController.getRecordInfoAckStrings(
+                        mMainRunningTasks[taskIndex].getStartFunction(), mDetectors));
                     ack.setReturns(returns);
                 }
 
@@ -212,17 +246,22 @@ public class RecordController extends AudioController.AudioTxController {
                     case RecordDetectFunction.OP_REGISTER: {
                         String className = ((RecordDetectFunction) function).getDetectorClassName();
                         String[] findings = Constants.Detectors.getDetectorClassNamesByTag(className);
+                        int taskIndex = ((RecordFunction) function).getIndex();
+                        if (taskIndex == RecordTask.TASK_ALL) {
+                            Log.e(TAG, "Abnormal task index");
+                            return;
+                        }
 
                         if (findings.length > 0)
                             className = findings[0];
 
-                        String params = processDetectorParams(mMainRunningTask, className, ((RecordDetectFunction) function).getDetectorParams());
+                        String params = processDetectorParams(mMainRunningTasks[taskIndex], className, ((RecordDetectFunction) function).getDetectorParams());
                         DetectorBase detector = DetectorBase.getDetectorByClassName(className, new DetectorBase.DetectionListener() {
                             @Override
                             public void onTargetDetected(DetectorBase detector, SparseArray<? extends DetectorBase.Target> targets) {
                                 RecordController.this.onTargetDetected(detector.getHandle(), targets);
                             }
-                        }, mMainRunningTask.getStartFunction(), params);
+                        }, mMainRunningTasks[taskIndex].getStartFunction(), params);
 
                         if (detector == null) {
                             notifyFunctionHasBeenExecuted(function);
@@ -236,7 +275,7 @@ public class RecordController extends AudioController.AudioTxController {
 
                         mDetectors.put(detector.getHandle(), detector);
                         Log.d(TAG, "register the detector " + detector.getHandle());
-                        mMainRunningTask.registerDetector(detector);
+                        mMainRunningTasks[taskIndex].registerDetector(detector);
                         if (l != null) {
                             ArrayList<Object> returns = new ArrayList<>();
                             returns.add(detector.getHandle());
@@ -248,8 +287,14 @@ public class RecordController extends AudioController.AudioTxController {
                     }
                         break;
                     case RecordDetectFunction.OP_UNREGISTER: {
+                        int taskIndex = ((RecordFunction) function).getIndex();
+                        if (taskIndex == RecordTask.TASK_ALL) {
+                            Log.e(TAG, "Abnormal task index");
+                            return;
+                        }
+
                         if (mDetectors.containsKey(((RecordDetectFunction) function).getClassHandle())) {
-                            mMainRunningTask.unregisterDetector(mDetectors.get(((RecordDetectFunction) function).getClassHandle()));
+                            mMainRunningTasks[taskIndex].unregisterDetector(mDetectors.get(((RecordDetectFunction) function).getClassHandle()));
                             mDetectors.remove(((RecordDetectFunction) function).getClassHandle());
                             mDetectionListeners.remove(((RecordDetectFunction) function).getClassHandle());
                             if (l != null) {
@@ -288,27 +333,41 @@ public class RecordController extends AudioController.AudioTxController {
                 }
             } else if (function instanceof RecordDumpFunction) {
                 WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
-                if (!isTxRunning()) {
-                    if (l != null) {
-                        ack.setReturnCode(-1);
-                        ack.setDescription("no recording process running");
-                        l.onAckReceived(ack);
-                    }
-                    return;
+                int taskIndex = ((RecordFunction) function).getIndex();
+                if (l != null) {
+                    ack.setReturnCode(-1);
+                    ack.setDescription("no recording process running");
+                    l.onAckReceived(ack);
                 }
 
                 pushFunctionBeingExecuted(function);
                 String path = ((RecordDumpFunction) function).getFileName();
+                File file = new File(getDataDir(), path);
                 if (!path.startsWith("/"))
-                    path = new File(getDataDir(), path).getAbsolutePath();
+                    path = file.getAbsolutePath();
 
-                if (mMainRunningTask.mStartFunction.usingExtApi())
-                    ((RecordController) mMainRunningTask.mController).saveWav(
-                        path, mMainRunningTask.mStartFunction.getAudioAPI());
-                else
-                    mMainRunningTask.dumpBufferTo(path, function);
+                // Dump all active recording tasks
+                if (taskIndex == RecordTask.TASK_ALL)
+                    Log.e(TAG, "execute all active tasks");
 
+                int start = (taskIndex == RecordTask.TASK_ALL) ? 0 : taskIndex;
+                int target =
+                    (taskIndex == RecordTask.TASK_ALL) ? RecordTask.MAX_NUM : taskIndex + 1;
+                for (int i = start; i < target; i++) {
+                    if (!isTxRunning(i))
+                        continue;
 
+                    if (taskIndex == RecordTask.TASK_ALL) {
+                        path = new File(file.getParent(), "Task_" + i + "_" + file.getName())
+                            .getAbsolutePath();
+                    }
+
+                    if (mMainRunningTasks[i].mStartFunction.usingExtApi())
+                        ((RecordController) mMainRunningTasks[i].mController)
+                            .saveWav(path, mMainRunningTasks[i].mStartFunction.getAudioAPI(), i);
+                    else
+                        mMainRunningTasks[i].dumpBufferTo(path, function);
+                }
             }
         } else {
             if (function.isValid())
@@ -352,7 +411,11 @@ public class RecordController extends AudioController.AudioTxController {
 
     @Override
     public boolean isTxRunning() {
-        return mMainRunningTask != null && !mMainRunningTask.hasDone();
+        return isTxRunning(Constants.Controllers.Config.RecordTask.INDEX_DEFAULT);
+    }
+
+    public boolean isTxRunning(int index) {
+        return mMainRunningTasks[index] != null && !mMainRunningTasks[index].hasDone();
     }
 
     @Override
@@ -365,7 +428,7 @@ public class RecordController extends AudioController.AudioTxController {
         if (!isTxRunning())
             return;
 
-        mMainRunningTask.registerDataListener(l);
+        mMainRunningTasks[0].registerDataListener(l);
     }
 
     @Override
@@ -377,7 +440,7 @@ public class RecordController extends AudioController.AudioTxController {
         if (!isTxRunning())
             return;
 
-        mMainRunningTask.unregisterDataListener(l);
+        mMainRunningTasks[0].unregisterDataListener(l);
     }
 
     static public String processDetectorParams(RecordRunnable runnable, String className, String params) {
@@ -809,6 +872,7 @@ public class RecordController extends AudioController.AudioTxController {
             boolean isExtApi = startFunction.usingExtApi();
             int audioAPI = startFunction.getAudioAPI();
             int minBuffsize;
+            int index = startFunction.getIndex();
 
             while (master.sharedBuffer == null) {
                 try {
@@ -826,7 +890,7 @@ public class RecordController extends AudioController.AudioTxController {
                 Log.d(TAG, "Recording start by external API");
                 ((RecordController) master.mController).openInput(format, inputSource, perfMode,
                                                                      master.dumpBufferSize,
-                                                                     audioAPI);
+                                                                     audioAPI, index);
             } else {
                 Log.d(TAG, "Recording start");
                 record = new AudioRecord.Builder()
@@ -847,7 +911,7 @@ public class RecordController extends AudioController.AudioTxController {
 
             if (isExtApi) {
                 if (master.mController instanceof RecordController) {
-                    ((RecordController) master.mController).startRecording(audioAPI);
+                    ((RecordController) master.mController).startRecording(audioAPI, index);
                 }
             } else {
                 record.startRecording();
@@ -869,8 +933,8 @@ public class RecordController extends AudioController.AudioTxController {
 
             if (isExtApi) {
                 if (master.mController instanceof RecordController) {
-                    ((RecordController) master.mController).stopRecording(audioAPI);
-                    ((RecordController) master.mController).releaseRecording(audioAPI);
+                    ((RecordController) master.mController).stopRecording(audioAPI, index);
+                    ((RecordController) master.mController).releaseRecording(audioAPI, index);
                 }
             } else {
                 record.stop();

@@ -14,6 +14,7 @@ import com.google.audioworker.fragments.GeneralInfoFragment;
 import com.google.audioworker.fragments.ShellFragment;
 
 import com.google.audioworker.utils.Constants.Controllers.Config.AudioApi;
+import com.google.audioworker.utils.Constants.Controllers.Config.RecordTask;
 import com.google.audioworker.utils.Constants.Controllers.Config.PerformanceMode;
 import java.io.File;
 import java.util.ArrayList;
@@ -255,15 +256,21 @@ public class Constants {
             }
 
             public static class PerformanceMode {
-                    public final static int None = 10; // AAUDIO_PERFORMANCE_MODE_NONE,
-                    public final static int PowerSaving = 11; // AAUDIO_PERFORMANCE_MODE_POWER_SAVING,
-                    public final static int LowLatency = 12; // AAUDIO_PERFORMANCE_MODE_LOW_LATENCY
+                    public final static int NONE = 10; // AAUDIO_PERFORMANCE_MODE_NONE,
+                    public final static int POWERSAVING = 11; // AAUDIO_PERFORMANCE_MODE_POWER_SAVING,
+                    public final static int LOWLATENCY = 12; // AAUDIO_PERFORMANCE_MODE_LOW_LATENCY
             }
 
             public static class AudioApi {
                     public final static int NONE = 0;
-                    public final static int OpenSLES = 1;
-                    public final static int AAudio = 2;
+                    public final static int OPENSLES = 1;
+                    public final static int AAUDIO = 2;
+            }
+
+            public static class RecordTask {
+                    public final static int INDEX_DEFAULT = 0;
+                    public final static int MAX_NUM = 10;
+                    public final static int TASK_ALL = -1;
             }
         }
     }
@@ -281,8 +288,9 @@ public class Constants {
         public final static int BIT_PER_SAMPLE = 16;
         public final static int BUFFER_SIZE_MILLIS = 0;
         public final static int INPUT_SRC = MediaRecorder.AudioSource.MIC;
-        public final static int AUDIO_PERF = PerformanceMode.None;
+        public final static int AUDIO_PERF = PerformanceMode.NONE;
         public final static int AUDIO_API = AudioApi.NONE;
+        public final static int INDEX = RecordTask.INDEX_DEFAULT;
     }
 
     public static class VoIPDefaultConfig {

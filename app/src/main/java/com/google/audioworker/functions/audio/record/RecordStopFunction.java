@@ -6,16 +6,15 @@ public class RecordStopFunction extends RecordFunction {
     private final static String TAG = Constants.packageTag("RecordStopFunction");
 
     @Override
-    public Parameter[] getParameters() {
-        return new Parameter[0];
-    }
+    public Parameter[] getParameters() {return super.getParameters();}
 
     @Override
     public boolean isValueAccepted(String attr, Object value) {
-        return false;
+        return super.isValueAccepted(attr, value);
     }
 
     @Override
     public void setParameter(String attr, Object value) {
+        super.setParameter(attr, value);
     }
 }
