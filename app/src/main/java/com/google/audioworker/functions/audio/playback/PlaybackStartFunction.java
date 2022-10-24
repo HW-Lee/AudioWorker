@@ -161,6 +161,8 @@ public class PlaybackStartFunction extends PlaybackFunction {
             case 32000:
             case 44100:
             case 48000:
+            case 96000:
+            case 192000:
                 return true;
         }
         return false;
@@ -170,6 +172,12 @@ public class PlaybackStartFunction extends PlaybackFunction {
         switch (nch) {
             case 1:
             case 2:
+            case 3:
+            case 4:
+            case 5:
+            case 6:
+            case 7:
+            case 8:
                 return true;
         }
         return false;
