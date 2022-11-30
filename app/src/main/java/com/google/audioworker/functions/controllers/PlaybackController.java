@@ -31,6 +31,8 @@ import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -373,8 +375,13 @@ public class PlaybackController extends AudioController.AudioRxController {
 
             String wavPath = new File(mController.getDataDir(), getTempName() + ".wav").getAbsolutePath();
             String mp3Path = new File(mController.getDataDir(), getTempName() + ".mp3").getAbsolutePath();
-            String path = convertToMp3(wavPath, mp3Path) ? mp3Path:wavPath;
-
+            String path = wavPath;
+            if (Files.exists(Paths.get(mStartFunction.getPlaybackFile()))) {
+                Log.d(TAG, "run_offload: Using file " + mStartFunction.getPlaybackFile());
+                path = mStartFunction.getPlaybackFile();
+            } else {
+                path = convertToMp3(wavPath, mp3Path) ? mp3Path:wavPath;
+            }
             exitPending = false;
             MediaPlayer player = new MediaPlayer();
             player.setAudioAttributes(mAttributes);

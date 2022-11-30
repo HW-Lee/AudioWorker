@@ -16,7 +16,7 @@ public class PlaybackStartFunction extends PlaybackFunction {
     public final static String ATTR_FS = "sampling-freq";
     public final static String ATTR_NCH = "num-channels";
     public final static String ATTR_BPS = "pcm-bit-width";
-
+    public final static String ATTR_FILE = "file";
     private final static String[] ATTRS = {
             ATTR_TYPE,
             ATTR_TARGET_FREQS,
@@ -25,7 +25,8 @@ public class PlaybackStartFunction extends PlaybackFunction {
             ATTR_AMPLITUDE,
             ATTR_FS,
             ATTR_NCH,
-            ATTR_BPS
+            ATTR_BPS,
+            ATTR_FILE
     };
 
     private Parameter<String> PARAM_TYPE = new AudioFunction.Parameter<>(ATTR_TYPE, true, null);
@@ -36,6 +37,8 @@ public class PlaybackStartFunction extends PlaybackFunction {
     private Parameter<Integer> PARAM_FS = new AudioFunction.Parameter<>(ATTR_FS, false, Constants.PlaybackDefaultConfig.SAMPLING_FREQ);
     private Parameter<Integer> PARAM_NCH = new AudioFunction.Parameter<>(ATTR_NCH, false, Constants.PlaybackDefaultConfig.NUM_CHANNELS);
     private Parameter<Integer> PARAM_BPS = new AudioFunction.Parameter<>(ATTR_BPS, false, Constants.PlaybackDefaultConfig.BIT_PER_SAMPLE);
+    private Parameter<String> PARAM_FILE = new AudioFunction.Parameter<>(ATTR_FILE, false, Constants.PlaybackDefaultConfig.FILE_NAME);
+
     private Parameter[] PARAMS = {
             PARAM_TYPE,
             PARAM_TARGET_FREQS,
@@ -44,7 +47,8 @@ public class PlaybackStartFunction extends PlaybackFunction {
             PARAM_AMPLITUDE,
             PARAM_FS,
             PARAM_NCH,
-            PARAM_BPS
+            PARAM_BPS,
+            PARAM_FILE
     };
 
     @Override
@@ -77,6 +81,8 @@ public class PlaybackStartFunction extends PlaybackFunction {
                     return checkNumChannels((int) value);
                 case ATTR_BPS:
                     return checkBitPerSample((int) value);
+                case ATTR_FILE:
+                    return checkFileName((String) value);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -99,6 +105,8 @@ public class PlaybackStartFunction extends PlaybackFunction {
                     PARAM_PLAYBACK_USE_LL.setValue(
                             "true".equals(value.toString()) | "1".equals(value.toString())
                     );
+                case ATTR_FILE:
+                    PARAM_FILE.setValue(value.toString());
                     return;
                 default:
                     int idx = toIndex(attr);
@@ -176,7 +184,11 @@ public class PlaybackStartFunction extends PlaybackFunction {
         }
         return false;
     }
-
+    private boolean checkFileName(String fileName) {
+        return fileName.endsWith(".mp3") ||
+                fileName.endsWith(".aac") ||
+                fileName == Constants.PlaybackDefaultConfig.FILE_NAME;
+    }
     public String getPlaybackType() {
         return PARAM_TYPE.getValue();
     }
@@ -219,6 +231,10 @@ public class PlaybackStartFunction extends PlaybackFunction {
         return PARAM_PLAYBACK_USE_LL.getValue();
     }
 
+    public String getPlaybackFile() {
+        return PARAM_FILE.getValue();
+    }
+
     public void setPlaybackType(String type) {
         setParameter(ATTR_TYPE, type);
     }
@@ -253,5 +269,9 @@ public class PlaybackStartFunction extends PlaybackFunction {
 
     public void setBitWidth(int bps) {
         setParameter(ATTR_BPS, bps);
+    }
+
+    public void setPlaybackFile(String file) {
+        setParameter(ATTR_FILE, file);
     }
 }

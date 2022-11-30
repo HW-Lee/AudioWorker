@@ -280,6 +280,7 @@ public class Constants {
         public final static int SAMPLING_FREQ = 44100;
         public final static int NUM_CHANNELS = 2;
         public final static int BIT_PER_SAMPLE = 16;
+        public final static String FILE_NAME = "null";
     }
 
     public static class RecordDefaultConfig {
