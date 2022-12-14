@@ -6,14 +6,14 @@ android {
         applicationId "com.google.audioworker"
         minSdkVersion 28
         targetSdkVersion 28
-        versionCode 1
-        versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             ndkBuild {
                 cppFlags "-std=c++11"
             }
         }
+        versionName '86dc46db9'
+        versionNameSuffix '-python-audio-autotest-v1.5'
     }
     buildTypes {
         release {
@@ -26,6 +26,8 @@ android {
             path "src/main/cpp/Android.mk"
         }
     }
+    buildToolsVersion '33.0.0'
+    ndkVersion '25.1.8937393'
 }
 
 dependencies {
