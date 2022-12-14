@@ -9,6 +9,11 @@ public class VoIPTxDumpFunction extends VoIPFunction {
     private RecordDumpFunction mReference = new RecordDumpFunction();
 
     @Override
+    public String[] getAttributes() {
+        return mReference.getAttributes();
+    }
+
+    @Override
     public Parameter[] getParameters() {
         return mReference.getParameters();
     }

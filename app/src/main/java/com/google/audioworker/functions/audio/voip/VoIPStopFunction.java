@@ -6,6 +6,11 @@ public class VoIPStopFunction extends VoIPFunction {
     private final static String TAG = Constants.packageTag("VoIPStopFunction");
 
     @Override
+    public String[] getAttributes() {
+        return new String[0];
+    }
+
+    @Override
     public Parameter[] getParameters() {
         return new Parameter[0];
     }

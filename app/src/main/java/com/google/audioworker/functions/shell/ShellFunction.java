@@ -75,6 +75,11 @@ public class ShellFunction extends ParameterizedWorkerFunction {
     }
 
     @Override
+    public String[] getAttributes() {
+        return ATTRS;
+    }
+
+    @Override
     public Parameter[] getParameters() {
         return PARAMS;
     }

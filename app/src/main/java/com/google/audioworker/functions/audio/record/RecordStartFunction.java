@@ -49,11 +49,15 @@ public class RecordStartFunction extends RecordFunction {
     };
 
     private Parameter[] mParams;
+    private String[] mAttrs;
 
     public RecordStartFunction() {
         mParams = Arrays.copyOf(PARAMS, PARAMS.length + super.getParameters().length);
+        mAttrs = Arrays.copyOf(ATTRS, ATTRS.length + super.getAttributes().length);
         System.arraycopy(
-            super.getParameters(), 0, mParams, PARAMS.length, super.getParameters().length);
+                super.getParameters(), 0, mParams, PARAMS.length, super.getParameters().length);
+        System.arraycopy(
+                super.getAttributes(), 0, mAttrs, ATTRS.length, super.getAttributes().length);
     }
 
     @Override

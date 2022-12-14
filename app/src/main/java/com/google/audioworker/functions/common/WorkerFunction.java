@@ -14,6 +14,7 @@ import java.util.List;
 public abstract class WorkerFunction {
     public interface Parameterizable {
         WorkerFunction.Parameter[] getParameters();
+        String[] getAttributes();
         void setParameter(String attr, Object value);
         boolean isValueAccepted(String attr, Object value);
     }

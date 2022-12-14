@@ -18,6 +18,11 @@ public class VoIPInfoFunction extends VoIPFunction {
     };
 
     @Override
+    public String[] getAttributes() {
+        return ATTRS;
+    }
+
+    @Override
     public Parameter[] getParameters() {
         return PARAMS;
     }

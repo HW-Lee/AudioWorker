@@ -48,6 +48,11 @@ public class PlaybackStartFunction extends PlaybackFunction {
     };
 
     @Override
+    public String[] getAttributes() {
+        return ATTRS;
+    }
+
+    @Override
     public AudioFunction.Parameter[] getParameters() {
         return PARAMS;
     }

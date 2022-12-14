@@ -61,6 +61,18 @@ public class ToneDetector extends VisualizableDetector implements WorkerFunction
     private WorkerFunction.Parameter<Boolean> PARAM_DUMP_HISTORY;
 
     @Override
+    public String[] getAttributes() {
+        initParameters();
+        return new String[] {
+                ATTR_TARGETS,
+                ATTR_PROCESS_FRAME_MILLIS,
+                ATTR_TOL_DIFF_SEMI,
+                ATTR_CLEAR_TARGETS,
+                ATTR_DUMP_HISTORY
+        };
+    }
+
+    @Override
     public WorkerFunction.Parameter[] getParameters() {
         initParameters();
         return new WorkerFunction.Parameter[]{

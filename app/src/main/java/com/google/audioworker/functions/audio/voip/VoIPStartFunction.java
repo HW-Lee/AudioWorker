@@ -57,6 +57,11 @@ public class VoIPStartFunction extends VoIPFunction {
     };
 
     @Override
+    public String[] getAttributes() {
+        return ATTRS;
+    }
+
+    @Override
     public Parameter[] getParameters() {
         return PARAMS;
     }

@@ -21,6 +21,11 @@ public class PlaybackStopFunction extends PlaybackFunction {
     };
 
     @Override
+    public String[] getAttributes() {
+        return ATTRS;
+    }
+
+    @Override
     public Parameter[] getParameters() {
         return PARAMS;
     }

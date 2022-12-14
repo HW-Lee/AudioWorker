@@ -23,6 +23,11 @@ public class RecordFunction extends AudioFunction {
     }
 
     @Override
+    public String[] getAttributes() {
+        return ATTRS;
+    }
+
+    @Override
     public boolean isValueAccepted(String attr, Object value) {
         switch (attr) {
             case ATTR_INDEX:

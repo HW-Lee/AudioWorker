@@ -17,6 +17,11 @@ public class VoIPDetectFunction extends VoIPFunction {
     }
 
     @Override
+    public String[] getAttributes() {
+        return mReference.getAttributes();
+    }
+
+    @Override
     public Parameter[] getParameters() {
         return mReference.getParameters();
     }
