@@ -105,6 +105,7 @@ public class PlaybackStartFunction extends PlaybackFunction {
                     PARAM_PLAYBACK_USE_LL.setValue(
                             "true".equals(value.toString()) | "1".equals(value.toString())
                     );
+                    return;
                 case ATTR_FILE:
                     PARAM_FILE.setValue(value.toString());
                     return;
