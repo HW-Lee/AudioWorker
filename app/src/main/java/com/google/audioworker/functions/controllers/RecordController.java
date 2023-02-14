@@ -68,10 +68,10 @@ public class RecordController extends AudioController.AudioTxController {
     public native void releaseRecording(int api, int index);
     public native void saveWav(String filename, int api, int index);
 
-    public void openInput(AudioFormat format, int source, int perf, int bufferSize, int api, int index) {
+    public void openInput(AudioFormat format, int channel, int source, int perf, int bufferSize, int api, int index) {
         openInput(
             format.getEncoding(),
-            format.getChannelCount(),
+            channel,
             format.getSampleRate(),
             source,
             perf,
@@ -873,6 +873,7 @@ public class RecordController extends AudioController.AudioTxController {
             int audioAPI = startFunction.getAudioAPI();
             int minBuffsize;
             int index = startFunction.getIndex();
+            int channel = startFunction.getNumChannels();
 
             while (master.sharedBuffer == null) {
                 try {
@@ -888,7 +889,7 @@ public class RecordController extends AudioController.AudioTxController {
             AudioRecord record = null;
             if (isExtApi) {
                 Log.d(TAG, "Recording start by external API");
-                ((RecordController) master.mController).openInput(format, inputSource, perfMode,
+                ((RecordController) master.mController).openInput(format, channel, inputSource, perfMode,
                                                                      master.dumpBufferSize,
                                                                      audioAPI, index);
             } else {
