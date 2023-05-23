@@ -276,6 +276,26 @@ public class PlaybackController extends AudioController.AudioRxController {
         }
 
         private void run_nonoffload() {
+            if (Files.exists(Paths.get(mStartFunction.getPlaybackFile()))) {
+                Log.d(TAG, "run_nonoffload: Using file " + mStartFunction.getPlaybackFile());
+                String path = mStartFunction.getPlaybackFile();
+                playFile(path);
+            } else {
+                Log.d(TAG, "run_nonoffload: Using AudioTrack");
+                playFromAudioTrack();
+            }
+
+            if (mStopFunction != null) {
+                Log.d(TAG, "run_nonoffload: terminated (id: " + mStopFunction.getPlaybackId() + ")");
+                if (mStopFunction.getCommandId() == null)
+                    mStopFunction.setCommandId(mStartFunction.getCommandId());
+                returnAck(mStopFunction, 0);
+            } else {
+                returnAck(mStartFunction, -1);
+            }
+        }
+
+        private void playFromAudioTrack() {
             AudioFormat format = new AudioFormat.Builder()
                     .setSampleRate(mStartFunction.getSamplingFreq())
                     .setEncoding(parseEncodingFormat(mStartFunction.getBitWidth()))
@@ -299,7 +319,7 @@ public class PlaybackController extends AudioController.AudioRxController {
                 infos.add(new SparseArray<SinusoidalGenerator.ModelInfo>());
             }
             exitPending = false;
-            Log.d(TAG, "run_nonoffload: start running (id: " + mStartFunction.getPlaybackId() + ")");
+            Log.d(TAG, "playFromAudioTrack: start running (id: " + mStartFunction.getPlaybackId() + ")");
             returnAck(mStartFunction, 0);
             mController.broadcastStateChange(mController);
             switch (mStartFunction.getBitWidth()) {
@@ -318,7 +338,7 @@ public class PlaybackController extends AudioController.AudioRxController {
                             for (int i = 0; i < signal.length; i++) {
                                 byte v = (byte) (signal[i] * 127);
                                 buffer[i * mStartFunction.getNumChannels() + c] = v;
-                             }
+                            }
                         }
 
                         mTrack.write(buffer, 0, minBuffsize);
@@ -351,14 +371,6 @@ public class PlaybackController extends AudioController.AudioRxController {
                     break;
             }
             mController.broadcastStateChange(mController);
-            if (mStopFunction != null) {
-                Log.d(TAG, "run_nonoffload: terminated (id: " + mStopFunction.getPlaybackId() + ")");
-                if (mStopFunction.getCommandId() == null)
-                    mStopFunction.setCommandId(mStartFunction.getCommandId());
-                returnAck(mStopFunction, 0);
-            } else {
-                returnAck(mStartFunction, -1);
-            }
         }
 
         private void run_offload() {
@@ -382,6 +394,25 @@ public class PlaybackController extends AudioController.AudioRxController {
             } else {
                 path = convertToMp3(wavPath, mp3Path) ? mp3Path:wavPath;
             }
+
+            playFile(path);
+
+            if (mStopFunction != null) {
+                Log.d(TAG, "run_offload: terminated (id: " + mStopFunction.getPlaybackId() + ")");
+                returnAck(mStopFunction, 0);
+            } else {
+                returnAck(mStartFunction, -1);
+            }
+
+            File[] files = {new File(wavPath), new File(mp3Path)};
+            for (File f : files) {
+                if (f.exists() && !f.delete()) {
+                    Log.w(TAG, "Delete " + wavPath + " failed");
+                }
+            }
+        }
+
+        private void playFile(String path) {
             exitPending = false;
             MediaPlayer player = new MediaPlayer();
             player.setAudioAttributes(mAttributes);
@@ -392,7 +423,7 @@ public class PlaybackController extends AudioController.AudioRxController {
                 player.prepare();
                 player.start();
 
-                Log.d(TAG, "run_offload: start running (id: " + mStartFunction.getPlaybackId() + ")");
+                Log.d(TAG, "playFile: start running (id: " + mStartFunction.getPlaybackId() + ")");
                 returnAck(mStartFunction, 0);
             } catch (IOException e) {
                 exitPending = true;
@@ -409,19 +440,6 @@ public class PlaybackController extends AudioController.AudioRxController {
             player.stop();
             player.release();
             mController.broadcastStateChange(mController);
-            if (mStopFunction != null) {
-                Log.d(TAG, "run_offload: terminated (id: " + mStopFunction.getPlaybackId() + ")");
-                returnAck(mStopFunction, 0);
-            } else {
-                returnAck(mStartFunction, -1);
-            }
-
-            File[] files = {new File(wavPath), new File(mp3Path)};
-            for (File f : files) {
-                if (f.exists() && !f.delete()) {
-                    Log.w(TAG, "Delete " + wavPath + " failed");
-                }
-            }
         }
 
         private boolean convertToMp3(String wavPath, String mp3Path) {

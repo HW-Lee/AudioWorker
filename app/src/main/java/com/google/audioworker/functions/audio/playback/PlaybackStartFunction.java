@@ -194,9 +194,19 @@ public class PlaybackStartFunction extends PlaybackFunction {
         return false;
     }
     private boolean checkFileName(String fileName) {
-        return fileName.endsWith(".mp3") ||
-                fileName.endsWith(".aac") ||
-                fileName == Constants.PlaybackDefaultConfig.FILE_NAME;
+        switch (getPlaybackType()) {
+            case TASK_NONOFFLOAD:
+                return fileName.endsWith(".wav") ||
+                        Constants.PlaybackDefaultConfig.FILE_NAME.equals(fileName);
+
+            case TASK_OFFLOAD:
+                return fileName.endsWith(".mp3") ||
+                        fileName.endsWith(".aac") ||
+                        Constants.PlaybackDefaultConfig.FILE_NAME.equals(fileName);
+
+            default:
+                return false;
+        }
     }
     public String getPlaybackType() {
         return PARAM_TYPE.getValue();
