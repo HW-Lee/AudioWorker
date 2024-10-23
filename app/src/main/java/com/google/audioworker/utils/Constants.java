@@ -155,6 +155,7 @@ public class Constants {
     public static class MasterInterface {
         public final static String INTENT_PLAYBACK_START = INTENT_PREFIX + ".playback.start";
         public final static String INTENT_PLAYBACK_STOP = INTENT_PREFIX + ".playback.stop";
+        public final static String INTENT_PLAYBACK_SEEK = INTENT_PREFIX + ".playback.seek";
         public final static String INTENT_PLAYBACK_INFO = INTENT_PREFIX + ".playback.info";
 
         public final static String INTENT_RECORD_START = INTENT_PREFIX + ".record.start";
@@ -177,6 +178,7 @@ public class Constants {
         public final static String[] INTENT_NAMES = {
                 INTENT_PLAYBACK_START,
                 INTENT_PLAYBACK_STOP,
+                INTENT_PLAYBACK_SEEK,
                 INTENT_PLAYBACK_INFO,
 
                 INTENT_RECORD_START,

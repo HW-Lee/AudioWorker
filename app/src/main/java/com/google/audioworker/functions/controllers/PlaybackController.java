@@ -11,6 +11,7 @@ import android.util.SparseArray;
 
 import com.google.audioworker.functions.audio.playback.PlaybackFunction;
 import com.google.audioworker.functions.audio.playback.PlaybackInfoFunction;
+import com.google.audioworker.functions.audio.playback.PlaybackSeekFunction;
 import com.google.audioworker.functions.audio.playback.PlaybackStartFunction;
 import com.google.audioworker.functions.audio.playback.PlaybackStopFunction;
 import com.google.audioworker.functions.commands.CommandHelper;
@@ -99,6 +100,23 @@ public class PlaybackController extends AudioController.AudioRxController {
 
     private void executeBackground(WorkerFunction function, WorkerFunction.WorkerFunctionListener l) {
         if (function instanceof PlaybackFunction && function.isValid()) {
+            if(function instanceof PlaybackSeekFunction) {
+                PlaybackSeekFunction f = (PlaybackSeekFunction) function;
+                int playbackId = f.getPlaybackId();
+                String playbackType = f.getPlaybackType();
+                SparseArray<PlaybackRunnable> tasks = mRunningPlaybackTasks.get(playbackType);
+                if (tasks == null) {
+                    return;
+                }
+                PlaybackRunnable playbackRunnable = tasks.get(playbackId);
+                if (playbackRunnable != null && !playbackRunnable.hasDone()) {
+                    pushFunctionBeingExecuted(function);
+                    Log.w(TAG, "Seeking playbackID:" + playbackId + " with playbackType:" + playbackType + " to position = " + f.getSeekPositionInMs() + " ms");
+                    playbackRunnable.seekTo(f.getSeekPositionInMs());
+                } else {
+                    Log.w(TAG, "playbackID:" + playbackId + " with playbackType:" + playbackType + " is not running, cannot seek");
+                }
+            }
             if (function instanceof PlaybackStartFunction) {
                 int playbackId = ((PlaybackStartFunction) function).getPlaybackId();
                 String playbackType = ((PlaybackStartFunction) function).getPlaybackType();
@@ -189,6 +207,8 @@ public class PlaybackController extends AudioController.AudioRxController {
         private ControllerBase mController;
         private AudioTrack mTrack;
         private boolean exitPending;
+        private int mSeekPositionMs = -1;
+        private int mFileDurationMs = 0;
 
         public PlaybackRunnable(PlaybackStartFunction function, WorkerFunction.WorkerFunctionListener l, ControllerBase controller) {
             this(function, l, controller, null);
@@ -273,6 +293,14 @@ public class PlaybackController extends AudioController.AudioRxController {
                 run_nonoffload();
             else
                 run_offload();
+        }
+
+        public void seekTo(int positionInMs) {
+            if(positionInMs <= mFileDurationMs) {
+                mSeekPositionMs = positionInMs;
+            } else {
+                Log.e(TAG, "Cannot seek to position past the audio file duration!");
+            }
         }
 
         private void run_nonoffload() {
@@ -422,7 +450,7 @@ public class PlaybackController extends AudioController.AudioRxController {
                 player.setLooping(true);
                 player.prepare();
                 player.start();
-
+                mFileDurationMs = player.getDuration();
                 Log.d(TAG, "playFile: start running (id: " + mStartFunction.getPlaybackId() + ")");
                 returnAck(mStartFunction, 0);
             } catch (IOException e) {
@@ -435,6 +463,10 @@ public class PlaybackController extends AudioController.AudioRxController {
                 } catch (InterruptedException e) {
                     exitPending = true;
                     e.printStackTrace();
+                }
+                if(mSeekPositionMs>=0) {
+                    player.seekTo(mSeekPositionMs);
+                    mSeekPositionMs = -1;
                 }
             }
             player.stop();
