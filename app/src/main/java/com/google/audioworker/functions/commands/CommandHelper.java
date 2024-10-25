@@ -13,6 +13,7 @@ import com.google.audioworker.functions.audio.playback.PlaybackFunction;
 import com.google.audioworker.functions.audio.playback.PlaybackInfoFunction;
 import com.google.audioworker.functions.audio.playback.PlaybackStartFunction;
 import com.google.audioworker.functions.audio.playback.PlaybackStopFunction;
+import com.google.audioworker.functions.audio.playback.PlaybackSeekFunction;
 import com.google.audioworker.functions.audio.record.RecordDetectFunction;
 import com.google.audioworker.functions.audio.record.RecordDumpFunction;
 import com.google.audioworker.functions.audio.record.RecordEventFunction;
@@ -166,6 +167,9 @@ public class CommandHelper {
             case Constants.MasterInterface.INTENT_PLAYBACK_START:
                 function = new PlaybackStartFunction();
                 break;
+            case Constants.MasterInterface.INTENT_PLAYBACK_SEEK:
+                function = new PlaybackSeekFunction();
+                break;
             case Constants.MasterInterface.INTENT_PLAYBACK_STOP:
                 function = new PlaybackStopFunction();
                 break;
@@ -316,7 +320,6 @@ public class CommandHelper {
                 case Constants.INTENT_OWNER_VOIP:
                     mListener.onFunctionReceived(CommandHelper.getVoIPFunction(intent));
                     break;
-
                 case Constants.DebugInterface.INTENT_RECEIVE_FUNCTION:
                     mListener.onFunctionReceived(CommandHelper.getFunction(intent));
                     break;
