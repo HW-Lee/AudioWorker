@@ -1,11 +1,14 @@
 package com.google.audioworker.functions.controllers;
 
 import android.content.Context;
+import android.media.AudioDeviceInfo;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
+import android.os.Build.VERSION_CODES;
 import android.support.annotation.NonNull;
+import android.support.annotation.RequiresApi;
 import android.util.Log;
 import android.util.SparseArray;
 
@@ -857,6 +860,7 @@ public class RecordController extends AudioController.AudioTxController {
             exitPending = true;
         }
 
+        @RequiresApi(api = VERSION_CODES.S)
         @Override
         public void run() {
             RecordStartFunction startFunction = master.mStartFunction;
@@ -907,6 +911,13 @@ public class RecordController extends AudioController.AudioTxController {
                 audioManager.setBluetoothScoOn(master.mStartFunction.bluetoothScoOn());
                 if (audioManager.isBluetoothScoOn()) {
                     audioManager.startBluetoothSco();
+                    for (AudioDeviceInfo device : audioManager.getAvailableCommunicationDevices()) {
+                        if (device.getType() == AudioDeviceInfo.TYPE_BLE_HEADSET) {
+                            audioManager.setCommunicationDevice(device);
+                            Log.d(TAG, "setCommunicationDevice to ble headset");
+                            break;
+                        }
+                    }
                 }
             }
 

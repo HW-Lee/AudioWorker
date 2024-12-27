@@ -1,5 +1,6 @@
 package com.google.audioworker.functions.audio.playback;
 
+import android.media.AudioManager;
 import com.google.audioworker.functions.audio.AudioFunction;
 import com.google.audioworker.utils.Constants;
 
@@ -17,6 +18,7 @@ public class PlaybackStartFunction extends PlaybackFunction {
     public final static String ATTR_NCH = "num-channels";
     public final static String ATTR_BPS = "pcm-bit-width";
     public final static String ATTR_FILE = "file";
+    public final static String ATTR_STREAM_TYPE = "stream-type";
     private final static String[] ATTRS = {
             ATTR_TYPE,
             ATTR_TARGET_FREQS,
@@ -26,7 +28,8 @@ public class PlaybackStartFunction extends PlaybackFunction {
             ATTR_FS,
             ATTR_NCH,
             ATTR_BPS,
-            ATTR_FILE
+            ATTR_FILE,
+            ATTR_STREAM_TYPE
     };
 
     private Parameter<String> PARAM_TYPE = new AudioFunction.Parameter<>(ATTR_TYPE, true, null);
@@ -38,6 +41,7 @@ public class PlaybackStartFunction extends PlaybackFunction {
     private Parameter<Integer> PARAM_NCH = new AudioFunction.Parameter<>(ATTR_NCH, false, Constants.PlaybackDefaultConfig.NUM_CHANNELS);
     private Parameter<Integer> PARAM_BPS = new AudioFunction.Parameter<>(ATTR_BPS, false, Constants.PlaybackDefaultConfig.BIT_PER_SAMPLE);
     private Parameter<String> PARAM_FILE = new AudioFunction.Parameter<>(ATTR_FILE, false, Constants.PlaybackDefaultConfig.FILE_NAME);
+    private Parameter<Integer> PARAM_STREAM_TYPE = new AudioFunction.Parameter<>(ATTR_STREAM_TYPE, false, Constants.PlaybackDefaultConfig.STREAM_TYPE);
 
     private Parameter[] PARAMS = {
             PARAM_TYPE,
@@ -48,7 +52,8 @@ public class PlaybackStartFunction extends PlaybackFunction {
             PARAM_FS,
             PARAM_NCH,
             PARAM_BPS,
-            PARAM_FILE
+            PARAM_FILE,
+            PARAM_STREAM_TYPE
     };
 
     @Override
@@ -83,6 +88,8 @@ public class PlaybackStartFunction extends PlaybackFunction {
                     return checkBitPerSample((int) value);
                 case ATTR_FILE:
                     return checkFileName((String) value);
+                case ATTR_STREAM_TYPE:
+                    return checkStreamType((int) value);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -208,6 +215,22 @@ public class PlaybackStartFunction extends PlaybackFunction {
                 return false;
         }
     }
+    private boolean checkStreamType(int stream_type) {
+        switch (stream_type) {
+            case AudioManager.STREAM_VOICE_CALL:
+            case AudioManager.STREAM_SYSTEM:
+            case AudioManager.STREAM_RING:
+            case AudioManager.STREAM_MUSIC:
+            case AudioManager.STREAM_ALARM:
+            case AudioManager.STREAM_NOTIFICATION:
+            case AudioManager.STREAM_DTMF:
+            case AudioManager.STREAM_ACCESSIBILITY:
+                return true;
+        }
+
+        return false;
+    }
+
     public String getPlaybackType() {
         return PARAM_TYPE.getValue();
     }
@@ -254,6 +277,10 @@ public class PlaybackStartFunction extends PlaybackFunction {
         return PARAM_FILE.getValue();
     }
 
+    public int getStreamType() {
+        return PARAM_STREAM_TYPE.getValue();
+    }
+
     public void setPlaybackType(String type) {
         setParameter(ATTR_TYPE, type);
     }
@@ -292,5 +319,9 @@ public class PlaybackStartFunction extends PlaybackFunction {
 
     public void setPlaybackFile(String file) {
         setParameter(ATTR_FILE, file);
+    }
+
+    public void setStreamType(int stream_type) {
+        setParameter(ATTR_STREAM_TYPE, stream_type);
     }
 }

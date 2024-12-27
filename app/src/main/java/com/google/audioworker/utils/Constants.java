@@ -2,6 +2,7 @@ package com.google.audioworker.utils;
 
 import android.Manifest;
 import android.content.Intent;
+import android.media.AudioManager;
 import android.media.MediaRecorder;
 import android.os.Environment;
 
@@ -283,6 +284,7 @@ public class Constants {
         public final static int NUM_CHANNELS = 2;
         public final static int BIT_PER_SAMPLE = 16;
         public final static String FILE_NAME = "null";
+        public final static int STREAM_TYPE = AudioManager.STREAM_MUSIC;
     }
 
     public static class RecordDefaultConfig {

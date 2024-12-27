@@ -220,12 +220,13 @@ public class PlaybackController extends AudioController.AudioRxController {
             mController = controller;
             mAttributes = attributes;
 
-            if (mAttributes == null)
+            if (mAttributes == null) {
                 mAttributes = new AudioAttributes.Builder()
-                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                        .setUsage(AudioAttributes.USAGE_MEDIA)
-                        .setLegacyStreamType(AudioManager.STREAM_MUSIC)
-                        .build();
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setLegacyStreamType(mStartFunction.getStreamType())
+                    .build();
+            }
         }
 
         private int parseEncodingFormat(int bits) {
