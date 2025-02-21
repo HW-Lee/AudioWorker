@@ -387,6 +387,7 @@ public class VoIPController extends AudioController.AudioRxTxController {
         rxFunction.setPlaybackType(PlaybackFunction.TASK_NONOFFLOAD);
         rxFunction.setSamplingFreq(function.getRxSamplingFreq());
         rxFunction.setTargetFrequency(function.getTargetFrequency());
+        rxFunction.setPlaybackFile(function.getRxFile());
     }
 
     private void initTxStartFunction(VoIPStartFunction function, RecordStartFunction txFunction) {
