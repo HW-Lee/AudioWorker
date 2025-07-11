@@ -1,59 +1,95 @@
 package com.google.audioworker.functions.audio.playback;
 
+import android.media.AudioAttributes;
 import android.media.AudioManager;
+import android.media.AudioTrack;
+import android.util.Log;
+
 import com.google.audioworker.functions.audio.AudioFunction;
 import com.google.audioworker.utils.Constants;
 
 import java.util.ArrayList;
 
 public class PlaybackStartFunction extends PlaybackFunction {
-    private final static String TAG = Constants.packageTag("PlaybackStartFunction");
+    private static final String TAG = Constants.packageTag("PlaybackStartFunction");
 
-    public final static String ATTR_TYPE = "type";
-    public final static String ATTR_TARGET_FREQS = "target-freqs";
-    public final static String ATTR_PLAYBACK_ID = "playback-id";
-    public final static String ATTR_PLAYBACK_USE_LL = "low-latency-mode";
-    public final static String ATTR_AMPLITUDE = "amplitude";
-    public final static String ATTR_FS = "sampling-freq";
-    public final static String ATTR_NCH = "num-channels";
-    public final static String ATTR_BPS = "pcm-bit-width";
-    public final static String ATTR_FILE = "file";
-    public final static String ATTR_STREAM_TYPE = "stream-type";
-    private final static String[] ATTRS = {
-            ATTR_TYPE,
-            ATTR_TARGET_FREQS,
-            ATTR_PLAYBACK_ID,
-            ATTR_PLAYBACK_USE_LL,
-            ATTR_AMPLITUDE,
-            ATTR_FS,
-            ATTR_NCH,
-            ATTR_BPS,
-            ATTR_FILE,
-            ATTR_STREAM_TYPE
+    public static final String ATTR_TYPE = "type";
+    public static final String ATTR_TARGET_FREQS = "target-freqs";
+    public static final String ATTR_PLAYBACK_ID = "playback-id";
+    public static final String ATTR_PLAYBACK_USE_LL = "low-latency-mode";
+    public static final String ATTR_AMPLITUDE = "amplitude";
+    public static final String ATTR_FS = "sampling-freq";
+    public static final String ATTR_NCH = "num-channels";
+    public static final String ATTR_BPS = "pcm-bit-width";
+    public static final String ATTR_FILE = "file";
+    public static final String ATTR_STREAM_TYPE = "stream-type";
+    public static final String ATTR_USAGE = "usage";
+    public static final String ATTR_CONTENT_TYPE = "content-type";
+    public static final String ATTR_PERF_MODE = "performance-mode";
+    private static final String[] ATTRS = {
+        ATTR_TYPE,
+        ATTR_TARGET_FREQS,
+        ATTR_PLAYBACK_ID,
+        ATTR_PLAYBACK_USE_LL,
+        ATTR_AMPLITUDE,
+        ATTR_FS,
+        ATTR_NCH,
+        ATTR_BPS,
+        ATTR_FILE,
+        ATTR_STREAM_TYPE,
+        ATTR_USAGE,
+        ATTR_CONTENT_TYPE,
+        ATTR_PERF_MODE
     };
 
     private Parameter<String> PARAM_TYPE = new AudioFunction.Parameter<>(ATTR_TYPE, true, null);
-    private Parameter<String> PARAM_TARGET_FREQS = new AudioFunction.Parameter<>(ATTR_TARGET_FREQS, true, null);
-    private Parameter<Integer> PARAM_PLAYBACK_ID = new AudioFunction.Parameter<>(ATTR_PLAYBACK_ID, true, -1);
-    private Parameter<Boolean> PARAM_PLAYBACK_USE_LL = new Parameter<>(ATTR_PLAYBACK_USE_LL, false, false);
-    private Parameter<Float> PARAM_AMPLITUDE = new AudioFunction.Parameter<>(ATTR_AMPLITUDE, false, Constants.PlaybackDefaultConfig.AMPLITUDE);
-    private Parameter<Integer> PARAM_FS = new AudioFunction.Parameter<>(ATTR_FS, false, Constants.PlaybackDefaultConfig.SAMPLING_FREQ);
-    private Parameter<Integer> PARAM_NCH = new AudioFunction.Parameter<>(ATTR_NCH, false, Constants.PlaybackDefaultConfig.NUM_CHANNELS);
-    private Parameter<Integer> PARAM_BPS = new AudioFunction.Parameter<>(ATTR_BPS, false, Constants.PlaybackDefaultConfig.BIT_PER_SAMPLE);
-    private Parameter<String> PARAM_FILE = new AudioFunction.Parameter<>(ATTR_FILE, false, Constants.PlaybackDefaultConfig.FILE_NAME);
-    private Parameter<Integer> PARAM_STREAM_TYPE = new AudioFunction.Parameter<>(ATTR_STREAM_TYPE, false, Constants.PlaybackDefaultConfig.STREAM_TYPE);
+    private Parameter<String> PARAM_TARGET_FREQS =
+            new AudioFunction.Parameter<>(ATTR_TARGET_FREQS, true, null);
+    private Parameter<Integer> PARAM_PLAYBACK_ID =
+            new AudioFunction.Parameter<>(ATTR_PLAYBACK_ID, true, -1);
+    private Parameter<Boolean> PARAM_PLAYBACK_USE_LL =
+            new Parameter<>(ATTR_PLAYBACK_USE_LL, false, false);
+    private Parameter<Float> PARAM_AMPLITUDE =
+            new AudioFunction.Parameter<>(
+                    ATTR_AMPLITUDE, false, Constants.PlaybackDefaultConfig.AMPLITUDE);
+    private Parameter<Integer> PARAM_FS =
+            new AudioFunction.Parameter<>(
+                    ATTR_FS, false, Constants.PlaybackDefaultConfig.SAMPLING_FREQ);
+    private Parameter<Integer> PARAM_NCH =
+            new AudioFunction.Parameter<>(
+                    ATTR_NCH, false, Constants.PlaybackDefaultConfig.NUM_CHANNELS);
+    private Parameter<Integer> PARAM_BPS =
+            new AudioFunction.Parameter<>(
+                    ATTR_BPS, false, Constants.PlaybackDefaultConfig.BIT_PER_SAMPLE);
+    private Parameter<String> PARAM_FILE =
+            new AudioFunction.Parameter<>(
+                    ATTR_FILE, false, Constants.PlaybackDefaultConfig.FILE_NAME);
+    private Parameter<Integer> PARAM_STREAM_TYPE =
+            new AudioFunction.Parameter<>(
+                    ATTR_STREAM_TYPE, false, Constants.PlaybackDefaultConfig.STREAM_TYPE);
+    private Parameter<Integer> PARAM_USAGE =
+            new AudioFunction.Parameter<>(ATTR_USAGE, false, Constants.PlaybackDefaultConfig.USAGE);
+    private Parameter<Integer> PARAM_CONTENT_TYPE =
+            new AudioFunction.Parameter<>(
+                    ATTR_CONTENT_TYPE, false, Constants.PlaybackDefaultConfig.CONTENT_TYPE);
+    private Parameter<Integer> PARAM_PERF_MODE =
+            new AudioFunction.Parameter<>(
+                    ATTR_PERF_MODE, false, Constants.PlaybackDefaultConfig.PERF_MODE);
 
     private Parameter[] PARAMS = {
-            PARAM_TYPE,
-            PARAM_TARGET_FREQS,
-            PARAM_PLAYBACK_ID,
-            PARAM_PLAYBACK_USE_LL,
-            PARAM_AMPLITUDE,
-            PARAM_FS,
-            PARAM_NCH,
-            PARAM_BPS,
-            PARAM_FILE,
-            PARAM_STREAM_TYPE
+        PARAM_TYPE,
+        PARAM_TARGET_FREQS,
+        PARAM_PLAYBACK_ID,
+        PARAM_PLAYBACK_USE_LL,
+        PARAM_AMPLITUDE,
+        PARAM_FS,
+        PARAM_NCH,
+        PARAM_BPS,
+        PARAM_FILE,
+        PARAM_STREAM_TYPE,
+        PARAM_USAGE,
+        PARAM_CONTENT_TYPE,
+        PARAM_PERF_MODE
     };
 
     @Override
@@ -90,6 +126,12 @@ public class PlaybackStartFunction extends PlaybackFunction {
                     return checkFileName((String) value);
                 case ATTR_STREAM_TYPE:
                     return checkStreamType((int) value);
+                case ATTR_USAGE:
+                    return checkUsage((int) value);
+                case ATTR_CONTENT_TYPE:
+                    return checkContentType((int) value);
+                case ATTR_PERF_MODE:
+                    return checkPerformanceMode((int) value);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -110,24 +152,24 @@ public class PlaybackStartFunction extends PlaybackFunction {
                     return;
                 case ATTR_PLAYBACK_USE_LL:
                     PARAM_PLAYBACK_USE_LL.setValue(
-                            "true".equals(value.toString()) | "1".equals(value.toString())
-                    );
+                            "true".equals(value.toString()) | "1".equals(value.toString()));
                     return;
                 case ATTR_FILE:
                     PARAM_FILE.setValue(value.toString());
                     return;
                 default:
                     int idx = toIndex(attr);
-                    if (idx >= 0)
-                        PARAMS[idx].setValue(value);
+                    if (idx >= 0) PARAMS[idx].setValue(value);
+                    return;
             }
         }
+
+        Log.w(TAG, "The value " + value + " is not acceptable to the parameter " + attr + ".");
     }
 
     private int toIndex(String attr) {
         for (int i = 0; i < ATTRS.length; i++) {
-            if (ATTRS[i].equals(attr))
-                return i;
+            if (ATTRS[i].equals(attr)) return i;
         }
         return -1;
     }
@@ -137,8 +179,7 @@ public class PlaybackStartFunction extends PlaybackFunction {
     }
 
     private boolean checkTargetFreqs(String freqs) {
-        if (freqs.split(",").length == 0)
-            return false;
+        if (freqs.split(",").length == 0) return false;
 
         for (String freqStr : freqs.split(",")) {
             try {
@@ -200,23 +241,58 @@ public class PlaybackStartFunction extends PlaybackFunction {
         }
         return false;
     }
+
     private boolean checkFileName(String fileName) {
         switch (getPlaybackType()) {
             case TASK_NONOFFLOAD:
-                return fileName.endsWith(".wav") ||
-                        Constants.PlaybackDefaultConfig.FILE_NAME.equals(fileName);
+                return fileName.endsWith(".wav")
+                        || Constants.PlaybackDefaultConfig.FILE_NAME.equals(fileName);
 
             case TASK_OFFLOAD:
-                return fileName.endsWith(".mp3") ||
-                        fileName.endsWith(".aac") ||
-                        Constants.PlaybackDefaultConfig.FILE_NAME.equals(fileName);
+                return fileName.endsWith(".mp3")
+                        || fileName.endsWith(".aac")
+                        || Constants.PlaybackDefaultConfig.FILE_NAME.equals(fileName);
 
             default:
                 return false;
         }
     }
-    private boolean checkStreamType(int stream_type) {
-        switch (stream_type) {
+
+    private boolean checkContentType(int contentType) {
+        switch (contentType) {
+            case AudioAttributes.CONTENT_TYPE_UNKNOWN:
+            case AudioAttributes.CONTENT_TYPE_SPEECH:
+            case AudioAttributes.CONTENT_TYPE_MUSIC:
+            case AudioAttributes.CONTENT_TYPE_MOVIE:
+            case AudioAttributes.CONTENT_TYPE_SONIFICATION:
+            case 1997: // CONTENT_TYPE_ULTRASOUND
+                return true;
+        }
+        return false;
+    }
+
+    private boolean checkUsage(int usage) {
+        switch (usage) {
+            case AudioAttributes.USAGE_UNKNOWN:
+            case AudioAttributes.USAGE_MEDIA:
+            case AudioAttributes.USAGE_VOICE_COMMUNICATION:
+            case AudioAttributes.USAGE_VOICE_COMMUNICATION_SIGNALLING:
+            case AudioAttributes.USAGE_ALARM:
+            case AudioAttributes.USAGE_NOTIFICATION:
+            case AudioAttributes.USAGE_NOTIFICATION_RINGTONE:
+            case AudioAttributes.USAGE_NOTIFICATION_EVENT:
+            case AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY:
+            case AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE:
+            case AudioAttributes.USAGE_ASSISTANCE_SONIFICATION:
+            case AudioAttributes.USAGE_GAME:
+            case AudioAttributes.USAGE_ASSISTANT:
+                return true;
+        }
+        return false;
+    }
+
+    private boolean checkStreamType(int streamType) {
+        switch (streamType) {
             case AudioManager.STREAM_VOICE_CALL:
             case AudioManager.STREAM_SYSTEM:
             case AudioManager.STREAM_RING:
@@ -225,6 +301,18 @@ public class PlaybackStartFunction extends PlaybackFunction {
             case AudioManager.STREAM_NOTIFICATION:
             case AudioManager.STREAM_DTMF:
             case AudioManager.STREAM_ACCESSIBILITY:
+                return true;
+        }
+
+        return false;
+    }
+
+    private boolean checkPerformanceMode(int perfMode) {
+        switch (perfMode) {
+            case -1:
+            case AudioTrack.PERFORMANCE_MODE_NONE:
+            case AudioTrack.PERFORMANCE_MODE_LOW_LATENCY:
+            case AudioTrack.PERFORMANCE_MODE_POWER_SAVING:
                 return true;
         }
 
@@ -277,6 +365,18 @@ public class PlaybackStartFunction extends PlaybackFunction {
         return PARAM_FILE.getValue();
     }
 
+    public int getUsage() {
+        return PARAM_USAGE.getValue();
+    }
+
+    public int getContentType() {
+        return PARAM_CONTENT_TYPE.getValue();
+    }
+
+    public int getPerformanceMode() {
+        return PARAM_PERF_MODE.getValue();
+    }
+
     public int getStreamType() {
         return PARAM_STREAM_TYPE.getValue();
     }
@@ -321,7 +421,19 @@ public class PlaybackStartFunction extends PlaybackFunction {
         setParameter(ATTR_FILE, file);
     }
 
-    public void setStreamType(int stream_type) {
-        setParameter(ATTR_STREAM_TYPE, stream_type);
+    public void setStreamType(int streamType) {
+        setParameter(ATTR_STREAM_TYPE, streamType);
+    }
+
+    public void setContentType(int contentType) {
+        setParameter(ATTR_CONTENT_TYPE, contentType);
+    }
+
+    public void setUsage(int usage) {
+        setParameter(ATTR_USAGE, usage);
+    }
+
+    public void setPerformanceMode(int perfMode) {
+        setParameter(ATTR_PERF_MODE, perfMode);
     }
 }

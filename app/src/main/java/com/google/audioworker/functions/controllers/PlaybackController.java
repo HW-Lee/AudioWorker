@@ -3,7 +3,6 @@ package com.google.audioworker.functions.controllers;
 import android.content.Context;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
-import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.media.MediaPlayer;
 import android.util.Log;
@@ -42,7 +41,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class PlaybackController extends AudioController.AudioRxController {
-    private final static String TAG = Constants.packageTag("PlaybackController");
+    private static final String TAG = Constants.packageTag("PlaybackController");
 
     private WeakReference<Context> mContextRef;
     private AudioConverter mConverter;
@@ -52,20 +51,22 @@ public class PlaybackController extends AudioController.AudioRxController {
 
     @Override
     public void activate(Context ctx) {
-        mPoolExecuter = new ThreadPoolExecutor(
-                Constants.Controllers.Config.Common.MAX_THREAD_COUNT,
-                Constants.Controllers.Config.Common.MAX_THREAD_COUNT,
-                Constants.Controllers.Config.Common.KEEP_ALIVE_TIME_SECONDS,
-                TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
+        mPoolExecuter =
+                new ThreadPoolExecutor(
+                        Constants.Controllers.Config.Common.MAX_THREAD_COUNT,
+                        Constants.Controllers.Config.Common.MAX_THREAD_COUNT,
+                        Constants.Controllers.Config.Common.KEEP_ALIVE_TIME_SECONDS,
+                        TimeUnit.SECONDS,
+                        new LinkedBlockingQueue<Runnable>());
         mRunningPlaybackTasks = new HashMap<>();
-        mRunningPlaybackTasks.put(PlaybackStartFunction.TASK_NONOFFLOAD, new SparseArray<PlaybackRunnable>());
-        mRunningPlaybackTasks.put(PlaybackStartFunction.TASK_OFFLOAD, new SparseArray<PlaybackRunnable>());
+        mRunningPlaybackTasks.put(
+                PlaybackStartFunction.TASK_NONOFFLOAD, new SparseArray<PlaybackRunnable>());
+        mRunningPlaybackTasks.put(
+                PlaybackStartFunction.TASK_OFFLOAD, new SparseArray<PlaybackRunnable>());
 
         String name = "PlaybackController";
-        if (createFolder(name))
-            _dataPath = Constants.externalDirectory(name);
-        else
-            _dataPath = Constants.EnvironmentPaths.SDCARD_PATH;
+        if (createFolder(name)) _dataPath = Constants.externalDirectory(name);
+        else _dataPath = Constants.EnvironmentPaths.SDCARD_PATH;
 
         mContextRef = new WeakReference<>(ctx);
         Log.i(TAG, "create data folder: " + _dataPath);
@@ -89,18 +90,21 @@ public class PlaybackController extends AudioController.AudioRxController {
     }
 
     @Override
-    public void execute(final WorkerFunction function, final WorkerFunction.WorkerFunctionListener l) {
-        mPoolExecuter.execute(new Runnable() {
-            @Override
-            public void run() {
-                executeBackground(function, l);
-            }
-        });
+    public void execute(
+            final WorkerFunction function, final WorkerFunction.WorkerFunctionListener l) {
+        mPoolExecuter.execute(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        executeBackground(function, l);
+                    }
+                });
     }
 
-    private void executeBackground(WorkerFunction function, WorkerFunction.WorkerFunctionListener l) {
+    private void executeBackground(
+            WorkerFunction function, WorkerFunction.WorkerFunctionListener l) {
         if (function instanceof PlaybackFunction && function.isValid()) {
-            if(function instanceof PlaybackSeekFunction) {
+            if (function instanceof PlaybackSeekFunction) {
                 PlaybackSeekFunction f = (PlaybackSeekFunction) function;
                 int playbackId = f.getPlaybackId();
                 String playbackType = f.getPlaybackType();
@@ -111,10 +115,24 @@ public class PlaybackController extends AudioController.AudioRxController {
                 PlaybackRunnable playbackRunnable = tasks.get(playbackId);
                 if (playbackRunnable != null && !playbackRunnable.hasDone()) {
                     pushFunctionBeingExecuted(function);
-                    Log.w(TAG, "Seeking playbackID:" + playbackId + " with playbackType:" + playbackType + " to position = " + f.getSeekPositionInMs() + " ms");
+                    Log.w(
+                            TAG,
+                            "Seeking playbackID:"
+                                    + playbackId
+                                    + " with playbackType:"
+                                    + playbackType
+                                    + " to position = "
+                                    + f.getSeekPositionInMs()
+                                    + " ms");
                     playbackRunnable.seekTo(f.getSeekPositionInMs());
                 } else {
-                    Log.w(TAG, "playbackID:" + playbackId + " with playbackType:" + playbackType + " is not running, cannot seek");
+                    Log.w(
+                            TAG,
+                            "playbackID:"
+                                    + playbackId
+                                    + " with playbackType:"
+                                    + playbackType
+                                    + " is not running, cannot seek");
                 }
             }
             if (function instanceof PlaybackStartFunction) {
@@ -151,7 +169,12 @@ public class PlaybackController extends AudioController.AudioRxController {
                 } else if (l != null) {
                     WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
                     ack.setReturnCode(-1);
-                    ack.setDescription("invalid argument: the task[" + playbackType + ": " + playbackId + "] does not exist");
+                    ack.setDescription(
+                            "invalid argument: the task["
+                                    + playbackType
+                                    + ": "
+                                    + playbackId
+                                    + "] does not exist");
                     l.onAckReceived(ack);
                 }
             } else if (function instanceof PlaybackInfoFunction) {
@@ -161,8 +184,7 @@ public class PlaybackController extends AudioController.AudioRxController {
         } else {
             if (function.isValid())
                 Log.e(TAG, "The function: " + function + " is not playback function");
-            else
-                Log.e(TAG, "The function: " + function + " is invalid");
+            else Log.e(TAG, "The function: " + function + " is invalid");
             if (l != null) {
                 WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
                 ack.setDescription("invalid argument");
@@ -177,8 +199,7 @@ public class PlaybackController extends AudioController.AudioRxController {
         for (SparseArray<PlaybackRunnable> tasks : mRunningPlaybackTasks.values()) {
             for (int i = 0; i < tasks.size(); i++) {
                 PlaybackRunnable task = tasks.get(tasks.keyAt(i));
-                if (task != null && !task.hasDone())
-                    return true;
+                if (task != null && !task.hasDone()) return true;
             }
         }
 
@@ -191,8 +212,7 @@ public class PlaybackController extends AudioController.AudioRxController {
         for (SparseArray<PlaybackRunnable> tasks : mRunningPlaybackTasks.values()) {
             for (int i = 0; i < tasks.size(); i++) {
                 PlaybackRunnable task = tasks.get(tasks.keyAt(i));
-                if (task != null && !task.hasDone())
-                    cnt++;
+                if (task != null && !task.hasDone()) cnt++;
             }
         }
 
@@ -210,22 +230,38 @@ public class PlaybackController extends AudioController.AudioRxController {
         private int mSeekPositionMs = -1;
         private int mFileDurationMs = 0;
 
-        public PlaybackRunnable(PlaybackStartFunction function, WorkerFunction.WorkerFunctionListener l, ControllerBase controller) {
+        public PlaybackRunnable(
+                PlaybackStartFunction function,
+                WorkerFunction.WorkerFunctionListener l,
+                ControllerBase controller) {
             this(function, l, controller, null);
         }
 
-        public PlaybackRunnable(PlaybackStartFunction function, WorkerFunction.WorkerFunctionListener l, ControllerBase controller, AudioAttributes attributes) {
+        public PlaybackRunnable(
+                PlaybackStartFunction function,
+                WorkerFunction.WorkerFunctionListener l,
+                ControllerBase controller,
+                AudioAttributes attributes) {
             mStartFunction = function;
             mListener = l;
             mController = controller;
             mAttributes = attributes;
 
             if (mAttributes == null) {
-                mAttributes = new AudioAttributes.Builder()
-                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                    .setUsage(AudioAttributes.USAGE_MEDIA)
-                    .setLegacyStreamType(mStartFunction.getStreamType())
-                    .build();
+                Log.d(
+                        TAG,
+                        String.format(
+                                "initiate the attribute by, content type: %d, usage: %d, stream:"
+                                        + " %d.",
+                                mStartFunction.getContentType(),
+                                mStartFunction.getUsage(),
+                                mStartFunction.getStreamType()));
+                mAttributes =
+                        new AudioAttributes.Builder()
+                                .setContentType(mStartFunction.getContentType())
+                                .setUsage(mStartFunction.getUsage())
+                                .setLegacyStreamType(mStartFunction.getStreamType())
+                                .build();
             }
         }
 
@@ -281,9 +317,9 @@ public class PlaybackController extends AudioController.AudioRxController {
             tryStop(function, null);
         }
 
-        public void tryStop(PlaybackStopFunction function, WorkerFunction.WorkerFunctionListener l) {
-            if (l != null)
-                mListener = l;
+        public void tryStop(
+                PlaybackStopFunction function, WorkerFunction.WorkerFunctionListener l) {
+            if (l != null) mListener = l;
             exitPending = true;
             mStopFunction = function;
         }
@@ -292,8 +328,7 @@ public class PlaybackController extends AudioController.AudioRxController {
         public void run() {
             if (mStartFunction.getPlaybackType().equals(PlaybackStartFunction.TASK_NONOFFLOAD))
                 run_nonoffload();
-            else
-                run_offload();
+            else run_offload();
         }
 
         public void seekTo(int positionInMs) {
@@ -315,7 +350,9 @@ public class PlaybackController extends AudioController.AudioRxController {
             }
 
             if (mStopFunction != null) {
-                Log.d(TAG, "run_nonoffload: terminated (id: " + mStopFunction.getPlaybackId() + ")");
+                Log.d(
+                        TAG,
+                        "run_nonoffload: terminated (id: " + mStopFunction.getPlaybackId() + ")");
                 if (mStopFunction.getCommandId() == null)
                     mStopFunction.setCommandId(mStartFunction.getCommandId());
                 returnAck(mStopFunction, 0);
@@ -325,77 +362,120 @@ public class PlaybackController extends AudioController.AudioRxController {
         }
 
         private void playFromAudioTrack() {
-            AudioFormat format = new AudioFormat.Builder()
-                    .setSampleRate(mStartFunction.getSamplingFreq())
-                    .setEncoding(parseEncodingFormat(mStartFunction.getBitWidth()))
-                    .setChannelMask(parseChannelMask(mStartFunction.getNumChannels()))
-                    .build();
-            int minBuffsize = AudioTrack.getMinBufferSize(
-                    mStartFunction.getSamplingFreq(), parseChannelMask(mStartFunction.getNumChannels()), parseEncodingFormat(mStartFunction.getBitWidth()));
+            AudioFormat format =
+                    new AudioFormat.Builder()
+                            .setSampleRate(mStartFunction.getSamplingFreq())
+                            .setEncoding(parseEncodingFormat(mStartFunction.getBitWidth()))
+                            .setChannelMask(parseChannelMask(mStartFunction.getNumChannels()))
+                            .build();
+            int minBuffsize =
+                    AudioTrack.getMinBufferSize(
+                            mStartFunction.getSamplingFreq(),
+                            parseChannelMask(mStartFunction.getNumChannels()),
+                            parseEncodingFormat(mStartFunction.getBitWidth()));
 
-            mTrack = new AudioTrack.Builder()
-                    .setAudioAttributes(mAttributes).setAudioFormat(format)
-                    .setBufferSizeInBytes(minBuffsize)
-                    .setPerformanceMode(mStartFunction.isLowLatencyMode() ? AudioTrack.PERFORMANCE_MODE_NONE : AudioTrack.PERFORMANCE_MODE_POWER_SAVING)
-                    .setTransferMode(AudioTrack.MODE_STREAM).build();
+            int performanceMode = mStartFunction.getPerformanceMode();
+            if (performanceMode < 0) {
+                performanceMode =
+                        mStartFunction.isLowLatencyMode()
+                                ? AudioTrack.PERFORMANCE_MODE_LOW_LATENCY
+                                : AudioTrack.PERFORMANCE_MODE_POWER_SAVING;
+            }
+            int transferMode = AudioTrack.MODE_STREAM;
+            Log.d(
+                    TAG,
+                    String.format(
+                            "playFromAudioTrack: track configuration: %d Hz sampling, %d bits, %d"
+                                + " channels, %d bytes buffer, performance mode %d, transfer mode:"
+                                + " %d.",
+                            mStartFunction.getSamplingFreq(),
+                            mStartFunction.getBitWidth(),
+                            mStartFunction.getNumChannels(),
+                            minBuffsize,
+                            performanceMode,
+                            transferMode));
+            mTrack =
+                    new AudioTrack.Builder()
+                            .setAudioAttributes(mAttributes)
+                            .setAudioFormat(format)
+                            .setBufferSizeInBytes(minBuffsize)
+                            .setPerformanceMode(performanceMode)
+                            .setTransferMode(AudioTrack.MODE_STREAM)
+                            .build();
             mTrack.play();
 
             double[] signal = new double[minBuffsize / mStartFunction.getNumChannels()];
-            ArrayList<SinusoidalGenerator> signalGenerators = new ArrayList<>(mStartFunction.getNumChannels());
-            ArrayList<SparseArray<SinusoidalGenerator.ModelInfo>> infos = new ArrayList<>(mStartFunction.getNumChannels());
+            ArrayList<SinusoidalGenerator> signalGenerators =
+                    new ArrayList<>(mStartFunction.getNumChannels());
+            ArrayList<SparseArray<SinusoidalGenerator.ModelInfo>> infos =
+                    new ArrayList<>(mStartFunction.getNumChannels());
             for (int i = 0; i < mStartFunction.getNumChannels(); i++) {
                 signalGenerators.add(new SinusoidalGenerator());
                 infos.add(new SparseArray<SinusoidalGenerator.ModelInfo>());
             }
             exitPending = false;
-            Log.d(TAG, "playFromAudioTrack: start running (id: " + mStartFunction.getPlaybackId() + ")");
+            Log.d(
+                    TAG,
+                    "playFromAudioTrack: start running (id: "
+                            + mStartFunction.getPlaybackId()
+                            + ")");
             returnAck(mStartFunction, 0);
             mController.broadcastStateChange(mController);
             switch (mStartFunction.getBitWidth()) {
-                case 8: {
-                    byte[] buffer = new byte[minBuffsize];
-                    ArrayList<Double> freqs = mStartFunction.getTargetFrequencies();
+                case 8:
+                    {
+                        byte[] buffer = new byte[minBuffsize];
+                        ArrayList<Double> freqs = mStartFunction.getTargetFrequencies();
 
-                    while (!exitPending) {
-                        for (int c = 0; c < mStartFunction.getNumChannels(); c++) {
-                            double freq = freqs.get(freqs.size() > c ? c : freqs.size() - 1);
-                            SparseArray<SinusoidalGenerator.ModelInfo> info = infos.get(c);
-                            SinusoidalGenerator signalGenerator = signalGenerators.get(c);
-                            info.put(0, new SinusoidalGenerator.ModelInfo(mStartFunction.getAmplitude(), freq));
-                            signalGenerator.render(signal, info, mStartFunction.getSamplingFreq());
+                        while (!exitPending) {
+                            for (int c = 0; c < mStartFunction.getNumChannels(); c++) {
+                                double freq = freqs.get(freqs.size() > c ? c : freqs.size() - 1);
+                                SparseArray<SinusoidalGenerator.ModelInfo> info = infos.get(c);
+                                SinusoidalGenerator signalGenerator = signalGenerators.get(c);
+                                info.put(
+                                        0,
+                                        new SinusoidalGenerator.ModelInfo(
+                                                mStartFunction.getAmplitude(), freq));
+                                signalGenerator.render(
+                                        signal, info, mStartFunction.getSamplingFreq());
 
-                            for (int i = 0; i < signal.length; i++) {
-                                byte v = (byte) (signal[i] * 127);
-                                buffer[i * mStartFunction.getNumChannels() + c] = v;
+                                for (int i = 0; i < signal.length; i++) {
+                                    byte v = (byte) (signal[i] * 127);
+                                    buffer[i * mStartFunction.getNumChannels() + c] = v;
+                                }
                             }
+
+                            mTrack.write(buffer, 0, minBuffsize);
                         }
-
-                        mTrack.write(buffer, 0, minBuffsize);
                     }
-                }
-                break;
-                case 16: {
-                    short[] buffer = new short[minBuffsize];
-                    ArrayList<Double> freqs = mStartFunction.getTargetFrequencies();
+                    break;
+                case 16:
+                    {
+                        short[] buffer = new short[minBuffsize];
+                        ArrayList<Double> freqs = mStartFunction.getTargetFrequencies();
 
-                    while (!exitPending) {
-                        for (int c = 0; c < mStartFunction.getNumChannels(); c++) {
-                            double freq = freqs.get(freqs.size() > c ? c : freqs.size() - 1);
-                            SparseArray<SinusoidalGenerator.ModelInfo> info = infos.get(c);
-                            SinusoidalGenerator signalGenerator = signalGenerators.get(c);
-                            info.put(0, new SinusoidalGenerator.ModelInfo(mStartFunction.getAmplitude(), freq));
-                            signalGenerator.render(signal, info, mStartFunction.getSamplingFreq());
+                        while (!exitPending) {
+                            for (int c = 0; c < mStartFunction.getNumChannels(); c++) {
+                                double freq = freqs.get(freqs.size() > c ? c : freqs.size() - 1);
+                                SparseArray<SinusoidalGenerator.ModelInfo> info = infos.get(c);
+                                SinusoidalGenerator signalGenerator = signalGenerators.get(c);
+                                info.put(
+                                        0,
+                                        new SinusoidalGenerator.ModelInfo(
+                                                mStartFunction.getAmplitude(), freq));
+                                signalGenerator.render(
+                                        signal, info, mStartFunction.getSamplingFreq());
 
-                            for (int i = 0; i < signal.length; i++) {
-                                short v = (short) (signal[i] * 32767);
-                                buffer[i * mStartFunction.getNumChannels() + c] = v;
+                                for (int i = 0; i < signal.length; i++) {
+                                    short v = (short) (signal[i] * 32767);
+                                    buffer[i * mStartFunction.getNumChannels() + c] = v;
+                                }
                             }
-                        }
 
-                        mTrack.write(buffer, 0, minBuffsize);
+                            mTrack.write(buffer, 0, minBuffsize);
+                        }
                     }
-                }
-                break;
+                    break;
                 default:
                     break;
             }
@@ -412,16 +492,24 @@ public class PlaybackController extends AudioController.AudioRxController {
                     return;
                 }
             }
-            Log.d(TAG, "Generate " + Constants.Controllers.Config.Playback.TONE_FILE_DURATION_SECONDS + " sec " + mStartFunction.getTargetFrequenciesString() + "Hz tone wav");
+            Log.d(
+                    TAG,
+                    "Generate "
+                            + Constants.Controllers.Config.Playback.TONE_FILE_DURATION_SECONDS
+                            + " sec "
+                            + mStartFunction.getTargetFrequenciesString()
+                            + "Hz tone wav");
 
-            String wavPath = new File(mController.getDataDir(), getTempName() + ".wav").getAbsolutePath();
-            String mp3Path = new File(mController.getDataDir(), getTempName() + ".mp3").getAbsolutePath();
+            String wavPath =
+                    new File(mController.getDataDir(), getTempName() + ".wav").getAbsolutePath();
+            String mp3Path =
+                    new File(mController.getDataDir(), getTempName() + ".mp3").getAbsolutePath();
             String path = wavPath;
             if (Files.exists(Paths.get(mStartFunction.getPlaybackFile()))) {
                 Log.d(TAG, "run_offload: Using file " + mStartFunction.getPlaybackFile());
                 path = mStartFunction.getPlaybackFile();
             } else {
-                path = convertToMp3(wavPath, mp3Path) ? mp3Path:wavPath;
+                path = convertToMp3(wavPath, mp3Path) ? mp3Path : wavPath;
             }
 
             playFile(path);
@@ -477,13 +565,15 @@ public class PlaybackController extends AudioController.AudioRxController {
 
         private boolean convertToMp3(String wavPath, String mp3Path) {
             boolean success;
-            if (!(mController instanceof PlaybackController) || ((PlaybackController) mController).mContextRef.get() == null)
-                return false;
+            if (!(mController instanceof PlaybackController)
+                    || ((PlaybackController) mController).mContextRef.get() == null) return false;
 
-            AudioConverter converter = new AudioConverter.Builder()
-                    .with(((PlaybackController) mController).mContextRef.get())
-                    .withSource(wavPath)
-                    .convertTo(mp3Path).buildWith(((PlaybackController) mController).mConverter);
+            AudioConverter converter =
+                    new AudioConverter.Builder()
+                            .with(((PlaybackController) mController).mContextRef.get())
+                            .withSource(wavPath)
+                            .convertTo(mp3Path)
+                            .buildWith(((PlaybackController) mController).mConverter);
 
             if (((PlaybackController) mController).mConverter == null)
                 ((PlaybackController) mController).mConverter = converter;
@@ -497,31 +587,44 @@ public class PlaybackController extends AudioController.AudioRxController {
                 }
             }
 
-            AudioConverter.Config config = new AudioConverter.Config.Builder()
-                    .withBitrate(Constants.Controllers.Config.Playback.MP3_ENCODE.COMPRESSION_RATIO_KHZ)
-                    .withQuality(Constants.Controllers.Config.Playback.MP3_ENCODE.QUALITY).build();
+            AudioConverter.Config config =
+                    new AudioConverter.Config.Builder()
+                            .withBitrate(
+                                    Constants.Controllers.Config.Playback.MP3_ENCODE
+                                            .COMPRESSION_RATIO_KHZ)
+                            .withQuality(Constants.Controllers.Config.Playback.MP3_ENCODE.QUALITY)
+                            .build();
 
             Log.d(TAG, "convert " + wavPath + " to " + mp3Path + "....");
             success = converter.convert(null, true, config);
-            if (success)
-                Log.d(TAG, "convert successfully");
-            else
-                Log.w(TAG, "convert failed");
+            if (success) Log.d(TAG, "convert successfully");
+            else Log.w(TAG, "convert failed");
 
             return success;
         }
 
         private boolean genAudioFile() {
             try {
-                WavUtils.WavConfig config = new WavUtils.WavConfig.Builder()
-                        .withSamplingFrequency(mStartFunction.getSamplingFreq())
-                        .withNumChannels(mStartFunction.getNumChannels())
-                        .withBitPerSample(mStartFunction.getBitWidth())
-                        .withDurationMillis(Constants.Controllers.Config.Playback.TONE_FILE_DURATION_SECONDS * 1000).build();
-                DataOutputStream data = WavUtils.obtainWavFile(config, new File(mController.getDataDir(), getTempName() + ".wav").getAbsolutePath());
+                WavUtils.WavConfig config =
+                        new WavUtils.WavConfig.Builder()
+                                .withSamplingFrequency(mStartFunction.getSamplingFreq())
+                                .withNumChannels(mStartFunction.getNumChannels())
+                                .withBitPerSample(mStartFunction.getBitWidth())
+                                .withDurationMillis(
+                                        Constants.Controllers.Config.Playback
+                                                        .TONE_FILE_DURATION_SECONDS
+                                                * 1000)
+                                .build();
+                DataOutputStream data =
+                        WavUtils.obtainWavFile(
+                                config,
+                                new File(mController.getDataDir(), getTempName() + ".wav")
+                                        .getAbsolutePath());
                 double[] signal = new double[mStartFunction.getSamplingFreq()];
-                ArrayList<SinusoidalGenerator> signalGenerators = new ArrayList<>(mStartFunction.getNumChannels());
-                ArrayList<SparseArray<SinusoidalGenerator.ModelInfo>> infos = new ArrayList<>(mStartFunction.getNumChannels());
+                ArrayList<SinusoidalGenerator> signalGenerators =
+                        new ArrayList<>(mStartFunction.getNumChannels());
+                ArrayList<SparseArray<SinusoidalGenerator.ModelInfo>> infos =
+                        new ArrayList<>(mStartFunction.getNumChannels());
                 for (int i = 0; i < mStartFunction.getNumChannels(); i++) {
                     signalGenerators.add(new SinusoidalGenerator());
                     infos.add(new SparseArray<SinusoidalGenerator.ModelInfo>());
@@ -529,63 +632,90 @@ public class PlaybackController extends AudioController.AudioRxController {
                 double amp = mStartFunction.getAmplitude();
                 ArrayList<Double> freqs = mStartFunction.getTargetFrequencies();
 
-                for (int dummy = 0; dummy < Constants.Controllers.Config.Playback.TONE_FILE_DURATION_SECONDS; dummy++) {
+                for (int dummy = 0;
+                        dummy < Constants.Controllers.Config.Playback.TONE_FILE_DURATION_SECONDS;
+                        dummy++) {
                     switch ((mStartFunction.getBitWidth())) {
-                        case 8: {
-                            byte[] raw = new byte[signal.length * mStartFunction.getNumChannels()];
-                            for (int c = 0; c < mStartFunction.getNumChannels(); c++) {
-                                double freq = freqs.get(freqs.size() > c ? c : freqs.size() - 1);
-                                SparseArray<SinusoidalGenerator.ModelInfo> info = infos.get(c);
-                                SinusoidalGenerator signalGenerator = signalGenerators.get(c);
-                                info.put(0, new SinusoidalGenerator.ModelInfo(amp, freq));
-                                signalGenerator.render(signal, info, mStartFunction.getSamplingFreq());
+                        case 8:
+                            {
+                                byte[] raw =
+                                        new byte[signal.length * mStartFunction.getNumChannels()];
+                                for (int c = 0; c < mStartFunction.getNumChannels(); c++) {
+                                    double freq =
+                                            freqs.get(freqs.size() > c ? c : freqs.size() - 1);
+                                    SparseArray<SinusoidalGenerator.ModelInfo> info = infos.get(c);
+                                    SinusoidalGenerator signalGenerator = signalGenerators.get(c);
+                                    info.put(0, new SinusoidalGenerator.ModelInfo(amp, freq));
+                                    signalGenerator.render(
+                                            signal, info, mStartFunction.getSamplingFreq());
 
-                                for (int i = 0; i < signal.length; i++)
-                                    raw[i * mStartFunction.getNumChannels() + c] = (byte) ((1 << 7 - 1) * signal[i]);
+                                    for (int i = 0; i < signal.length; i++)
+                                        raw[i * mStartFunction.getNumChannels() + c] =
+                                                (byte) ((1 << 7 - 1) * signal[i]);
+                                }
+                                data.write(raw);
                             }
-                            data.write(raw);
-                        }
                             break;
-                        case 32: {
-                            int[] raw = new int[signal.length * mStartFunction.getNumChannels()];
-                            byte[] buffer = new byte[raw.length * 4];
-                            for (int c = 0; c < mStartFunction.getNumChannels(); c++) {
-                                double freq = freqs.get(freqs.size() > c ? c : freqs.size() - 1);
-                                SparseArray<SinusoidalGenerator.ModelInfo> info = infos.get(c);
-                                SinusoidalGenerator signalGenerator = signalGenerators.get(c);
-                                info.put(0, new SinusoidalGenerator.ModelInfo(amp, freq));
-                                signalGenerator.render(signal, info, mStartFunction.getSamplingFreq());
+                        case 32:
+                            {
+                                int[] raw =
+                                        new int[signal.length * mStartFunction.getNumChannels()];
+                                byte[] buffer = new byte[raw.length * 4];
+                                for (int c = 0; c < mStartFunction.getNumChannels(); c++) {
+                                    double freq =
+                                            freqs.get(freqs.size() > c ? c : freqs.size() - 1);
+                                    SparseArray<SinusoidalGenerator.ModelInfo> info = infos.get(c);
+                                    SinusoidalGenerator signalGenerator = signalGenerators.get(c);
+                                    info.put(0, new SinusoidalGenerator.ModelInfo(amp, freq));
+                                    signalGenerator.render(
+                                            signal, info, mStartFunction.getSamplingFreq());
 
-                                for (int i = 0; i < signal.length; i++)
-                                    raw[i*mStartFunction.getNumChannels() + c] = (int) ((1 << 31 - 1) * signal[i]);
+                                    for (int i = 0; i < signal.length; i++)
+                                        raw[i * mStartFunction.getNumChannels() + c] =
+                                                (int) ((1 << 31 - 1) * signal[i]);
+                                }
+                                ByteBuffer.wrap(buffer)
+                                        .order(ByteOrder.LITTLE_ENDIAN)
+                                        .asIntBuffer()
+                                        .put(raw);
+                                data.write(buffer);
                             }
-                            ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer().put(raw);
-                            data.write(buffer);
-                        }
                             break;
                         case 16:
-                        default: {
-                            short[] raw = new short[signal.length * mStartFunction.getNumChannels()];
-                            byte[] buffer = new byte[raw.length * 2];
-                            for (int c = 0; c < mStartFunction.getNumChannels(); c++) {
-                                double freq = freqs.get(freqs.size() > c ? c : freqs.size() - 1);
-                                SparseArray<SinusoidalGenerator.ModelInfo> info = infos.get(c);
-                                SinusoidalGenerator signalGenerator = signalGenerators.get(c);
-                                info.put(0, new SinusoidalGenerator.ModelInfo(amp, freq));
-                                signalGenerator.render(signal, info, mStartFunction.getSamplingFreq());
+                        default:
+                            {
+                                short[] raw =
+                                        new short[signal.length * mStartFunction.getNumChannels()];
+                                byte[] buffer = new byte[raw.length * 2];
+                                for (int c = 0; c < mStartFunction.getNumChannels(); c++) {
+                                    double freq =
+                                            freqs.get(freqs.size() > c ? c : freqs.size() - 1);
+                                    SparseArray<SinusoidalGenerator.ModelInfo> info = infos.get(c);
+                                    SinusoidalGenerator signalGenerator = signalGenerators.get(c);
+                                    info.put(0, new SinusoidalGenerator.ModelInfo(amp, freq));
+                                    signalGenerator.render(
+                                            signal, info, mStartFunction.getSamplingFreq());
 
-                                for (int i = 0; i < signal.length; i++)
-                                    raw[i*mStartFunction.getNumChannels() + c] = (short) ((1 << 15 - 1) * signal[i]);
+                                    for (int i = 0; i < signal.length; i++)
+                                        raw[i * mStartFunction.getNumChannels() + c] =
+                                                (short) ((1 << 15 - 1) * signal[i]);
+                                }
+                                ByteBuffer.wrap(buffer)
+                                        .order(ByteOrder.LITTLE_ENDIAN)
+                                        .asShortBuffer()
+                                        .put(raw);
+                                data.write(buffer);
                             }
-                            ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().put(raw);
-                            data.write(buffer);
-                        }
                             break;
                     }
                 }
 
                 data.close();
-                Log.d(TAG, "write data to: " + new File(mController.getDataDir(), getTempName() + ".wav").getAbsolutePath());
+                Log.d(
+                        TAG,
+                        "write data to: "
+                                + new File(mController.getDataDir(), getTempName() + ".wav")
+                                        .getAbsolutePath());
                 return true;
             } catch (IOException e) {
                 e.printStackTrace();
@@ -599,16 +729,13 @@ public class PlaybackController extends AudioController.AudioRxController {
 
         private void returnAck(PlaybackFunction function, int ret) {
             mController.notifyFunctionHasBeenExecuted(function);
-            if (mListener == null)
-                return;
+            if (mListener == null) return;
 
             WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
             if (function instanceof PlaybackStartFunction) {
                 ack.setReturnCode(ret);
-                if (ret < 0)
-                    ack.setDescription("unexpected stop");
-                else
-                    ack.setDescription("playback start");
+                if (ret < 0) ack.setDescription("unexpected stop");
+                else ack.setDescription("playback start");
             } else if (function instanceof PlaybackStopFunction) {
                 ack.setReturnCode(ret);
                 ack.setDescription("stop command received");
@@ -629,7 +756,8 @@ public class PlaybackController extends AudioController.AudioRxController {
                 if (!obj.has(type)) {
                     obj.put(type, new JSONObject());
                 }
-                obj.getJSONObject(type).put(String.valueOf(function.getPlaybackId()), function.toJson());
+                obj.getJSONObject(type)
+                        .put(String.valueOf(function.getPlaybackId()), function.toJson());
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -643,7 +771,8 @@ public class PlaybackController extends AudioController.AudioRxController {
         private PlaybackInfoFunction mFunction;
         private WorkerFunction.WorkerFunctionListener mListener;
 
-        public PlaybackInfoRunnable(PlaybackInfoFunction function, WorkerFunction.WorkerFunctionListener l) {
+        public PlaybackInfoRunnable(
+                PlaybackInfoFunction function, WorkerFunction.WorkerFunctionListener l) {
             mFunction = function;
             mListener = l;
         }
@@ -651,15 +780,13 @@ public class PlaybackController extends AudioController.AudioRxController {
         @Override
         public void run() {
             notifyFunctionHasBeenExecuted(mFunction);
-            if (mListener == null)
-                return;
+            if (mListener == null) return;
 
             ArrayList<Object> returns = new ArrayList<>();
             ArrayList<PlaybackStartFunction> functions = new ArrayList<>();
             for (String type : mRunningPlaybackTasks.keySet()) {
                 SparseArray<PlaybackRunnable> tasks = mRunningPlaybackTasks.get(type);
-                if (tasks == null)
-                    continue;
+                if (tasks == null) continue;
                 for (int i = 0; i < tasks.size(); i++) {
                     int idx = tasks.keyAt(i);
                     PlaybackRunnable task = tasks.get(idx);
