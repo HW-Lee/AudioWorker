@@ -1,11 +1,11 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 32
+    compileSdkVersion 33
     defaultConfig {
         applicationId "com.google.audioworker"
-        minSdkVersion 28
-        targetSdkVersion 28
+        minSdkVersion 33
+        targetSdkVersion 33
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             ndkBuild {

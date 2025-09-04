@@ -95,11 +95,10 @@ public class RecordController extends AudioController.AudioTxController {
                 TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
 
         String name = "RecordController";
-        if (createFolder(name))
-            _dataPath = Constants.externalDirectory(name);
-        else
-            _dataPath = Constants.EnvironmentPaths.SDCARD_PATH;
-
+        if (!createFolder(name)) {
+            Log.e(TAG, "Failed to create data folder for RecordController");
+        }
+        _dataPath = Constants.externalDirectory(name);
         Log.i(TAG, "create data folder: " + _dataPath);
     }
 
@@ -562,7 +561,7 @@ public class RecordController extends AudioController.AudioTxController {
             mController = controller;
 
             int minBuffsize = AudioRecord.getMinBufferSize(
-                    mStartFunction.getSamplingFreq(), parseChannelMask(mStartFunction.getNumChannels()), parseEncodingFormat(mStartFunction.getBitWidth()));
+                    mStartFunction.getSamplingFreq(), AudioFormat.CHANNEL_IN_MONO, parseEncodingFormat(mStartFunction.getBitWidth()));
             sharedBuffer = new RecordSharedBuffer(minBuffsize);
             dumpBufferSize = (int) (mStartFunction.getBitWidth() / 8. * mStartFunction.getNumChannels() * mStartFunction.getSamplingFreq() * mStartFunction.getDumpBufferSizeMs() / 1000.);
             dumpBuffer = new RecordCircularBuffer(dumpBufferSize);
@@ -611,15 +610,13 @@ public class RecordController extends AudioController.AudioTxController {
             }
         }
 
-        private int parseChannelMask(int nch) {
-            switch (nch) {
-                case 1:
-                    return AudioFormat.CHANNEL_IN_MONO;
-                case 2:
-                    return AudioFormat.CHANNEL_IN_STEREO;
-                default:
-                    return AudioFormat.CHANNEL_IN_MONO;
+        private int parseChannelIndexMask(int nch) {
+            if (nch <= 0 || nch > 8) {
+                Log.w(TAG, "Invalid number of channels (" + nch + ") specified. Defaulting to 1.");
+                nch = 1;
             }
+
+            return (1 << nch) - 1;
         }
 
         public void setRecordRunner(RecordInternalRunnable runner) {
@@ -861,13 +858,14 @@ public class RecordController extends AudioController.AudioTxController {
         }
 
         @RequiresApi(api = VERSION_CODES.S)
+        @SuppressWarnings("MissingPermission")
         @Override
         public void run() {
             RecordStartFunction startFunction = master.mStartFunction;
             AudioFormat format = new AudioFormat.Builder()
                     .setSampleRate(startFunction.getSamplingFreq())
                     .setEncoding(master.parseEncodingFormat(startFunction.getBitWidth()))
-                    .setChannelMask(master.parseChannelMask(startFunction.getNumChannels()))
+                    .setChannelIndexMask(master.parseChannelIndexMask(startFunction.getNumChannels()))
                     .build();
             int inputSource = startFunction.getInputSrc();
             int perfMode = startFunction.getAudioPerf();
