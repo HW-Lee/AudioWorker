@@ -144,6 +144,9 @@ public class DataView extends View {
 
         synchronized (mDataBuffer) {
             for (int j = 0; j < mDataBuffer.size(); j++) {
+                if (j >= mDataPaints.size()) {
+                    continue;
+                }
                 ArrayList<Double> data = mDataBuffer.get(j);
                 Paint paint = mDataPaints.get(j);
                 if (data == null || paint == null)

@@ -65,11 +65,13 @@ public class PlaybackController extends AudioController.AudioRxController {
                 PlaybackStartFunction.TASK_OFFLOAD, new SparseArray<PlaybackRunnable>());
 
         String name = "PlaybackController";
-        if (createFolder(name)) _dataPath = Constants.externalDirectory(name);
-        else _dataPath = Constants.EnvironmentPaths.SDCARD_PATH;
-
-        mContextRef = new WeakReference<>(ctx);
-        Log.i(TAG, "create data folder: " + _dataPath);
+        if (!createFolder(name)) {
+            Log.e(TAG, "Failed to create data folder for PlaybackController");
+        } else {
+            _dataPath = Constants.externalDirectory(name);
+            mContextRef = new WeakReference<>(ctx);
+            Log.i(TAG, "create data folder: " + _dataPath);
+        }
     }
 
     @Override
@@ -270,6 +272,9 @@ public class PlaybackController extends AudioController.AudioRxController {
                 case 8:
                     return AudioFormat.ENCODING_PCM_8BIT;
                 case 16:
+                    return AudioFormat.ENCODING_PCM_16BIT;
+                case 32:
+                    return AudioFormat.ENCODING_PCM_32BIT;
                 default:
                     return AudioFormat.ENCODING_PCM_16BIT;
             }
@@ -404,81 +409,70 @@ public class PlaybackController extends AudioController.AudioRxController {
                             .build();
             mTrack.play();
 
-            double[] signal = new double[minBuffsize / mStartFunction.getNumChannels()];
-            ArrayList<SinusoidalGenerator> signalGenerators =
-                    new ArrayList<>(mStartFunction.getNumChannels());
-            ArrayList<SparseArray<SinusoidalGenerator.ModelInfo>> infos =
-                    new ArrayList<>(mStartFunction.getNumChannels());
-            for (int i = 0; i < mStartFunction.getNumChannels(); i++) {
+            final int numChannels = mStartFunction.getNumChannels();
+            final int bitWidth = mStartFunction.getBitWidth();
+            final int bytesPerSample = bitWidth / 8;
+            final int frameSize = numChannels * bytesPerSample;
+            final int frameCount = minBuffsize / frameSize;
+
+            double[] signal = new double[frameCount];
+            ArrayList<SinusoidalGenerator> signalGenerators = new ArrayList<>(numChannels);
+            ArrayList<SparseArray<SinusoidalGenerator.ModelInfo>> infos = new ArrayList<>(numChannels);
+            for (int i = 0; i < numChannels; i++) {
                 signalGenerators.add(new SinusoidalGenerator());
                 infos.add(new SparseArray<SinusoidalGenerator.ModelInfo>());
             }
+
+            // Allocate buffers outside the loop
+            byte[] byteBuffer = (bitWidth == 8) ? new byte[frameCount * numChannels] : null;
+            short[] shortBuffer = (bitWidth == 16) ? new short[frameCount * numChannels] : null;
+            int[] intBuffer = (bitWidth == 32) ? new int[frameCount * numChannels] : null;
+            byte[] byteBuffer32 = (bitWidth == 32) ? new byte[intBuffer.length * 4] : null;
+
             exitPending = false;
-            Log.d(
-                    TAG,
-                    "playFromAudioTrack: start running (id: "
-                            + mStartFunction.getPlaybackId()
-                            + ")");
+            Log.d(TAG, "playFromAudioTrack: start running (id: " + mStartFunction.getPlaybackId() + ")");
             returnAck(mStartFunction, 0);
             mController.broadcastStateChange(mController);
-            switch (mStartFunction.getBitWidth()) {
-                case 8:
-                    {
-                        byte[] buffer = new byte[minBuffsize];
-                        ArrayList<Double> freqs = mStartFunction.getTargetFrequencies();
 
-                        while (!exitPending) {
-                            for (int c = 0; c < mStartFunction.getNumChannels(); c++) {
-                                double freq = freqs.get(freqs.size() > c ? c : freqs.size() - 1);
-                                SparseArray<SinusoidalGenerator.ModelInfo> info = infos.get(c);
-                                SinusoidalGenerator signalGenerator = signalGenerators.get(c);
-                                info.put(
-                                        0,
-                                        new SinusoidalGenerator.ModelInfo(
-                                                mStartFunction.getAmplitude(), freq));
-                                signalGenerator.render(
-                                        signal, info, mStartFunction.getSamplingFreq());
+            ArrayList<Double> freqs = mStartFunction.getTargetFrequencies();
+            while (!exitPending) {
+                for (int c = 0; c < numChannels; c++) {
+                    double freq = freqs.get(freqs.size() > c ? c : freqs.size() - 1);
+                    SparseArray<SinusoidalGenerator.ModelInfo> info = infos.get(c);
+                    SinusoidalGenerator signalGenerator = signalGenerators.get(c);
+                    info.put(0, new SinusoidalGenerator.ModelInfo(mStartFunction.getAmplitude(), freq));
+                    signalGenerator.render(signal, info, mStartFunction.getSamplingFreq());
 
-                                for (int i = 0; i < signal.length; i++) {
-                                    byte v = (byte) (signal[i] * 127);
-                                    buffer[i * mStartFunction.getNumChannels() + c] = v;
-                                }
-                            }
-
-                            mTrack.write(buffer, 0, minBuffsize);
-                        }
+                    switch (bitWidth) {
+                        case 8:
+                            for (int i = 0; i < frameCount; i++)
+                                byteBuffer[i * numChannels + c] = (byte) (signal[i] * 127);
+                            break;
+                        case 16:
+                            for (int i = 0; i < frameCount; i++)
+                                shortBuffer[i * numChannels + c] = (short) (signal[i] * 32767);
+                            break;
+                        case 32:
+                            for (int i = 0; i < frameCount; i++)
+                                intBuffer[i * numChannels + c] = (int) (signal[i] * Integer.MAX_VALUE);
+                            break;
                     }
-                    break;
-                case 16:
-                    {
-                        short[] buffer = new short[minBuffsize];
-                        ArrayList<Double> freqs = mStartFunction.getTargetFrequencies();
+                }
 
-                        while (!exitPending) {
-                            for (int c = 0; c < mStartFunction.getNumChannels(); c++) {
-                                double freq = freqs.get(freqs.size() > c ? c : freqs.size() - 1);
-                                SparseArray<SinusoidalGenerator.ModelInfo> info = infos.get(c);
-                                SinusoidalGenerator signalGenerator = signalGenerators.get(c);
-                                info.put(
-                                        0,
-                                        new SinusoidalGenerator.ModelInfo(
-                                                mStartFunction.getAmplitude(), freq));
-                                signalGenerator.render(
-                                        signal, info, mStartFunction.getSamplingFreq());
-
-                                for (int i = 0; i < signal.length; i++) {
-                                    short v = (short) (signal[i] * 32767);
-                                    buffer[i * mStartFunction.getNumChannels() + c] = v;
-                                }
-                            }
-
-                            mTrack.write(buffer, 0, minBuffsize);
-                        }
-                    }
-                    break;
-                default:
-                    break;
+                switch (bitWidth) {
+                    case 8:
+                        mTrack.write(byteBuffer, 0, byteBuffer.length);
+                        break;
+                    case 16:
+                        mTrack.write(shortBuffer, 0, shortBuffer.length);
+                        break;
+                    case 32:
+                        ByteBuffer.wrap(byteBuffer32).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer().put(intBuffer);
+                        mTrack.write(byteBuffer32, 0, byteBuffer32.length);
+                        break;
+                }
             }
+
             mController.broadcastStateChange(mController);
         }
 

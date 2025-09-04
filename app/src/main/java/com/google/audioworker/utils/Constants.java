@@ -2,6 +2,7 @@ package com.google.audioworker.utils;
 
 import android.Manifest;
 import android.content.Intent;
+import android.content.Context;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.MediaRecorder;
@@ -11,9 +12,7 @@ import com.google.audioworker.fragments.AudioFragment;
 import com.google.audioworker.fragments.AudioPlaybackFragment;
 import com.google.audioworker.fragments.AudioRecordFragment;
 import com.google.audioworker.fragments.AudioVoIPFragment;
-import com.google.audioworker.fragments.ConnectFragment;
 import com.google.audioworker.fragments.GeneralInfoFragment;
-import com.google.audioworker.fragments.ShellFragment;
 import com.google.audioworker.utils.Constants.Controllers.Config.AudioApi;
 import com.google.audioworker.utils.Constants.Controllers.Config.PerformanceMode;
 import com.google.audioworker.utils.Constants.Controllers.Config.RecordTask;
@@ -30,15 +29,7 @@ public class Constants {
         Manifest.permission.MODIFY_AUDIO_SETTINGS,
         Manifest.permission.READ_EXTERNAL_STORAGE,
         Manifest.permission.RECORD_AUDIO,
-        Manifest.permission.WRITE_EXTERNAL_STORAGE,
-
-        // WIFI P2P
-        Manifest.permission.ACCESS_WIFI_STATE,
-        Manifest.permission.CHANGE_WIFI_STATE,
-        Manifest.permission.CHANGE_NETWORK_STATE,
-        Manifest.permission.ACCESS_NETWORK_STATE,
-        Manifest.permission.INTERNET,
-        Manifest.permission.ACCESS_COARSE_LOCATION,
+        Manifest.permission.MANAGE_EXTERNAL_STORAGE,
 
         // Telephony
         Manifest.permission.READ_PHONE_STATE,
@@ -84,15 +75,11 @@ public class Constants {
 
         private static final FragmentInfo GENERAL_FRAGMENT_INFO =
                 new FragmentInfo("GeneralFragment", "Main", GeneralInfoFragment.class);
-        private static final FragmentInfo CONNECT_FRAGMENT_INFO =
-                new FragmentInfo("ConnectFragment", "Comm", ConnectFragment.class);
         private static final FragmentInfo AUDIO_FRAGMENT_INFO =
                 new FragmentInfo("AudioFragment", "Audio", AudioFragment.class);
-        private static final FragmentInfo SHELL_FRAGMENT_INFO =
-                new FragmentInfo("ShellFragment", "Shell", ShellFragment.class);
 
         public static final FragmentInfo[] FRAGMENT_INFOS = {
-            GENERAL_FRAGMENT_INFO, CONNECT_FRAGMENT_INFO, AUDIO_FRAGMENT_INFO, SHELL_FRAGMENT_INFO
+            AUDIO_FRAGMENT_INFO,
         };
 
         public static class Audio {
@@ -110,13 +97,6 @@ public class Constants {
         }
     }
 
-    public static class WIFIP2PConstants {
-        public static final int SERVER_PORT = 8888;
-        public static final int MAX_THREAD_COUNT = 10;
-        public static final int KEEP_ALIVE_TIME_SECONDS = 30;
-        public static final int MSG_BUFFER_SIZE = 1024;
-    }
-
     public static class MessageSpecification {
         public static final String COMMAND_ID = "command-id";
         public static final String COMMAND_TAG_NAME = "SN";
@@ -126,7 +106,6 @@ public class Constants {
         public static final String COMMAND_ACK_RETURN_CODE = "code";
         public static final String COMMAND_ACK_TARGET = "target";
 
-        public static final String COMMAND_SHELL_TARGET = "shell";
         public static final String COMMAND_BROADCAST_INTENT = "intent";
         public static final String COMMAND_BROADCAST_PARAMS = "params";
     }
@@ -239,7 +218,6 @@ public class Constants {
         public static final String NAME_PLAYBACK = "Playback";
         public static final String NAME_RECORD = "Record";
         public static final String NAME_VOIP = "VoIP";
-        public static final String NAME_SHELL = "Shell";
 
         public static class Config {
             public static class Common {

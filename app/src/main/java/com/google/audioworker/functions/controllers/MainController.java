@@ -4,7 +4,6 @@ import android.util.Log;
 
 import com.google.audioworker.functions.audio.AudioFunction;
 import com.google.audioworker.functions.common.WorkerFunction;
-import com.google.audioworker.functions.shell.ShellFunction;
 import com.google.audioworker.utils.Constants;
 
 import org.json.JSONException;
@@ -19,7 +18,7 @@ public class MainController extends ManagerController {
     public MainController() {
         super();
         mControllers.put(Constants.Controllers.NAME_AUDIO, new AudioController());
-        mControllers.put(Constants.Controllers.NAME_SHELL, new ShellController());
+        // mControllers.put(Constants.Controllers.NAME_SHELL, new ShellController());
 
         mRequestedFunctions = new HashMap<>();
     }
@@ -56,8 +55,6 @@ public class MainController extends ManagerController {
         ControllerBase selectedController = null;
         if (function instanceof AudioFunction)
             selectedController = mControllers.get(Constants.Controllers.NAME_AUDIO);
-        else if (function instanceof ShellFunction)
-            selectedController = mControllers.get(Constants.Controllers.NAME_SHELL);
 
         return selectedController;
     }

@@ -5,7 +5,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -30,9 +29,7 @@ import com.google.audioworker.functions.audio.voip.VoIPStartFunction;
 import com.google.audioworker.functions.audio.voip.VoIPStopFunction;
 import com.google.audioworker.functions.audio.voip.VoIPTxDumpFunction;
 import com.google.audioworker.functions.common.WorkerFunction;
-import com.google.audioworker.functions.shell.ShellFunction;
 import com.google.audioworker.utils.Constants;
-import com.google.audioworker.utils.communicate.base.Communicable;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -72,17 +69,7 @@ public class CommandHelper {
 
         @SuppressLint("MissingPermission")
         static public String genId() {
-            return Build.getSerial() + "::" + System.currentTimeMillis();
-        }
-    }
-
-    static public WorkerFunction getFunction(String cmd) {
-        try {
-            JSONObject jsonCmd = new JSONObject(cmd);
-            return getFunction(jsonCmd);
-        } catch (JSONException e) {
-            e.printStackTrace();
-            return null;
+            return TAG + "::" + System.currentTimeMillis();
         }
     }
 
@@ -99,41 +86,7 @@ public class CommandHelper {
                 break;
         }
 
-        switch (Objects.requireNonNull(intent.getAction())) {
-            case Constants.DebugInterface.INTENT_RECEIVE_FUNCTION:
-                String cmd = intent.getStringExtra(Constants.DebugInterface.INTENT_KEY_FUNCTION_CONTENT);
-                return getFunction(cmd);
-
-            default:
-                break;
-        }
         return null;
-    }
-
-    static private WorkerFunction getFunction(JSONObject obj) throws JSONException {
-        WorkerFunction function;
-        function = getShellFunction(obj);
-        if (function != null)
-            return function;
-
-        return null;
-    }
-
-    static private ShellFunction getShellFunction(JSONObject obj) throws JSONException {
-        ShellFunction function = null;
-        if (obj.has(Constants.MessageSpecification.COMMAND_SHELL_TARGET)) {
-            function = new ShellFunction(obj.getString(Constants.MessageSpecification.COMMAND_SHELL_TARGET));
-        }
-
-        if (obj.has(Constants.MessageSpecification.COMMAND_BROADCAST_INTENT)) {
-            function = new ShellFunction(obj);
-        }
-
-        if (obj.has(Constants.MessageSpecification.COMMAND_ID) && obj.getString(Constants.MessageSpecification.COMMAND_ID) != null && function != null) {
-            function.setCommandId(obj.getString(Constants.MessageSpecification.COMMAND_ID));
-        }
-
-        return function;
     }
 
     static private void checkParameters(WorkerFunction function, Intent intent) {
@@ -257,28 +210,15 @@ public class CommandHelper {
         return function;
     }
 
-    static private ShellFunction getShellFunction(String cmd) {
-        return null;
-    }
-
-    static private ShellFunction getShellFunction(Intent intent) {
-        return null;
-    }
-
     public static class BroadcastHandler extends BroadcastReceiver {
         public interface FunctionReceivedListener {
             public void onFunctionReceived(WorkerFunction function);
         }
 
         private FunctionReceivedListener mListener;
-        private Communicable<String, String> mCommunicator;
 
         public BroadcastHandler(FunctionReceivedListener l) {
             mListener = l;
-        }
-
-        public void registerCommuncator(Communicable<String, String> communicator) {
-            mCommunicator = communicator;
         }
 
         static public BroadcastHandler registerReceiver(Context ctx, FunctionReceivedListener l) {
@@ -326,8 +266,6 @@ public class CommandHelper {
                 case Constants.DebugInterface.INTNET_SEND_FUNCTION:
                     String recv = intent.getStringExtra(Constants.DebugInterface.INTENT_KEY_RECEIVER_ID);
                     String func = intent.getStringExtra(Constants.DebugInterface.INTENT_KEY_FUNCTION_CONTENT);
-                    if (mCommunicator != null && recv != null && func != null)
-                        mCommunicator.send(recv, func);
                     break;
 
                 default:

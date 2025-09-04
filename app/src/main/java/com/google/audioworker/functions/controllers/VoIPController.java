@@ -64,12 +64,12 @@ public class VoIPController extends AudioController.AudioRxTxController {
                 TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
 
         String name = "VoIPController";
-        if (createFolder(name))
+        if (!createFolder(name)) {
+            Log.e(TAG, "Failed to create data folder for VoIPController");
+        } else {
             _dataPath = Constants.externalDirectory(name);
-        else
-            _dataPath = Constants.EnvironmentPaths.SDCARD_PATH;
-
-        Log.i(TAG, "create data folder: " + _dataPath);
+            Log.i(TAG, "create data folder: " + _dataPath);
+        }
 
         if (mContextRef.get() != null) {
             ((AudioManager) mContextRef.get().getSystemService(Context.AUDIO_SERVICE)).setMode(AudioManager.MODE_NORMAL);
