@@ -14,12 +14,17 @@ import java.util.HashMap;
 import java.util.List;
 
 public abstract class AudioRxTxSupportFragment extends WorkerFragment
-        implements AudioFragment.RxSupport, AudioFragment.TxSupport, AudioFragment.WorkerFunctionAuxSupport,
-        WorkerFunctionView.ActionSelectedListener, RecordController.RecordRunnable.RecordDataListener {
-    private final static String TAG = Constants.packageTag("AudioRxTxSupportFragment");
+        implements AudioFragment.RxSupport,
+                AudioFragment.TxSupport,
+                AudioFragment.WorkerFunctionAuxSupport,
+                WorkerFunctionView.ActionSelectedListener,
+                RecordController.RecordRunnable.RecordDataListener {
+    private static final String TAG = Constants.packageTag("AudioRxTxSupportFragment");
 
-    protected final AudioRxSupportFragment.Factory.Bundle mRxBundle = new AudioRxSupportFragment.Factory.Bundle();
-    protected final AudioTxSupportFragment.Factory.Bundle mTxBundle = new AudioTxSupportFragment.Factory.Bundle();
+    protected final AudioRxSupportFragment.Factory.Bundle mRxBundle =
+            new AudioRxSupportFragment.Factory.Bundle();
+    protected final AudioTxSupportFragment.Factory.Bundle mTxBundle =
+            new AudioTxSupportFragment.Factory.Bundle();
 
     @Override
     public void onAttach(Context ctx) {
@@ -52,14 +57,14 @@ public abstract class AudioRxTxSupportFragment extends WorkerFragment
 
     @CallSuper
     @Override
-    public void onActionSelected(String action, HashMap<String, WorkerFunctionView.ParameterView> views) {
+    public void onActionSelected(
+            String action, HashMap<String, WorkerFunctionView.ParameterView> views) {
         AudioRxSupportFragment.Factory.onActionSelected(this, mRxBundle, action, views);
         AudioTxSupportFragment.Factory.onActionSelected(this, mTxBundle, action, views);
     }
 
     @Override
-    public void onFunctionSent(WorkerFunction function) {
-    }
+    public void onFunctionSent(WorkerFunction function) {}
 
     @CallSuper
     @Override

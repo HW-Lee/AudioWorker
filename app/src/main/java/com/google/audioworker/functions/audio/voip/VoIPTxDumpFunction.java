@@ -4,7 +4,7 @@ import com.google.audioworker.functions.audio.record.RecordDumpFunction;
 import com.google.audioworker.utils.Constants;
 
 public class VoIPTxDumpFunction extends VoIPFunction {
-    private final static String TAG = Constants.packageTag("VoIPTxDumpFunction");
+    private static final String TAG = Constants.packageTag("VoIPTxDumpFunction");
 
     private RecordDumpFunction mReference = new RecordDumpFunction();
 

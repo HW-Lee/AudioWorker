@@ -5,7 +5,8 @@ import android.support.annotation.CallSuper;
 
 import java.util.HashMap;
 
-public abstract class ManagerController extends ControllerBase implements ControllerBase.ControllerStateListener {
+public abstract class ManagerController extends ControllerBase
+        implements ControllerBase.ControllerStateListener {
     protected HashMap<String, ControllerBase> mControllers;
 
     public ManagerController() {
@@ -13,8 +14,7 @@ public abstract class ManagerController extends ControllerBase implements Contro
     }
 
     public ControllerBase getSubControllerByName(String name) {
-        if (mControllers.containsKey(name))
-            return mControllers.get(name);
+        if (mControllers.containsKey(name)) return mControllers.get(name);
 
         for (ControllerBase controller : mControllers.values()) {
             if (controller instanceof ManagerController)
@@ -38,8 +38,7 @@ public abstract class ManagerController extends ControllerBase implements Contro
     public void destroy() {
         super.destroy();
 
-        for (ControllerBase controller : mControllers.values())
-            controller.destroy();
+        for (ControllerBase controller : mControllers.values()) controller.destroy();
 
         mControllers.clear();
     }

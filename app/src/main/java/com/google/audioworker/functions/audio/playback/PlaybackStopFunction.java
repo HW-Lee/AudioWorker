@@ -3,22 +3,16 @@ package com.google.audioworker.functions.audio.playback;
 import com.google.audioworker.utils.Constants;
 
 public class PlaybackStopFunction extends PlaybackFunction {
-    private final static String TAG = Constants.packageTag("PlaybackStopFunction");
+    private static final String TAG = Constants.packageTag("PlaybackStopFunction");
 
-    private final static String ATTR_TYPE = PlaybackStartFunction.ATTR_TYPE;
-    private final static String ATTR_PLAYBACK_ID = PlaybackStartFunction.ATTR_PLAYBACK_ID;
+    private static final String ATTR_TYPE = PlaybackStartFunction.ATTR_TYPE;
+    private static final String ATTR_PLAYBACK_ID = PlaybackStartFunction.ATTR_PLAYBACK_ID;
 
-    private final static String[] ATTRS = {
-            ATTR_TYPE,
-            ATTR_PLAYBACK_ID
-    };
+    private static final String[] ATTRS = {ATTR_TYPE, ATTR_PLAYBACK_ID};
 
     private Parameter<String> PARAM_TYPE = new Parameter<>(ATTR_TYPE, true, null);
     private Parameter<Integer> PARAM_PLAYBACK_ID = new Parameter<>(ATTR_PLAYBACK_ID, true, -1);
-    private Parameter[] PARAMS = {
-            PARAM_TYPE,
-            PARAM_PLAYBACK_ID
-    };
+    private Parameter[] PARAMS = {PARAM_TYPE, PARAM_PLAYBACK_ID};
 
     @Override
     public String[] getAttributes() {
@@ -50,15 +44,13 @@ public class PlaybackStopFunction extends PlaybackFunction {
     public void setParameter(String attr, Object value) {
         if (isValueAccepted(attr, value)) {
             int idx = toIndex(attr);
-            if (idx >= 0)
-                PARAMS[idx].setValue(value);
+            if (idx >= 0) PARAMS[idx].setValue(value);
         }
     }
 
     private int toIndex(String attr) {
         for (int i = 0; i < ATTRS.length; i++) {
-            if (ATTRS[i].equals(attr))
-                return i;
+            if (ATTRS[i].equals(attr)) return i;
         }
         return -1;
     }

@@ -1,21 +1,18 @@
 package com.google.audioworker.functions.audio.record;
 
-import com.google.audioworker.utils.Constants;
 import com.google.audioworker.functions.audio.AudioFunction;
+import com.google.audioworker.utils.Constants;
 import com.google.audioworker.utils.Constants.Controllers.Config.RecordTask;
 
 public class RecordFunction extends AudioFunction {
-    private final static String ATTR_INDEX = "task-index";
+    private static final String ATTR_INDEX = "task-index";
 
-    private final static String[] ATTRS = {
-            ATTR_INDEX
-    };
+    private static final String[] ATTRS = {ATTR_INDEX};
 
-    private Parameter<Integer> PARAM_INDEX = new Parameter<>(ATTR_INDEX, false, Constants.RecordDefaultConfig.INDEX);
+    private Parameter<Integer> PARAM_INDEX =
+            new Parameter<>(ATTR_INDEX, false, Constants.RecordDefaultConfig.INDEX);
 
-    private Parameter[] PARAMS = {
-            PARAM_INDEX
-    };
+    private Parameter[] PARAMS = {PARAM_INDEX};
 
     @Override
     public Parameter[] getParameters() {
@@ -52,7 +49,7 @@ public class RecordFunction extends AudioFunction {
 
     private boolean checkIndex(int index) {
         if ((index >= RecordTask.INDEX_DEFAULT && index < RecordTask.MAX_NUM)
-            || index == RecordTask.TASK_ALL) {
+                || index == RecordTask.TASK_ALL) {
             return true;
         }
         return false;

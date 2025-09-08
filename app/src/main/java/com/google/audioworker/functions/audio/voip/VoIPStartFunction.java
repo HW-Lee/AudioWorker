@@ -3,61 +3,73 @@ package com.google.audioworker.functions.audio.voip;
 import com.google.audioworker.utils.Constants;
 
 public class VoIPStartFunction extends VoIPFunction {
-    private final static String TAG = Constants.packageTag("VoIPStartFunction");
+    private static final String TAG = Constants.packageTag("VoIPStartFunction");
 
-    private final static String ATTR_TARGET_FREQ = "rx-target-freq";
-    private final static String ATTR_RX_AMP = "rx-amplitude";
-    private final static String ATTR_RX_FS = "rx-sampling-freq";
-    private final static String ATTR_RX_NCH = "rx-num-channels";
-    private final static String ATTR_RX_BPS = "rx-pcm-bit-width";
-    private final static String ATTR_RX_USE_SPKR = "rx-use-spkr";
-    private final static String ATTR_RX_FILE = "rx-file";
-    private final static String ATTR_BTSCO_ON = "btsco-on";
-    private final static String ATTR_TX_FS = "tx-sampling-freq";
-    private final static String ATTR_TX_NCH = "tx-num-channels";
-    private final static String ATTR_TX_BPS = "tx-pcm-bit-width";
-    private final static String ATTR_TX_DUMP_BUFFER_SIZE_MS = "tx-dump-buffer-ms";
+    private static final String ATTR_TARGET_FREQ = "rx-target-freq";
+    private static final String ATTR_RX_AMP = "rx-amplitude";
+    private static final String ATTR_RX_FS = "rx-sampling-freq";
+    private static final String ATTR_RX_NCH = "rx-num-channels";
+    private static final String ATTR_RX_BPS = "rx-pcm-bit-width";
+    private static final String ATTR_RX_USE_SPKR = "rx-use-spkr";
+    private static final String ATTR_RX_FILE = "rx-file";
+    private static final String ATTR_BTSCO_ON = "btsco-on";
+    private static final String ATTR_TX_FS = "tx-sampling-freq";
+    private static final String ATTR_TX_NCH = "tx-num-channels";
+    private static final String ATTR_TX_BPS = "tx-pcm-bit-width";
+    private static final String ATTR_TX_DUMP_BUFFER_SIZE_MS = "tx-dump-buffer-ms";
 
-    private final static String[] ATTRS = {
-            ATTR_TARGET_FREQ,
-            ATTR_RX_AMP,
-            ATTR_RX_FS,
-            ATTR_RX_NCH,
-            ATTR_RX_BPS,
-            ATTR_RX_USE_SPKR,
-            ATTR_RX_FILE,
-            ATTR_BTSCO_ON,
-            ATTR_TX_FS,
-            ATTR_TX_NCH,
-            ATTR_TX_BPS,
-            ATTR_TX_DUMP_BUFFER_SIZE_MS
+    private static final String[] ATTRS = {
+        ATTR_TARGET_FREQ,
+        ATTR_RX_AMP,
+        ATTR_RX_FS,
+        ATTR_RX_NCH,
+        ATTR_RX_BPS,
+        ATTR_RX_USE_SPKR,
+        ATTR_RX_FILE,
+        ATTR_BTSCO_ON,
+        ATTR_TX_FS,
+        ATTR_TX_NCH,
+        ATTR_TX_BPS,
+        ATTR_TX_DUMP_BUFFER_SIZE_MS
     };
 
     private Parameter<Float> PARAM_TARGET_FREQ = new Parameter<>(ATTR_TARGET_FREQ, true, -1f);
-    private Parameter<Float> PARAM_RX_AMP = new Parameter<>(ATTR_RX_AMP, false, Constants.VoIPDefaultConfig.Rx.AMPLITUDE);
-    private Parameter<Integer> PARAM_RX_FS = new Parameter<>(ATTR_RX_FS, false, Constants.VoIPDefaultConfig.Rx.SAMPLING_FREQ);
-    private Parameter<Integer> PARAM_RX_NCH = new Parameter<>(ATTR_RX_NCH, false, Constants.VoIPDefaultConfig.Rx.NUM_CHANNELS);
-    private Parameter<Integer> PARAM_RX_BPS = new Parameter<>(ATTR_RX_BPS, false, Constants.VoIPDefaultConfig.Rx.BIT_PER_SAMPLE);
+    private Parameter<Float> PARAM_RX_AMP =
+            new Parameter<>(ATTR_RX_AMP, false, Constants.VoIPDefaultConfig.Rx.AMPLITUDE);
+    private Parameter<Integer> PARAM_RX_FS =
+            new Parameter<>(ATTR_RX_FS, false, Constants.VoIPDefaultConfig.Rx.SAMPLING_FREQ);
+    private Parameter<Integer> PARAM_RX_NCH =
+            new Parameter<>(ATTR_RX_NCH, false, Constants.VoIPDefaultConfig.Rx.NUM_CHANNELS);
+    private Parameter<Integer> PARAM_RX_BPS =
+            new Parameter<>(ATTR_RX_BPS, false, Constants.VoIPDefaultConfig.Rx.BIT_PER_SAMPLE);
     private Parameter<Boolean> PARAM_RX_USE_SPKR = new Parameter<>(ATTR_RX_USE_SPKR, false, false);
-    private Parameter<String> PARAM_RX_FILE = new Parameter<>(ATTR_RX_FILE, false, Constants.PlaybackDefaultConfig.FILE_NAME);
+    private Parameter<String> PARAM_RX_FILE =
+            new Parameter<>(ATTR_RX_FILE, false, Constants.PlaybackDefaultConfig.FILE_NAME);
     private Parameter<Boolean> PARAM_BTSCO_ON = new Parameter<>(ATTR_BTSCO_ON, false, true);
-    private Parameter<Integer> PARAM_TX_FS = new Parameter<>(ATTR_TX_FS, false, Constants.VoIPDefaultConfig.Tx.SAMPLING_FREQ);
-    private Parameter<Integer> PARAM_TX_NCH = new Parameter<>(ATTR_TX_NCH, false, Constants.VoIPDefaultConfig.Tx.NUM_CHANNELS);
-    private Parameter<Integer> PARAM_TX_BPS = new Parameter<>(ATTR_TX_BPS, false, Constants.VoIPDefaultConfig.Tx.BIT_PER_SAMPLE);
-    private Parameter<Integer> PARAM_TX_DUMP_BUFFER_SIZE_MS = new Parameter<>(ATTR_TX_DUMP_BUFFER_SIZE_MS, false, Constants.VoIPDefaultConfig.Tx.BUFFER_SIZE_MILLIS);
+    private Parameter<Integer> PARAM_TX_FS =
+            new Parameter<>(ATTR_TX_FS, false, Constants.VoIPDefaultConfig.Tx.SAMPLING_FREQ);
+    private Parameter<Integer> PARAM_TX_NCH =
+            new Parameter<>(ATTR_TX_NCH, false, Constants.VoIPDefaultConfig.Tx.NUM_CHANNELS);
+    private Parameter<Integer> PARAM_TX_BPS =
+            new Parameter<>(ATTR_TX_BPS, false, Constants.VoIPDefaultConfig.Tx.BIT_PER_SAMPLE);
+    private Parameter<Integer> PARAM_TX_DUMP_BUFFER_SIZE_MS =
+            new Parameter<>(
+                    ATTR_TX_DUMP_BUFFER_SIZE_MS,
+                    false,
+                    Constants.VoIPDefaultConfig.Tx.BUFFER_SIZE_MILLIS);
     private Parameter[] PARAMS = {
-            PARAM_TARGET_FREQ,
-            PARAM_RX_AMP,
-            PARAM_RX_FS,
-            PARAM_RX_NCH,
-            PARAM_RX_BPS,
-            PARAM_RX_USE_SPKR,
-            PARAM_RX_FILE,
-            PARAM_BTSCO_ON,
-            PARAM_TX_FS,
-            PARAM_TX_NCH,
-            PARAM_TX_BPS,
-            PARAM_TX_DUMP_BUFFER_SIZE_MS
+        PARAM_TARGET_FREQ,
+        PARAM_RX_AMP,
+        PARAM_RX_FS,
+        PARAM_RX_NCH,
+        PARAM_RX_BPS,
+        PARAM_RX_USE_SPKR,
+        PARAM_RX_FILE,
+        PARAM_BTSCO_ON,
+        PARAM_TX_FS,
+        PARAM_TX_NCH,
+        PARAM_TX_BPS,
+        PARAM_TX_DUMP_BUFFER_SIZE_MS
     };
 
     @Override
@@ -105,15 +117,13 @@ public class VoIPStartFunction extends VoIPFunction {
     public void setParameter(String attr, Object value) {
         if (isValueAccepted(attr, value)) {
             int idx = toIndex(attr);
-            if (idx < 0)
-                return;
+            if (idx < 0) return;
 
-            switch(attr) {
+            switch (attr) {
                 case ATTR_RX_USE_SPKR:
                 case ATTR_BTSCO_ON:
                     PARAMS[idx].setValue(
-                            "true".equals(value.toString()) | "1".equals(value.toString())
-                    );
+                            "true".equals(value.toString()) | "1".equals(value.toString()));
                     return;
                 default:
                     PARAMS[idx].setValue(value);
@@ -123,8 +133,7 @@ public class VoIPStartFunction extends VoIPFunction {
 
     private int toIndex(String attr) {
         for (int i = 0; i < ATTRS.length; i++) {
-            if (ATTRS[i].equals(attr))
-                return i;
+            if (ATTRS[i].equals(attr)) return i;
         }
         return -1;
     }

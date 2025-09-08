@@ -4,7 +4,7 @@ import com.google.audioworker.functions.audio.record.RecordDetectFunction;
 import com.google.audioworker.utils.Constants;
 
 public class VoIPDetectFunction extends VoIPFunction {
-    private final static String TAG = Constants.packageTag("VoIPDetectFunction");
+    private static final String TAG = Constants.packageTag("VoIPDetectFunction");
 
     private RecordDetectFunction mReference;
 

@@ -3,7 +3,7 @@ package com.google.audioworker.functions.audio.voip;
 import com.google.audioworker.utils.Constants;
 
 public class VoIPStopFunction extends VoIPFunction {
-    private final static String TAG = Constants.packageTag("VoIPStopFunction");
+    private static final String TAG = Constants.packageTag("VoIPStopFunction");
 
     @Override
     public String[] getAttributes() {
@@ -21,6 +21,5 @@ public class VoIPStopFunction extends VoIPFunction {
     }
 
     @Override
-    public void setParameter(String attr, Object value) {
-    }
+    public void setParameter(String attr, Object value) {}
 }

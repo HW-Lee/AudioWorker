@@ -11,7 +11,7 @@ import org.json.JSONException;
 import java.util.HashMap;
 
 public class MainController extends ManagerController {
-    private final static String TAG = Constants.packageTag("MainController");
+    private static final String TAG = Constants.packageTag("MainController");
 
     private HashMap<String, WorkerFunction> mRequestedFunctions;
 
@@ -36,7 +36,8 @@ public class MainController extends ManagerController {
         String targetId;
         try {
             targetId = ack.getString(Constants.MessageSpecification.COMMAND_ACK_TARGET);
-            if (mRequestedFunctions.containsKey(targetId) && mRequestedFunctions.get(targetId) != null) {
+            if (mRequestedFunctions.containsKey(targetId)
+                    && mRequestedFunctions.get(targetId) != null) {
                 mRequestedFunctions.get(targetId).pushAck(ack);
                 listFunctions();
             }
@@ -61,8 +62,7 @@ public class MainController extends ManagerController {
 
     private void listFunctions() {
         for (String targetId : mRequestedFunctions.keySet()) {
-            if (mRequestedFunctions.get(targetId) == null)
-                continue;
+            if (mRequestedFunctions.get(targetId) == null) continue;
             Log.d(TAG, "Requested WorkerFunction#" + targetId);
             Log.d(TAG, mRequestedFunctions.get(targetId).toString());
         }

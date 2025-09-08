@@ -24,8 +24,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
-public class AudioVoIPFragment extends AudioRxTxSupportFragment implements ControllerBase.ControllerStateListener {
-    private final static String TAG = Constants.packageTag("AudioVoIPFragment");
+public class AudioVoIPFragment extends AudioRxTxSupportFragment
+        implements ControllerBase.ControllerStateListener {
+    private static final String TAG = Constants.packageTag("AudioVoIPFragment");
 
     private DataView mSignalView;
     private LinearLayout mTxAuxViewContainer;
@@ -39,7 +40,8 @@ public class AudioVoIPFragment extends AudioRxTxSupportFragment implements Contr
     }
 
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(
+            @NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         return inflater.inflate(R.layout.audio_voip_fragment, container, false);
     }
 
@@ -65,8 +67,7 @@ public class AudioVoIPFragment extends AudioRxTxSupportFragment implements Contr
 
     @Override
     public void initTxSupport() {
-        if (mActivityRef.get() == null)
-            return;
+        if (mActivityRef.get() == null) return;
 
         mSignalView = mActivityRef.get().findViewById(R.id.voip_tx_signal);
         mSignalView.setDataPaint(1, Color.RED);
@@ -99,15 +100,13 @@ public class AudioVoIPFragment extends AudioRxTxSupportFragment implements Contr
     public Object[] getTxReturns(WorkerFunction.Ack ack) {
         ArrayList<Object> returns = new ArrayList<>();
         Collections.addAll(returns, ack.getReturns());
-        if (returns.size() > 0)
-            returns.remove(0);
+        if (returns.size() > 0) returns.remove(0);
         return returns.toArray();
     }
 
     @Override
     public void initRxSupport() {
-        if (mActivityRef.get() == null)
-            return;
+        if (mActivityRef.get() == null) return;
 
         mRxAuxViewContainer = mActivityRef.get().findViewById(R.id.voip_rx_aux_view_container);
         mRxInfoContainer = mActivityRef.get().findViewById(R.id.voip_rx_info_container);
@@ -147,10 +146,10 @@ public class AudioVoIPFragment extends AudioRxTxSupportFragment implements Contr
 
     @Override
     public WorkerFunctionView getWorkerFunctionView() {
-        if (mActivityRef.get() == null)
-            return null;
+        if (mActivityRef.get() == null) return null;
 
-        return ((WorkerFunctionView) mActivityRef.get().findViewById(R.id.voip_func_attr_container));
+        return ((WorkerFunctionView)
+                mActivityRef.get().findViewById(R.id.voip_func_attr_container));
     }
 
     @Override
@@ -171,66 +170,81 @@ public class AudioVoIPFragment extends AudioRxTxSupportFragment implements Contr
     public void onFunctionAckReceived(WorkerFunction.Ack ack) {
         super.onFunctionAckReceived(ack);
 
-        if (mActivityRef.get() == null)
-            return;
+        if (mActivityRef.get() == null) return;
 
-        ControllerBase controller = mActivityRef.get().getMainController().getSubControllerByName(getControllerName());
+        ControllerBase controller =
+                mActivityRef.get().getMainController().getSubControllerByName(getControllerName());
         final TextView statusTxView = mActivityRef.get().findViewById(R.id.voip_tx_status);
-        if (statusTxView == null)
-            return;
+        if (statusTxView == null) return;
 
-        if (controller instanceof AudioController.TxSupport && ((AudioController.TxSupport) controller).isTxRunning()) {
-            mActivityRef.get().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    statusTxView.setText("VoIP Tx: running");
-                }
-            });
+        if (controller instanceof AudioController.TxSupport
+                && ((AudioController.TxSupport) controller).isTxRunning()) {
+            mActivityRef
+                    .get()
+                    .runOnUiThread(
+                            new Runnable() {
+                                @Override
+                                public void run() {
+                                    statusTxView.setText("VoIP Tx: running");
+                                }
+                            });
         } else {
-            mActivityRef.get().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    statusTxView.setText("VoIP Tx: idle");
-                    if (getTxDataView() != null)
-                        getTxDataView().reset();
-                }
-            });
+            mActivityRef
+                    .get()
+                    .runOnUiThread(
+                            new Runnable() {
+                                @Override
+                                public void run() {
+                                    statusTxView.setText("VoIP Tx: idle");
+                                    if (getTxDataView() != null) getTxDataView().reset();
+                                }
+                            });
         }
 
         final TextView statusRxView = mActivityRef.get().findViewById(R.id.voip_rx_status);
-        if (statusRxView == null)
-            return;
+        if (statusRxView == null) return;
 
-        if (controller instanceof AudioController.RxSupport && ((AudioController.RxSupport) controller).isRxRunning()) {
-            mActivityRef.get().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    statusRxView.setText("VoIP Rx: running");
-                }
-            });
+        if (controller instanceof AudioController.RxSupport
+                && ((AudioController.RxSupport) controller).isRxRunning()) {
+            mActivityRef
+                    .get()
+                    .runOnUiThread(
+                            new Runnable() {
+                                @Override
+                                public void run() {
+                                    statusRxView.setText("VoIP Rx: running");
+                                }
+                            });
         } else {
-            mActivityRef.get().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    statusRxView.setText("VoIP Rx: idle");
-                }
-            });
+            mActivityRef
+                    .get()
+                    .runOnUiThread(
+                            new Runnable() {
+                                @Override
+                                public void run() {
+                                    statusRxView.setText("VoIP Rx: idle");
+                                }
+                            });
         }
 
-        final TextView statusPhoneStateView = mActivityRef.get().findViewById(R.id.voip_phone_state);
-        if (statusPhoneStateView == null)
-            return;
+        final TextView statusPhoneStateView =
+                mActivityRef.get().findViewById(R.id.voip_phone_state);
+        if (statusPhoneStateView == null) return;
 
-        final int mode = ((AudioManager) mActivityRef.get().getSystemService(Context.AUDIO_SERVICE)).getMode();
-        mActivityRef.get().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                statusPhoneStateView.setText("Phone state: " + mode);
-            }
-        });
+        final int mode =
+                ((AudioManager) mActivityRef.get().getSystemService(Context.AUDIO_SERVICE))
+                        .getMode();
+        mActivityRef
+                .get()
+                .runOnUiThread(
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                statusPhoneStateView.setText("Phone state: " + mode);
+                            }
+                        });
     }
 
     @Override
-    public void onStateChanged(ControllerBase controller) {
-    }
+    public void onStateChanged(ControllerBase controller) {}
 }

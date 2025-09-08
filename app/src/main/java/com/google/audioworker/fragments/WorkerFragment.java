@@ -11,7 +11,7 @@ import com.google.audioworker.utils.Constants;
 import java.lang.ref.WeakReference;
 
 public class WorkerFragment extends Fragment {
-    private final static String TAG = Constants.packageTag("WorkerFragment");
+    private static final String TAG = Constants.packageTag("WorkerFragment");
 
     protected WeakReference<MainActivity> mActivityRef;
 
@@ -19,11 +19,12 @@ public class WorkerFragment extends Fragment {
     @Override
     public void onAttach(Context ctx) {
         super.onAttach(ctx);
-        if (ctx instanceof MainActivity)
-            mActivityRef = new WeakReference<>((MainActivity) ctx);
+        if (ctx instanceof MainActivity) mActivityRef = new WeakReference<>((MainActivity) ctx);
     }
 
-    final protected int getPxByDp(float dp) {
-        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, getResources().getDisplayMetrics());
+    protected final int getPxByDp(float dp) {
+        return (int)
+                TypedValue.applyDimension(
+                        TypedValue.COMPLEX_UNIT_DIP, dp, getResources().getDisplayMetrics());
     }
 }

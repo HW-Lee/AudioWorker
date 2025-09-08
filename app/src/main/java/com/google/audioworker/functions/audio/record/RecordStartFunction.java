@@ -1,51 +1,63 @@
 package com.google.audioworker.functions.audio.record;
 
-import java.util.Arrays;
 import android.media.MediaRecorder;
+
 import com.google.audioworker.utils.Constants;
 import com.google.audioworker.utils.Constants.Controllers.Config.AudioApi;
 import com.google.audioworker.utils.Constants.Controllers.Config.PerformanceMode;
 
+import java.util.Arrays;
+
 public class RecordStartFunction extends RecordFunction {
-    private final static String TAG = Constants.packageTag("RecordStartFunction");
+    private static final String TAG = Constants.packageTag("RecordStartFunction");
 
-    private final static String ATTR_FS = "sampling-freq";
-    private final static String ATTR_NCH = "num-channels";
-    private final static String ATTR_BPS = "pcm-bit-width";
-    private final static String ATTR_DUMP_BUFFER_SIZE_MS = "dump-buffer-ms";
-    private final static String ATTR_BTSCO_ON = "btsco-on";
-    private final static String ATTR_INPUT_SRC = "input-src";
-    private final static String ATTR_AUDIO_API = "audio-api";
-    private final static String ATTR_AUDIO_PERF = "audio-perf";
+    private static final String ATTR_FS = "sampling-freq";
+    private static final String ATTR_NCH = "num-channels";
+    private static final String ATTR_BPS = "pcm-bit-width";
+    private static final String ATTR_DUMP_BUFFER_SIZE_MS = "dump-buffer-ms";
+    private static final String ATTR_BTSCO_ON = "btsco-on";
+    private static final String ATTR_INPUT_SRC = "input-src";
+    private static final String ATTR_AUDIO_API = "audio-api";
+    private static final String ATTR_AUDIO_PERF = "audio-perf";
 
-    private final static String[] ATTRS = {
-            ATTR_FS,
-            ATTR_NCH,
-            ATTR_BPS,
-            ATTR_DUMP_BUFFER_SIZE_MS,
-            ATTR_BTSCO_ON,
-            ATTR_INPUT_SRC,
-            ATTR_AUDIO_API,
-            ATTR_AUDIO_PERF
+    private static final String[] ATTRS = {
+        ATTR_FS,
+        ATTR_NCH,
+        ATTR_BPS,
+        ATTR_DUMP_BUFFER_SIZE_MS,
+        ATTR_BTSCO_ON,
+        ATTR_INPUT_SRC,
+        ATTR_AUDIO_API,
+        ATTR_AUDIO_PERF
     };
 
-    private Parameter<Integer> PARAM_FS = new Parameter<>(ATTR_FS, false, Constants.RecordDefaultConfig.SAMPLING_FREQ);
-    private Parameter<Integer> PARAM_NCH = new Parameter<>(ATTR_NCH, false, Constants.RecordDefaultConfig.NUM_CHANNELS);
-    private Parameter<Integer> PARAM_BPS = new Parameter<>(ATTR_BPS, false, Constants.RecordDefaultConfig.BIT_PER_SAMPLE);
-    private Parameter<Integer> PARAM_DUMP_BUFFER_SIZE_MS = new Parameter<>(ATTR_DUMP_BUFFER_SIZE_MS, false, Constants.RecordDefaultConfig.BUFFER_SIZE_MILLIS);
+    private Parameter<Integer> PARAM_FS =
+            new Parameter<>(ATTR_FS, false, Constants.RecordDefaultConfig.SAMPLING_FREQ);
+    private Parameter<Integer> PARAM_NCH =
+            new Parameter<>(ATTR_NCH, false, Constants.RecordDefaultConfig.NUM_CHANNELS);
+    private Parameter<Integer> PARAM_BPS =
+            new Parameter<>(ATTR_BPS, false, Constants.RecordDefaultConfig.BIT_PER_SAMPLE);
+    private Parameter<Integer> PARAM_DUMP_BUFFER_SIZE_MS =
+            new Parameter<>(
+                    ATTR_DUMP_BUFFER_SIZE_MS,
+                    false,
+                    Constants.RecordDefaultConfig.BUFFER_SIZE_MILLIS);
     private Parameter<Boolean> PARAM_BTSCO_ON = new Parameter<>(ATTR_BTSCO_ON, false, true);
-    private Parameter<Integer> PARAM_INPUT_SRC = new Parameter<>(ATTR_INPUT_SRC, false, Constants.RecordDefaultConfig.INPUT_SRC);
-    private Parameter<Integer> PARAM_AUDIO_API = new Parameter<>(ATTR_AUDIO_API, false, Constants.RecordDefaultConfig.AUDIO_API);
-    private Parameter<Integer> PARAM_AUDIO_PERF = new Parameter<>(ATTR_AUDIO_PERF, false, Constants.RecordDefaultConfig.AUDIO_PERF);
+    private Parameter<Integer> PARAM_INPUT_SRC =
+            new Parameter<>(ATTR_INPUT_SRC, false, Constants.RecordDefaultConfig.INPUT_SRC);
+    private Parameter<Integer> PARAM_AUDIO_API =
+            new Parameter<>(ATTR_AUDIO_API, false, Constants.RecordDefaultConfig.AUDIO_API);
+    private Parameter<Integer> PARAM_AUDIO_PERF =
+            new Parameter<>(ATTR_AUDIO_PERF, false, Constants.RecordDefaultConfig.AUDIO_PERF);
     private Parameter[] PARAMS = {
-            PARAM_FS,
-            PARAM_NCH,
-            PARAM_BPS,
-            PARAM_DUMP_BUFFER_SIZE_MS,
-            PARAM_BTSCO_ON,
-            PARAM_INPUT_SRC,
-            PARAM_AUDIO_API,
-            PARAM_AUDIO_PERF
+        PARAM_FS,
+        PARAM_NCH,
+        PARAM_BPS,
+        PARAM_DUMP_BUFFER_SIZE_MS,
+        PARAM_BTSCO_ON,
+        PARAM_INPUT_SRC,
+        PARAM_AUDIO_API,
+        PARAM_AUDIO_PERF
     };
 
     private Parameter[] mParams;
@@ -101,14 +113,12 @@ public class RecordStartFunction extends RecordFunction {
         super.setParameter(attr, value);
         if (isValueAccepted(attr, value)) {
             int idx = toIndex(attr);
-            if (idx < 0)
-                return;
+            if (idx < 0) return;
 
-            switch(attr) {
+            switch (attr) {
                 case ATTR_BTSCO_ON:
                     PARAMS[idx].setValue(
-                            "true".equals(value.toString()) | "1".equals(value.toString())
-                    );
+                            "true".equals(value.toString()) | "1".equals(value.toString()));
                     return;
                 default:
                     PARAMS[idx].setValue(value);
@@ -118,8 +128,7 @@ public class RecordStartFunction extends RecordFunction {
 
     private int toIndex(String attr) {
         for (int i = 0; i < ATTRS.length; i++) {
-            if (ATTRS[i].equals(attr))
-                return i;
+            if (ATTRS[i].equals(attr)) return i;
         }
         return -1;
     }

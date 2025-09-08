@@ -10,9 +10,9 @@ import android.util.Log;
 
 import com.google.audioworker.functions.audio.playback.PlaybackFunction;
 import com.google.audioworker.functions.audio.playback.PlaybackInfoFunction;
+import com.google.audioworker.functions.audio.playback.PlaybackSeekFunction;
 import com.google.audioworker.functions.audio.playback.PlaybackStartFunction;
 import com.google.audioworker.functions.audio.playback.PlaybackStopFunction;
-import com.google.audioworker.functions.audio.playback.PlaybackSeekFunction;
 import com.google.audioworker.functions.audio.record.RecordDetectFunction;
 import com.google.audioworker.functions.audio.record.RecordDumpFunction;
 import com.google.audioworker.functions.audio.record.RecordEventFunction;
@@ -38,7 +38,7 @@ import java.util.ArrayList;
 import java.util.Objects;
 
 public class CommandHelper {
-    private final static String TAG = Constants.packageTag("CommandHelper");
+    private static final String TAG = Constants.packageTag("CommandHelper");
 
     public static class Command extends JSONObject {
         public Command() {
@@ -68,12 +68,12 @@ public class CommandHelper {
         }
 
         @SuppressLint("MissingPermission")
-        static public String genId() {
+        public static String genId() {
             return TAG + "::" + System.currentTimeMillis();
         }
     }
 
-    static public WorkerFunction getFunction(Intent intent) {
+    public static WorkerFunction getFunction(Intent intent) {
         switch (Constants.getIntentOwner(intent)) {
             case Constants.INTENT_OWNER_PLAYBACK:
                 return getPlaybackFunction(intent);
@@ -89,9 +89,8 @@ public class CommandHelper {
         return null;
     }
 
-    static private void checkParameters(WorkerFunction function, Intent intent) {
-        if (!(function instanceof WorkerFunction.Parameterizable))
-            return;
+    private static void checkParameters(WorkerFunction function, Intent intent) {
+        if (!(function instanceof WorkerFunction.Parameterizable)) return;
 
         WorkerFunction.Parameterizable pfunction = (WorkerFunction.Parameterizable) function;
         Bundle extras = intent.getExtras();
@@ -111,7 +110,7 @@ public class CommandHelper {
         }
     }
 
-    static private PlaybackFunction getPlaybackFunction(Intent intent) {
+    private static PlaybackFunction getPlaybackFunction(Intent intent) {
         PlaybackFunction function;
         switch (Objects.requireNonNull(intent.getAction())) {
             case Constants.MasterInterface.INTENT_PLAYBACK_INFO:
@@ -135,7 +134,7 @@ public class CommandHelper {
         return function;
     }
 
-    static private RecordFunction getRecordFunction(Intent intent) {
+    private static RecordFunction getRecordFunction(Intent intent) {
         RecordFunction function;
         switch (Objects.requireNonNull(intent.getAction())) {
             case Constants.MasterInterface.INTENT_RECORD_INFO:
@@ -171,7 +170,7 @@ public class CommandHelper {
         return function;
     }
 
-    static private VoIPFunction getVoIPFunction(Intent intent) {
+    private static VoIPFunction getVoIPFunction(Intent intent) {
         VoIPFunction function;
         switch (Objects.requireNonNull(intent.getAction())) {
             case Constants.MasterInterface.INTENT_VOIP_CONFIG:
@@ -221,7 +220,7 @@ public class CommandHelper {
             mListener = l;
         }
 
-        static public BroadcastHandler registerReceiver(Context ctx, FunctionReceivedListener l) {
+        public static BroadcastHandler registerReceiver(Context ctx, FunctionReceivedListener l) {
             BroadcastHandler handler = new BroadcastHandler(l);
             IntentFilter intentFilter = new IntentFilter("android.intent.action.MAIN");
             ctx.registerReceiver(handler, intentFilter);
@@ -241,14 +240,13 @@ public class CommandHelper {
             return handler;
         }
 
-        static public void unregisterReceiver(Context ctx, BroadcastReceiver handler) {
+        public static void unregisterReceiver(Context ctx, BroadcastReceiver handler) {
             ctx.unregisterReceiver(handler);
         }
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (mListener == null)
-                return;
+            if (mListener == null) return;
 
             switch (Constants.getIntentOwner(intent)) {
                 case Constants.INTENT_OWNER_PLAYBACK:
@@ -264,8 +262,11 @@ public class CommandHelper {
                     mListener.onFunctionReceived(CommandHelper.getFunction(intent));
                     break;
                 case Constants.DebugInterface.INTNET_SEND_FUNCTION:
-                    String recv = intent.getStringExtra(Constants.DebugInterface.INTENT_KEY_RECEIVER_ID);
-                    String func = intent.getStringExtra(Constants.DebugInterface.INTENT_KEY_FUNCTION_CONTENT);
+                    String recv =
+                            intent.getStringExtra(Constants.DebugInterface.INTENT_KEY_RECEIVER_ID);
+                    String func =
+                            intent.getStringExtra(
+                                    Constants.DebugInterface.INTENT_KEY_FUNCTION_CONTENT);
                     break;
 
                 default:

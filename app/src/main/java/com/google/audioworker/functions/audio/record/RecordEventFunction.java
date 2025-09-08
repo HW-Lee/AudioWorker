@@ -6,22 +6,16 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 public class RecordEventFunction extends RecordFunction {
-    private final static String TAG = Constants.packageTag("RecordEventFunction");
+    private static final String TAG = Constants.packageTag("RecordEventFunction");
 
-    private final static String ATTR_EVENT = "event";
-    private final static String ATTR_CLASS_HANDLE = "class-handle";
+    private static final String ATTR_EVENT = "event";
+    private static final String ATTR_CLASS_HANDLE = "class-handle";
 
-    private final static String[] ATTRS = {
-            ATTR_EVENT,
-            ATTR_CLASS_HANDLE
-    };
+    private static final String[] ATTRS = {ATTR_EVENT, ATTR_CLASS_HANDLE};
 
     private Parameter<String> PARAM_EVENT = new Parameter<>(ATTR_EVENT, true, null);
     private Parameter<String> PARAM_CLASS_HANDLE = new Parameter<>(ATTR_CLASS_HANDLE, true, null);
-    private Parameter[] PARAMS = {
-            PARAM_EVENT,
-            PARAM_CLASS_HANDLE
-    };
+    private Parameter[] PARAMS = {PARAM_EVENT, PARAM_CLASS_HANDLE};
 
     @Override
     public Parameter[] getParameters() {
@@ -48,15 +42,13 @@ public class RecordEventFunction extends RecordFunction {
     public void setParameter(String attr, Object value) {
         if (isValueAccepted(attr, value)) {
             int idx = toIndex(attr);
-            if (idx >= 0)
-                PARAMS[idx].setValue(value);
+            if (idx >= 0) PARAMS[idx].setValue(value);
         }
     }
 
     private int toIndex(String attr) {
         for (int i = 0; i < ATTRS.length; i++) {
-            if (ATTRS[i].equals(attr))
-                return i;
+            if (ATTRS[i].equals(attr)) return i;
         }
         return -1;
     }
@@ -66,8 +58,7 @@ public class RecordEventFunction extends RecordFunction {
     }
 
     private boolean checkEvent(Object value) {
-        if (!(value instanceof String))
-            return false;
+        if (!(value instanceof String)) return false;
 
         try {
             new JSONObject((String) value);

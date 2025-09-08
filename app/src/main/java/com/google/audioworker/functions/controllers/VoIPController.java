@@ -40,13 +40,14 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class VoIPController extends AudioController.AudioRxTxController {
-    private final static String TAG = Constants.packageTag("VoIPController");
+    private static final String TAG = Constants.packageTag("VoIPController");
 
     private WeakReference<Context> mContextRef;
 
     private HashMap<String, DetectorBase> mDetectors;
     private HashMap<String, DetectorBase.DetectionListener> mDetectionListeners;
-    private final ArrayList<RecordController.RecordRunnable.RecordDataListener> mDataListeners = new ArrayList<>();
+    private final ArrayList<RecordController.RecordRunnable.RecordDataListener> mDataListeners =
+            new ArrayList<>();
 
     private ThreadPoolExecutor mPoolExecuter;
     private PlaybackController.PlaybackRunnable mRxRunnable;
@@ -57,11 +58,13 @@ public class VoIPController extends AudioController.AudioRxTxController {
         mDetectors = new HashMap<>();
         mDetectionListeners = new HashMap<>();
         mContextRef = new WeakReference<>(ctx);
-        mPoolExecuter = new ThreadPoolExecutor(
-                Constants.Controllers.Config.Common.MAX_THREAD_COUNT,
-                Constants.Controllers.Config.Common.MAX_THREAD_COUNT,
-                Constants.Controllers.Config.Common.KEEP_ALIVE_TIME_SECONDS,
-                TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
+        mPoolExecuter =
+                new ThreadPoolExecutor(
+                        Constants.Controllers.Config.Common.MAX_THREAD_COUNT,
+                        Constants.Controllers.Config.Common.MAX_THREAD_COUNT,
+                        Constants.Controllers.Config.Common.KEEP_ALIVE_TIME_SECONDS,
+                        TimeUnit.SECONDS,
+                        new LinkedBlockingQueue<Runnable>());
 
         String name = "VoIPController";
         if (!createFolder(name)) {
@@ -72,7 +75,8 @@ public class VoIPController extends AudioController.AudioRxTxController {
         }
 
         if (mContextRef.get() != null) {
-            ((AudioManager) mContextRef.get().getSystemService(Context.AUDIO_SERVICE)).setMode(AudioManager.MODE_NORMAL);
+            ((AudioManager) mContextRef.get().getSystemService(Context.AUDIO_SERVICE))
+                    .setMode(AudioManager.MODE_NORMAL);
         }
     }
 
@@ -87,16 +91,19 @@ public class VoIPController extends AudioController.AudioRxTxController {
     }
 
     @Override
-    public void execute(final WorkerFunction function, final WorkerFunction.WorkerFunctionListener l) {
-        mPoolExecuter.execute(new Runnable() {
-            @Override
-            public void run() {
-                executeBackground(function, l);
-            }
-        });
+    public void execute(
+            final WorkerFunction function, final WorkerFunction.WorkerFunctionListener l) {
+        mPoolExecuter.execute(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        executeBackground(function, l);
+                    }
+                });
     }
 
-    private void executeBackground(final WorkerFunction function, WorkerFunction.WorkerFunctionListener l) {
+    private void executeBackground(
+            final WorkerFunction function, WorkerFunction.WorkerFunctionListener l) {
         if (function instanceof VoIPFunction && function.isValid()) {
             if (function instanceof VoIPStartFunction) {
                 if (isRxRunning()) {
@@ -129,26 +136,35 @@ public class VoIPController extends AudioController.AudioRxTxController {
                 initTxStartFunction((VoIPStartFunction) function, txStartFunction);
 
                 ProxyListener listener = new ProxyListener(function, l);
-                AudioAttributes attr = new AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
-                        .setLegacyStreamType(AudioManager.STREAM_VOICE_CALL)
-                        .build();
+                AudioAttributes attr =
+                        new AudioAttributes.Builder()
+                                .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+                                .setLegacyStreamType(AudioManager.STREAM_VOICE_CALL)
+                                .build();
                 pushFunctionBeingExecuted(rxStartFunction);
                 pushFunctionBeingExecuted(txStartFunction);
-                mRxRunnable = new PlaybackController.PlaybackRunnable(rxStartFunction, listener, this, attr);
+                mRxRunnable =
+                        new PlaybackController.PlaybackRunnable(
+                                rxStartFunction, listener, this, attr);
                 mTxRunnable = new RecordController.RecordRunnable(txStartFunction, listener, this);
-                mTxRunnable.setRecordRunner(new RecordController.RecordInternalRunnable(mTxRunnable, MediaRecorder.AudioSource.VOICE_COMMUNICATION));
+                mTxRunnable.setRecordRunner(
+                        new RecordController.RecordInternalRunnable(
+                                mTxRunnable, MediaRecorder.AudioSource.VOICE_COMMUNICATION));
 
                 if (mContextRef.get() != null) {
-                    AudioManager audioManager = (AudioManager) mContextRef.get().getSystemService(Context.AUDIO_SERVICE);
+                    AudioManager audioManager =
+                            (AudioManager)
+                                    mContextRef.get().getSystemService(Context.AUDIO_SERVICE);
                     audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
 
                     if (((VoIPStartFunction) function).bluetoothScoOn()) {
                         audioManager.setBluetoothScoOn(true);
                     }
 
-                    if (((VoIPStartFunction) function).switchSpeakerPhone() != audioManager.isSpeakerphoneOn()) {
-                        audioManager.setSpeakerphoneOn(((VoIPStartFunction) function).switchSpeakerPhone());
+                    if (((VoIPStartFunction) function).switchSpeakerPhone()
+                            != audioManager.isSpeakerphoneOn()) {
+                        audioManager.setSpeakerphoneOn(
+                                ((VoIPStartFunction) function).switchSpeakerPhone());
                     }
 
                     if (!audioManager.isSpeakerphoneOn() && audioManager.isBluetoothScoOn()) {
@@ -191,14 +207,25 @@ public class VoIPController extends AudioController.AudioRxTxController {
             } else if (function instanceof VoIPConfigFunction) {
                 WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
                 if (isRxRunning()) {
-                    WorkerFunction f = mRxRunnable.setSignalConfig(((VoIPConfigFunction) function).getRxAmplitude(), ((VoIPConfigFunction) function).getTargetFrequency());
+                    WorkerFunction f =
+                            mRxRunnable.setSignalConfig(
+                                    ((VoIPConfigFunction) function).getRxAmplitude(),
+                                    ((VoIPConfigFunction) function).getTargetFrequency());
                     ArrayList<Object> returns = new ArrayList<>();
                     returns.add(f.toString());
 
-                    AudioManager audioManager = (AudioManager) mContextRef.get().getSystemService(Context.AUDIO_SERVICE);
-                    if (((VoIPConfigFunction) function).switchSpeakerPhone() != audioManager.isSpeakerphoneOn()) {
-                        audioManager.setSpeakerphoneOn(((VoIPConfigFunction) function).switchSpeakerPhone());
-                        returns.add("change to " + (audioManager.isSpeakerphoneOn() ? "speakerphone" : "default"));
+                    AudioManager audioManager =
+                            (AudioManager)
+                                    mContextRef.get().getSystemService(Context.AUDIO_SERVICE);
+                    if (((VoIPConfigFunction) function).switchSpeakerPhone()
+                            != audioManager.isSpeakerphoneOn()) {
+                        audioManager.setSpeakerphoneOn(
+                                ((VoIPConfigFunction) function).switchSpeakerPhone());
+                        returns.add(
+                                "change to "
+                                        + (audioManager.isSpeakerphoneOn()
+                                                ? "speakerphone"
+                                                : "default"));
                     }
 
                     ack.setReturnCode(0);
@@ -224,85 +251,116 @@ public class VoIPController extends AudioController.AudioRxTxController {
                 }
 
                 switch (((VoIPDetectFunction) function).getOperationType()) {
-                    case RecordDetectFunction.OP_REGISTER: {
-                        String className = ((VoIPDetectFunction) function).getDetectorClassName();
-                        String[] findings = Constants.Detectors.getDetectorClassNamesByTag(className);
+                    case RecordDetectFunction.OP_REGISTER:
+                        {
+                            String className =
+                                    ((VoIPDetectFunction) function).getDetectorClassName();
+                            String[] findings =
+                                    Constants.Detectors.getDetectorClassNamesByTag(className);
 
-                        if (findings.length > 0)
-                            className = findings[0];
+                            if (findings.length > 0) className = findings[0];
 
-                        String params = RecordController.processDetectorParams(mTxRunnable, className, ((VoIPDetectFunction) function).getDetectorParams());
-                        DetectorBase detector = DetectorBase.getDetectorByClassName(className, new DetectorBase.DetectionListener() {
-                            @Override
-                            public void onTargetDetected(DetectorBase detector, SparseArray<? extends DetectorBase.Target> targets) {
-                                VoIPController.this.onTargetDetected(detector.getHandle(), targets);
+                            String params =
+                                    RecordController.processDetectorParams(
+                                            mTxRunnable,
+                                            className,
+                                            ((VoIPDetectFunction) function).getDetectorParams());
+                            DetectorBase detector =
+                                    DetectorBase.getDetectorByClassName(
+                                            className,
+                                            new DetectorBase.DetectionListener() {
+                                                @Override
+                                                public void onTargetDetected(
+                                                        DetectorBase detector,
+                                                        SparseArray<? extends DetectorBase.Target>
+                                                                targets) {
+                                                    VoIPController.this.onTargetDetected(
+                                                            detector.getHandle(), targets);
+                                                }
+                                            },
+                                            mTxRunnable.getStartFunction(),
+                                            params);
+
+                            if (detector == null) {
+                                if (l != null) {
+                                    ack.setReturnCode(-1);
+                                    ack.setDescription("invalid detector class name");
+                                    l.onAckReceived(ack);
+                                }
+                                return;
                             }
-                        }, mTxRunnable.getStartFunction(), params);
 
-                        if (detector == null) {
+                            mDetectors.put(detector.getHandle(), detector);
+                            Log.d(TAG, "register the detector " + detector.getHandle());
+                            mTxRunnable.registerDetector(detector);
                             if (l != null) {
-                                ack.setReturnCode(-1);
-                                ack.setDescription("invalid detector class name");
-                                l.onAckReceived(ack);
-                            }
-                            return;
-                        }
-
-                        mDetectors.put(detector.getHandle(), detector);
-                        Log.d(TAG, "register the detector " + detector.getHandle());
-                        mTxRunnable.registerDetector(detector);
-                        if (l != null) {
-                            ArrayList<Object> returns = new ArrayList<>();
-                            returns.add(detector.getHandle());
-                            ack.setReturnCode(0);
-                            ack.setDescription("detector has been registered");
-                            ack.setReturns(returns);
-                            l.onAckReceived(ack);
-                        }
-                    }
-                        break;
-                    case RecordDetectFunction.OP_UNREGISTER: {
-                        if (mDetectors.containsKey(((VoIPDetectFunction) function).getClassHandle())) {
-                            mTxRunnable.unregisterDetector(mDetectors.get(((VoIPDetectFunction) function).getClassHandle()));
-                            mDetectors.remove(((VoIPDetectFunction) function).getClassHandle());
-                            mDetectionListeners.remove(((VoIPDetectFunction) function).getClassHandle());
-                            if (l != null) {
+                                ArrayList<Object> returns = new ArrayList<>();
+                                returns.add(detector.getHandle());
                                 ack.setReturnCode(0);
-                                ack.setDescription("detector has been unregistered");
+                                ack.setDescription("detector has been registered");
+                                ack.setReturns(returns);
                                 l.onAckReceived(ack);
                             }
-                        } else if (l != null) {
-                            ack.setReturnCode(-1);
-                            ack.setDescription("invalid class handle");
-                            l.onAckReceived(ack);
                         }
-                    }
                         break;
-                    case RecordDetectFunction.OP_SETPARAMS: {
-                        if (mDetectors.containsKey(((VoIPDetectFunction) function).getClassHandle())) {
-                            DetectorBase detector = mDetectors.get(((VoIPDetectFunction) function).getClassHandle());
-                            boolean success = true;
-                            if (detector != null && ((VoIPDetectFunction) function).getDetectorParams() != null)
-                                success = detector.setDetectorParameters(((VoIPDetectFunction) function).getDetectorParams());
-
-                            if (l != null) {
-                                ack.setReturnCode(success ? 0 : -1);
-                                ack.setDescription(success ? "set parameters successfully" : "set parameters failed");
+                    case RecordDetectFunction.OP_UNREGISTER:
+                        {
+                            if (mDetectors.containsKey(
+                                    ((VoIPDetectFunction) function).getClassHandle())) {
+                                mTxRunnable.unregisterDetector(
+                                        mDetectors.get(
+                                                ((VoIPDetectFunction) function).getClassHandle()));
+                                mDetectors.remove(((VoIPDetectFunction) function).getClassHandle());
+                                mDetectionListeners.remove(
+                                        ((VoIPDetectFunction) function).getClassHandle());
+                                if (l != null) {
+                                    ack.setReturnCode(0);
+                                    ack.setDescription("detector has been unregistered");
+                                    l.onAckReceived(ack);
+                                }
+                            } else if (l != null) {
+                                ack.setReturnCode(-1);
+                                ack.setDescription("invalid class handle");
                                 l.onAckReceived(ack);
                             }
-                        } else if (l != null) {
-                            ack.setReturnCode(-1);
-                            ack.setDescription("invalid class handle");
-                            l.onAckReceived(ack);
                         }
-                    }
+                        break;
+                    case RecordDetectFunction.OP_SETPARAMS:
+                        {
+                            if (mDetectors.containsKey(
+                                    ((VoIPDetectFunction) function).getClassHandle())) {
+                                DetectorBase detector =
+                                        mDetectors.get(
+                                                ((VoIPDetectFunction) function).getClassHandle());
+                                boolean success = true;
+                                if (detector != null
+                                        && ((VoIPDetectFunction) function).getDetectorParams()
+                                                != null)
+                                    success =
+                                            detector.setDetectorParameters(
+                                                    ((VoIPDetectFunction) function)
+                                                            .getDetectorParams());
+
+                                if (l != null) {
+                                    ack.setReturnCode(success ? 0 : -1);
+                                    ack.setDescription(
+                                            success
+                                                    ? "set parameters successfully"
+                                                    : "set parameters failed");
+                                    l.onAckReceived(ack);
+                                }
+                            } else if (l != null) {
+                                ack.setReturnCode(-1);
+                                ack.setDescription("invalid class handle");
+                                l.onAckReceived(ack);
+                            }
+                        }
                         break;
                     default:
                         break;
                 }
             } else if (function instanceof VoIPInfoFunction) {
-                if (l == null)
-                    return;
+                if (l == null) return;
                 WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
                 if (isVoIPRunning()) {
                     ArrayList<Object> returns = new ArrayList<>();
@@ -310,7 +368,9 @@ public class VoIPController extends AudioController.AudioRxTxController {
                     functions.add(mRxRunnable.getStartFunction());
 
                     String rxInfoStr = PlaybackController.getPlaybackInfoAckString(functions);
-                    AudioManager audioManager = (AudioManager) mContextRef.get().getSystemService(Context.AUDIO_SERVICE);
+                    AudioManager audioManager =
+                            (AudioManager)
+                                    mContextRef.get().getSystemService(Context.AUDIO_SERVICE);
                     try {
                         JSONObject rxInfoObj = new JSONObject(rxInfoStr);
                         rxInfoObj.put("use-speakerphone", audioManager.isSpeakerphoneOn());
@@ -319,16 +379,19 @@ public class VoIPController extends AudioController.AudioRxTxController {
                         e.printStackTrace();
                     }
                     returns.add(rxInfoStr);
-                    returns.addAll(RecordController.getRecordInfoAckStrings(mTxRunnable.getStartFunction(), mDetectors));
+                    returns.addAll(
+                            RecordController.getRecordInfoAckStrings(
+                                    mTxRunnable.getStartFunction(), mDetectors));
                     ack.setReturns(returns);
                 }
 
                 if (((VoIPInfoFunction) function).getFileName().length() > 0) {
-                    String path = new File(getDataDir(), ((VoIPInfoFunction) function).getFileName()).getAbsolutePath();
+                    String path =
+                            new File(getDataDir(), ((VoIPInfoFunction) function).getFileName())
+                                    .getAbsolutePath();
                     ArrayList<String> returnStrs = new ArrayList<>();
                     StringBuilder infoStr = new StringBuilder();
-                    for (Object obj : ack.getReturns())
-                        returnStrs.add(obj.toString());
+                    for (Object obj : ack.getReturns()) returnStrs.add(obj.toString());
                     if (returnStrs.size() > 0) {
                         infoStr.append("[");
                         infoStr.append(String.join(",", returnStrs));
@@ -361,14 +424,15 @@ public class VoIPController extends AudioController.AudioRxTxController {
                 }
 
                 pushFunctionBeingExecuted(function);
-                String path = new File(getDataDir(), ((VoIPTxDumpFunction) function).getFileName()).getAbsolutePath();
+                String path =
+                        new File(getDataDir(), ((VoIPTxDumpFunction) function).getFileName())
+                                .getAbsolutePath();
                 mTxRunnable.dumpBufferTo(path, function);
             }
         } else {
             if (function.isValid())
                 Log.e(TAG, "The function: " + function + " is not VoIP function");
-            else
-                Log.e(TAG, "The function: " + function + " is invalid");
+            else Log.e(TAG, "The function: " + function + " is invalid");
             if (l != null) {
                 WorkerFunction.Ack ack = WorkerFunction.Ack.ackToFunction(function);
                 ack.setDescription("invalid argument");
@@ -408,14 +472,13 @@ public class VoIPController extends AudioController.AudioRxTxController {
         txFunction.setCommandId(function.getCommandId() + "c-stop");
     }
 
-    private void onTargetDetected(String detectorHandle, SparseArray<? extends DetectorBase.Target> targets) {
-        if (!mDetectionListeners.containsKey(detectorHandle))
-            return;
+    private void onTargetDetected(
+            String detectorHandle, SparseArray<? extends DetectorBase.Target> targets) {
+        if (!mDetectionListeners.containsKey(detectorHandle)) return;
 
         DetectorBase detector = mDetectors.get(detectorHandle);
         DetectorBase.DetectionListener l = mDetectionListeners.get(detectorHandle);
-        if (detector == null || l == null)
-            return;
+        if (detector == null || l == null) return;
 
         l.onTargetDetected(detector, targets);
     }
@@ -427,8 +490,7 @@ public class VoIPController extends AudioController.AudioRxTxController {
 
     @Override
     public void setDetectionListener(String detectorHandle, DetectorBase.DetectionListener l) {
-        if (!mDetectors.containsKey(detectorHandle))
-            return;
+        if (!mDetectors.containsKey(detectorHandle)) return;
 
         mDetectionListeners.put(detectorHandle, l);
     }
@@ -450,26 +512,25 @@ public class VoIPController extends AudioController.AudioRxTxController {
     }
 
     @Override
-    public void registerDataListener(@NonNull RecordController.RecordRunnable.RecordDataListener l) {
+    public void registerDataListener(
+            @NonNull RecordController.RecordRunnable.RecordDataListener l) {
         synchronized (mDataListeners) {
-            if (!mDataListeners.contains(l))
-                mDataListeners.add(l);
+            if (!mDataListeners.contains(l)) mDataListeners.add(l);
         }
 
-        if (!isTxRunning())
-            return;
+        if (!isTxRunning()) return;
 
         mTxRunnable.registerDataListener(l);
     }
 
     @Override
-    public void unregisterDataListener(@NonNull RecordController.RecordRunnable.RecordDataListener l) {
+    public void unregisterDataListener(
+            @NonNull RecordController.RecordRunnable.RecordDataListener l) {
         synchronized (mDataListeners) {
             mDataListeners.remove(l);
         }
 
-        if (!isTxRunning())
-            return;
+        if (!isTxRunning()) return;
 
         mTxRunnable.unregisterDataListener(l);
     }
@@ -487,7 +548,10 @@ public class VoIPController extends AudioController.AudioRxTxController {
             this(function, l, false);
         }
 
-        ProxyListener(WorkerFunction function, WorkerFunction.WorkerFunctionListener l, boolean initRunning) {
+        ProxyListener(
+                WorkerFunction function,
+                WorkerFunction.WorkerFunctionListener l,
+                boolean initRunning) {
             mFunction = function;
             mListener = l;
             isRxRunning = initRunning;
@@ -530,13 +594,13 @@ public class VoIPController extends AudioController.AudioRxTxController {
                 function.setCommandId(cmdId);
                 WorkerFunction.Ack oack = WorkerFunction.Ack.ackToFunction(function);
                 oack.setReturnCode(ack.getReturnCode());
-                if (ack.getReturnCode() >= 0)
-                    oack.setDescription("VoIP terminated");
-                else
-                    oack.setDescription("VoIP unexpected failed");
+                if (ack.getReturnCode() >= 0) oack.setDescription("VoIP terminated");
+                else oack.setDescription("VoIP unexpected failed");
 
                 if (mContextRef.get() != null) {
-                    AudioManager audioManager = (AudioManager) mContextRef.get().getSystemService(Context.AUDIO_SERVICE);
+                    AudioManager audioManager =
+                            (AudioManager)
+                                    mContextRef.get().getSystemService(Context.AUDIO_SERVICE);
                     audioManager.setMode(AudioManager.MODE_NORMAL);
                     if (audioManager.isBluetoothScoOn()) {
                         audioManager.stopBluetoothSco();

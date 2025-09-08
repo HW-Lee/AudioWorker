@@ -32,8 +32,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 
 public abstract class AudioRxSupportFragment extends WorkerFragment
-        implements AudioFragment.RxSupport, AudioFragment.WorkerFunctionAuxSupport, WorkerFunctionView.ActionSelectedListener {
-    private final static String TAG = Constants.packageTag("AudioRxSupportFragment");
+        implements AudioFragment.RxSupport,
+                AudioFragment.WorkerFunctionAuxSupport,
+                WorkerFunctionView.ActionSelectedListener {
+    private static final String TAG = Constants.packageTag("AudioRxSupportFragment");
 
     private final Factory.Bundle mBundle = new Factory.Bundle();
 
@@ -58,14 +60,14 @@ public abstract class AudioRxSupportFragment extends WorkerFragment
 
     @CallSuper
     @Override
-    public void onActionSelected(String action, HashMap<String, WorkerFunctionView.ParameterView> views) {
+    public void onActionSelected(
+            String action, HashMap<String, WorkerFunctionView.ParameterView> views) {
         Factory.onActionSelected(this, mBundle, action, views);
     }
 
     @CallSuper
     @Override
-    public void onFunctionSent(WorkerFunction function) {
-    }
+    public void onFunctionSent(WorkerFunction function) {}
 
     @CallSuper
     @Override
@@ -80,18 +82,24 @@ public abstract class AudioRxSupportFragment extends WorkerFragment
             HashMap<String, SparseArray<JSONObject>> mRunningUsecases;
         }
 
-        static <T extends WorkerFragment & AudioFragment.RxSupport>
-        void init(final T fragment, Bundle bundle) {
-            if (fragment.mActivityRef.get() == null)
-                return;
+        static <T extends WorkerFragment & AudioFragment.RxSupport> void init(
+                final T fragment, Bundle bundle) {
+            if (fragment.mActivityRef.get() == null) return;
 
             fragment.initRxSupport();
 
-            if (fragment instanceof AudioFragment.WorkerFunctionAuxSupport && fragment instanceof WorkerFunctionView.ActionSelectedListener) {
-                WorkerFunctionView workerFunctionView = ((AudioFragment.WorkerFunctionAuxSupport) fragment).getWorkerFunctionView();
+            if (fragment instanceof AudioFragment.WorkerFunctionAuxSupport
+                    && fragment instanceof WorkerFunctionView.ActionSelectedListener) {
+                WorkerFunctionView workerFunctionView =
+                        ((AudioFragment.WorkerFunctionAuxSupport) fragment).getWorkerFunctionView();
                 workerFunctionView.setSupportedIntentActions(
-                        ((AudioFragment.WorkerFunctionAuxSupport) fragment).getSupportedIntents(), (WorkerFunctionView.ActionSelectedListener) fragment);
-                workerFunctionView.setController(fragment.mActivityRef.get().getMainController().getSubControllerByName(fragment.getControllerName()));
+                        ((AudioFragment.WorkerFunctionAuxSupport) fragment).getSupportedIntents(),
+                        (WorkerFunctionView.ActionSelectedListener) fragment);
+                workerFunctionView.setController(
+                        fragment.mActivityRef
+                                .get()
+                                .getMainController()
+                                .getSubControllerByName(fragment.getControllerName()));
             }
 
             Factory.initInfoView(fragment, bundle, fragment.getRxInfoTitle());
@@ -101,109 +109,145 @@ public abstract class AudioRxSupportFragment extends WorkerFragment
             rxInfoContainer.addView(bundle.mRxInfoContentView);
 
             bundle.mRunningUsecases = new HashMap<>();
-            bundle.mRunningUsecases.put(PlaybackFunction.TASK_OFFLOAD, new SparseArray<JSONObject>());
-            bundle.mRunningUsecases.put(PlaybackFunction.TASK_NONOFFLOAD, new SparseArray<JSONObject>());
+            bundle.mRunningUsecases.put(
+                    PlaybackFunction.TASK_OFFLOAD, new SparseArray<JSONObject>());
+            bundle.mRunningUsecases.put(
+                    PlaybackFunction.TASK_NONOFFLOAD, new SparseArray<JSONObject>());
 
             if (fragment instanceof WorkerFunctionView.ActionSelectedListener) {
-                fragment.mActivityRef.get().getMainController().execute(fragment.getInfoRequestFunction(), new WorkerFunction.WorkerFunctionListener() {
-                    @Override
-                    public void onAckReceived(WorkerFunction.Ack ack) {
-                        ((WorkerFunctionView.ActionSelectedListener) fragment).onFunctionAckReceived(ack);
-                    }
-                }, true);
+                fragment.mActivityRef
+                        .get()
+                        .getMainController()
+                        .execute(
+                                fragment.getInfoRequestFunction(),
+                                new WorkerFunction.WorkerFunctionListener() {
+                                    @Override
+                                    public void onAckReceived(WorkerFunction.Ack ack) {
+                                        ((WorkerFunctionView.ActionSelectedListener) fragment)
+                                                .onFunctionAckReceived(ack);
+                                    }
+                                },
+                                true);
             }
         }
 
-        static <T extends WorkerFragment & AudioFragment.RxSupport>
-        void initInfoView(T fragment, final Bundle bundle, String title) {
+        static <T extends WorkerFragment & AudioFragment.RxSupport> void initInfoView(
+                T fragment, final Bundle bundle, String title) {
             bundle.mRxInfoCollapseToggleView = new FrameLayout(fragment.mActivityRef.get());
-            bundle.mRxInfoCollapseToggleView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, fragment.getPxByDp(40)));
+            bundle.mRxInfoCollapseToggleView.setLayoutParams(
+                    new LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT, fragment.getPxByDp(40)));
             bundle.mRxInfoContentView = new LinearLayout(fragment.mActivityRef.get());
             bundle.mRxInfoContentView.setOrientation(LinearLayout.VERTICAL);
-            bundle.mRxInfoContentView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+            bundle.mRxInfoContentView.setLayoutParams(
+                    new LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT));
             bundle.mRxInfoContentView.setVisibility(View.VISIBLE);
 
             TextView tv = new TextView(fragment.mActivityRef.get());
             tv.setText(title);
             tv.setGravity(Gravity.CENTER);
             tv.setTextSize(20);
-            tv.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
+            tv.setLayoutParams(
+                    new LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.MATCH_PARENT));
             final TextView toggle = new TextView(fragment.mActivityRef.get());
             toggle.setText("v");
             toggle.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
             toggle.setTextSize(20);
-            toggle.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
-            toggle.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (bundle.mRxInfoContentView.getVisibility() == View.GONE) {
-                        toggle.setText("v");
-                        bundle.mRxInfoContentView.setVisibility(View.VISIBLE);
-                    } else {
-                        toggle.setText(">");
-                        bundle.mRxInfoContentView.setVisibility(View.GONE);
-                    }
-                }
-            });
+            toggle.setLayoutParams(
+                    new LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.MATCH_PARENT));
+            toggle.setOnClickListener(
+                    new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            if (bundle.mRxInfoContentView.getVisibility() == View.GONE) {
+                                toggle.setText("v");
+                                bundle.mRxInfoContentView.setVisibility(View.VISIBLE);
+                            } else {
+                                toggle.setText(">");
+                                bundle.mRxInfoContentView.setVisibility(View.GONE);
+                            }
+                        }
+                    });
 
             bundle.mRxInfoCollapseToggleView.addView(tv);
             bundle.mRxInfoCollapseToggleView.addView(toggle);
         }
 
-        static <T extends WorkerFragment & AudioFragment.RxSupport>
-        void onActionSelected(final T fragment, final Bundle bundle, String action, HashMap<String, WorkerFunctionView.ParameterView> views) {
-            if (action == null || !(fragment instanceof AudioFragment.WorkerFunctionAuxSupport) ||
-                    !((AudioFragment.WorkerFunctionAuxSupport) fragment).needToShowAuxView(action))
-                Factory.hideRxAuxView(fragment);
-            else
-                Factory.showRxAuxView(fragment, bundle, action, views);
+        static <T extends WorkerFragment & AudioFragment.RxSupport> void onActionSelected(
+                final T fragment,
+                final Bundle bundle,
+                String action,
+                HashMap<String, WorkerFunctionView.ParameterView> views) {
+            if (action == null
+                    || !(fragment instanceof AudioFragment.WorkerFunctionAuxSupport)
+                    || !((AudioFragment.WorkerFunctionAuxSupport) fragment)
+                            .needToShowAuxView(action)) Factory.hideRxAuxView(fragment);
+            else Factory.showRxAuxView(fragment, bundle, action, views);
         }
 
-        static <T extends WorkerFragment & AudioFragment.RxSupport>
-        void onFunctionAckReceived(final T fragment, final Bundle bundle, WorkerFunction.Ack ack) {
-            if (fragment.mActivityRef.get() == null)
-                return;
+        static <T extends WorkerFragment & AudioFragment.RxSupport> void onFunctionAckReceived(
+                final T fragment, final Bundle bundle, WorkerFunction.Ack ack) {
+            if (fragment.mActivityRef.get() == null) return;
 
             ControllerBase controller = fragment.mActivityRef.get().getMainController();
-            controller.execute(fragment.getInfoRequestFunction(), new WorkerFunction.WorkerFunctionListener() {
-                @Override
-                public void onAckReceived(WorkerFunction.Ack ack) {
-                    if (fragment.mActivityRef.get() == null)
-                        return;
-
-                    final Object[] returns = fragment.getRxReturns(ack);
-
-                    fragment.mActivityRef.get().runOnUiThread(new Runnable() {
+            controller.execute(
+                    fragment.getInfoRequestFunction(),
+                    new WorkerFunction.WorkerFunctionListener() {
                         @Override
-                        public void run() {
-                            Factory.updateRxInfoContent(fragment, bundle, returns);
-                            if (fragment instanceof AudioFragment.WorkerFunctionAuxSupport &&
-                                    ((AudioFragment.WorkerFunctionAuxSupport) fragment).getWorkerFunctionView() != null) {
-                                ((AudioFragment.WorkerFunctionAuxSupport) fragment).getWorkerFunctionView().updateParameterView();
-                            }
+                        public void onAckReceived(WorkerFunction.Ack ack) {
+                            if (fragment.mActivityRef.get() == null) return;
+
+                            final Object[] returns = fragment.getRxReturns(ack);
+
+                            fragment.mActivityRef
+                                    .get()
+                                    .runOnUiThread(
+                                            new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    Factory.updateRxInfoContent(
+                                                            fragment, bundle, returns);
+                                                    if (fragment
+                                                                    instanceof
+                                                                    AudioFragment
+                                                                            .WorkerFunctionAuxSupport
+                                                            && ((AudioFragment
+                                                                                            .WorkerFunctionAuxSupport)
+                                                                                    fragment)
+                                                                            .getWorkerFunctionView()
+                                                                    != null) {
+                                                        ((AudioFragment.WorkerFunctionAuxSupport)
+                                                                        fragment)
+                                                                .getWorkerFunctionView()
+                                                                .updateParameterView();
+                                                    }
+                                                }
+                                            });
                         }
-                    });
-                }
-            }, true);
+                    },
+                    true);
         }
 
-        static <T extends WorkerFragment & AudioFragment.RxSupport>
-        void updateRxInfoContent(T fragment, Bundle bundle, Object[] returns) {
+        static <T extends WorkerFragment & AudioFragment.RxSupport> void updateRxInfoContent(
+                T fragment, Bundle bundle, Object[] returns) {
             bundle.mRxInfoContentView.removeAllViews();
-            if (returns.length < 1 || fragment.mActivityRef.get() == null)
-                return;
+            if (returns.length < 1 || fragment.mActivityRef.get() == null) return;
 
             try {
                 JSONObject rxInfo = new JSONObject(returns[0].toString());
                 for (String type : bundle.mRunningUsecases.keySet()) {
                     SparseArray<JSONObject> array = bundle.mRunningUsecases.get(type);
-                    if (array == null)
-                        continue;
+                    if (array == null) continue;
 
                     array.clear();
 
-                    if (!rxInfo.has(type) || rxInfo.getJSONObject(type) == null)
-                        continue;
+                    if (!rxInfo.has(type) || rxInfo.getJSONObject(type) == null) continue;
 
                     JSONObject jsonOffload = rxInfo.getJSONObject(type);
                     Iterator<String> iterator = jsonOffload.keys();
@@ -213,8 +257,7 @@ public abstract class AudioRxSupportFragment extends WorkerFragment
                         try {
                             id = Integer.valueOf(key);
                             JSONObject usecase = jsonOffload.getJSONObject(key);
-                            if (usecase != null)
-                                array.put(id, usecase);
+                            if (usecase != null) array.put(id, usecase);
                         } catch (NumberFormatException e) {
                             e.printStackTrace();
                         }
@@ -228,7 +271,10 @@ public abstract class AudioRxSupportFragment extends WorkerFragment
             if (Factory.getNumRunningTracks(bundle) == 0) {
                 {
                     TextView tv = new TextView(fragment.mActivityRef.get());
-                    tv.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, fragment.getPxByDp(40)));
+                    tv.setLayoutParams(
+                            new LinearLayout.LayoutParams(
+                                    LinearLayout.LayoutParams.MATCH_PARENT,
+                                    fragment.getPxByDp(40)));
                     tv.setGravity(Gravity.CENTER_VERTICAL);
                     tv.setTextSize(16);
                     tv.setText("no running tracks");
@@ -237,12 +283,14 @@ public abstract class AudioRxSupportFragment extends WorkerFragment
             } else {
                 for (String type : bundle.mRunningUsecases.keySet()) {
                     SparseArray<JSONObject> usecases = bundle.mRunningUsecases.get(type);
-                    if (usecases == null || usecases.size() == 0)
-                        continue;
+                    if (usecases == null || usecases.size() == 0) continue;
 
                     {
                         TextView tv = new TextView(fragment.mActivityRef.get());
-                        tv.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, fragment.getPxByDp(40)));
+                        tv.setLayoutParams(
+                                new LinearLayout.LayoutParams(
+                                        LinearLayout.LayoutParams.MATCH_PARENT,
+                                        fragment.getPxByDp(40)));
                         tv.setGravity(Gravity.CENTER_VERTICAL);
                         tv.setTextSize(16);
                         tv.setText(usecases.size() + " running " + type + " tracks");
@@ -251,13 +299,22 @@ public abstract class AudioRxSupportFragment extends WorkerFragment
 
                     LinearLayout configContainer = new LinearLayout(fragment.mActivityRef.get());
                     configContainer.setOrientation(LinearLayout.VERTICAL);
-                    configContainer.setPadding(fragment.getPxByDp(6), fragment.getPxByDp(6), fragment.getPxByDp(6), fragment.getPxByDp(6));
+                    configContainer.setPadding(
+                            fragment.getPxByDp(6),
+                            fragment.getPxByDp(6),
+                            fragment.getPxByDp(6),
+                            fragment.getPxByDp(6));
                     configContainer.setBackgroundResource(R.drawable.border2);
-                    configContainer.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                    configContainer.setLayoutParams(
+                            new LinearLayout.LayoutParams(
+                                    LinearLayout.LayoutParams.MATCH_PARENT,
+                                    LinearLayout.LayoutParams.WRAP_CONTENT));
 
                     for (int i = 0; i < usecases.size(); i++) {
                         if (i > 0) {
-                            View border = ViewUtils.getHorizontalBorder(fragment.mActivityRef.get(), fragment.getPxByDp(2));
+                            View border =
+                                    ViewUtils.getHorizontalBorder(
+                                            fragment.mActivityRef.get(), fragment.getPxByDp(2));
                             border.setBackgroundColor(Color.argb(64, 0, 0, 0));
                             configContainer.addView(border);
                         }
@@ -272,12 +329,11 @@ public abstract class AudioRxSupportFragment extends WorkerFragment
             bundle.mRxInfoContentView.invalidate();
         }
 
-        static private int getNumRunningTracks(Bundle bundle) {
+        private static int getNumRunningTracks(Bundle bundle) {
             int cnt = 0;
             for (String type : bundle.mRunningUsecases.keySet()) {
                 SparseArray<JSONObject> dummy = bundle.mRunningUsecases.get(type);
-                if (dummy == null)
-                    continue;
+                if (dummy == null) continue;
 
                 cnt += dummy.size();
             }
@@ -285,33 +341,41 @@ public abstract class AudioRxSupportFragment extends WorkerFragment
             return cnt;
         }
 
-        static <T extends WorkerFragment & AudioFragment.RxSupport>
-        void appendTrackInfoView(T fragment, LinearLayout configContainer, JSONObject jsonInfo) {
+        static <T extends WorkerFragment & AudioFragment.RxSupport> void appendTrackInfoView(
+                T fragment, LinearLayout configContainer, JSONObject jsonInfo) {
             try {
-                if (jsonInfo == null || jsonInfo.getJSONObject(ParameterizedWorkerFunction.KEY_PARAMS) == null)
+                if (jsonInfo == null
+                        || jsonInfo.getJSONObject(ParameterizedWorkerFunction.KEY_PARAMS) == null)
                     return;
 
-                JSONObject jsonConfig = jsonInfo.getJSONObject(ParameterizedWorkerFunction.KEY_PARAMS);
+                JSONObject jsonConfig =
+                        jsonInfo.getJSONObject(ParameterizedWorkerFunction.KEY_PARAMS);
                 Iterator<String> iterator = jsonConfig.keys();
 
                 while (iterator.hasNext()) {
                     String key = iterator.next();
-                    if (key.equals(PlaybackStartFunction.ATTR_TYPE))
-                        continue;
+                    if (key.equals(PlaybackStartFunction.ATTR_TYPE)) continue;
 
                     LinearLayout container = new LinearLayout(fragment.mActivityRef.get());
-                    container.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                    container.setLayoutParams(
+                            new LinearLayout.LayoutParams(
+                                    LinearLayout.LayoutParams.MATCH_PARENT,
+                                    LinearLayout.LayoutParams.WRAP_CONTENT));
                     container.setOrientation(LinearLayout.HORIZONTAL);
 
                     TextView tv = new TextView(fragment.mActivityRef.get());
-                    tv.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+                    tv.setLayoutParams(
+                            new LinearLayout.LayoutParams(
+                                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
                     tv.setGravity(Gravity.CENTER);
                     tv.setTextSize(16);
                     tv.setText(key);
                     container.addView(tv);
 
                     EditText et = new EditText(fragment.mActivityRef.get());
-                    et.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+                    et.setLayoutParams(
+                            new LinearLayout.LayoutParams(
+                                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
                     et.setGravity(Gravity.CENTER);
                     et.setTextSize(16);
                     et.setEnabled(false);
@@ -325,22 +389,22 @@ public abstract class AudioRxSupportFragment extends WorkerFragment
             }
         }
 
-        static <T extends WorkerFragment & AudioFragment.RxSupport>
-        void hideRxAuxView(T fragment) {
+        static <T extends WorkerFragment & AudioFragment.RxSupport> void hideRxAuxView(T fragment) {
             LinearLayout container = fragment.getRxAuxViewContainer();
-            if (container == null)
-                return;
+            if (container == null) return;
 
             container.setVisibility(View.GONE);
             container.removeAllViews();
             container.invalidate();
         }
 
-        static <T extends WorkerFragment & AudioFragment.RxSupport>
-        void showRxAuxView(T fragment, Bundle bundle, String action, HashMap<String, WorkerFunctionView.ParameterView> views) {
+        static <T extends WorkerFragment & AudioFragment.RxSupport> void showRxAuxView(
+                T fragment,
+                Bundle bundle,
+                String action,
+                HashMap<String, WorkerFunctionView.ParameterView> views) {
             LinearLayout container = fragment.getRxAuxViewContainer();
-            if (container == null)
-                return;
+            if (container == null) return;
 
             switch (action) {
                 case Constants.MasterInterface.INTENT_PLAYBACK_START:
@@ -357,14 +421,13 @@ public abstract class AudioRxSupportFragment extends WorkerFragment
             }
         }
 
-        static <T extends WorkerFragment & AudioFragment.RxSupport>
-        void updateRxAuxViewForStart(T fragment, final HashMap<String, WorkerFunctionView.ParameterView> views) {
-            if (!views.containsKey(PlaybackStartFunction.ATTR_TYPE) || fragment.mActivityRef.get() == null)
-                return;
+        static <T extends WorkerFragment & AudioFragment.RxSupport> void updateRxAuxViewForStart(
+                T fragment, final HashMap<String, WorkerFunctionView.ParameterView> views) {
+            if (!views.containsKey(PlaybackStartFunction.ATTR_TYPE)
+                    || fragment.mActivityRef.get() == null) return;
 
             LinearLayout container = fragment.getRxAuxViewContainer();
-            if (container == null)
-                return;
+            if (container == null) return;
 
             container.removeAllViews();
             container.setOrientation(LinearLayout.VERTICAL);
@@ -372,37 +435,43 @@ public abstract class AudioRxSupportFragment extends WorkerFragment
             selections.add("");
             selections.add(PlaybackFunction.TASK_OFFLOAD);
             selections.add(PlaybackFunction.TASK_NONOFFLOAD);
-            Spinner spinner = ViewUtils.getSimpleSpinner(fragment.mActivityRef.get(), selections, new AdapterView.OnItemSelectedListener() {
-                @Override
-                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                    if (position == 0)
-                        return;
+            Spinner spinner =
+                    ViewUtils.getSimpleSpinner(
+                            fragment.mActivityRef.get(),
+                            selections,
+                            new AdapterView.OnItemSelectedListener() {
+                                @Override
+                                public void onItemSelected(
+                                        AdapterView<?> parent, View view, int position, long id) {
+                                    if (position == 0) return;
 
-                    WorkerFunctionView.ParameterView pv = views.get(PlaybackStartFunction.ATTR_TYPE);
-                    if (pv == null)
-                        return;
-                    pv.requestValue.setText(selections.get(position));
-                }
+                                    WorkerFunctionView.ParameterView pv =
+                                            views.get(PlaybackStartFunction.ATTR_TYPE);
+                                    if (pv == null) return;
+                                    pv.requestValue.setText(selections.get(position));
+                                }
 
-                @Override
-                public void onNothingSelected(AdapterView<?> parent) {
-                }
-            });
-            spinner.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, fragment.getPxByDp(40)));
+                                @Override
+                                public void onNothingSelected(AdapterView<?> parent) {}
+                            });
+            spinner.setLayoutParams(
+                    new LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT, fragment.getPxByDp(40)));
 
             container.addView(spinner);
             container.invalidate();
         }
 
-        static <T extends WorkerFragment & AudioFragment.RxSupport>
-        void updateRxAuxViewForStop(T fragment, Bundle bundle, final HashMap<String, WorkerFunctionView.ParameterView> views) {
-            if (!views.containsKey(PlaybackStartFunction.ATTR_TYPE) ||
-                    !views.containsKey(PlaybackStartFunction.ATTR_PLAYBACK_ID) || fragment.mActivityRef.get() == null)
-                return;
+        static <T extends WorkerFragment & AudioFragment.RxSupport> void updateRxAuxViewForStop(
+                T fragment,
+                Bundle bundle,
+                final HashMap<String, WorkerFunctionView.ParameterView> views) {
+            if (!views.containsKey(PlaybackStartFunction.ATTR_TYPE)
+                    || !views.containsKey(PlaybackStartFunction.ATTR_PLAYBACK_ID)
+                    || fragment.mActivityRef.get() == null) return;
 
             LinearLayout container = fragment.getRxAuxViewContainer();
-            if (container == null)
-                return;
+            if (container == null) return;
 
             container.removeAllViews();
             container.setOrientation(LinearLayout.VERTICAL);
@@ -410,35 +479,40 @@ public abstract class AudioRxSupportFragment extends WorkerFragment
             selections.add("");
             for (String type : bundle.mRunningUsecases.keySet()) {
                 SparseArray<JSONObject> usecases = bundle.mRunningUsecases.get(type);
-                if (usecases == null || usecases.size() == 0)
-                    continue;
+                if (usecases == null || usecases.size() == 0) continue;
 
                 for (int i = 0; i < usecases.size(); i++)
                     selections.add(type + "@" + usecases.keyAt(i));
             }
-            Spinner spinner = ViewUtils.getSimpleSpinner(fragment.mActivityRef.get(), selections, new AdapterView.OnItemSelectedListener() {
-                @Override
-                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                    if (position == 0)
-                        return;
+            Spinner spinner =
+                    ViewUtils.getSimpleSpinner(
+                            fragment.mActivityRef.get(),
+                            selections,
+                            new AdapterView.OnItemSelectedListener() {
+                                @Override
+                                public void onItemSelected(
+                                        AdapterView<?> parent, View view, int position, long id) {
+                                    if (position == 0) return;
 
-                    WorkerFunctionView.ParameterView pv1 = views.get(PlaybackStartFunction.ATTR_TYPE);
-                    WorkerFunctionView.ParameterView pv2 = views.get(PlaybackStartFunction.ATTR_PLAYBACK_ID);
-                    if (pv1 == null || pv2 == null)
-                        return;
+                                    WorkerFunctionView.ParameterView pv1 =
+                                            views.get(PlaybackStartFunction.ATTR_TYPE);
+                                    WorkerFunctionView.ParameterView pv2 =
+                                            views.get(PlaybackStartFunction.ATTR_PLAYBACK_ID);
+                                    if (pv1 == null || pv2 == null) return;
 
-                    String s = selections.get(position);
-                    String[] patterns = s.split("@");
-                    pv1.requestValue.setText(patterns[0]);
-                    pv2.requestValue.setText(patterns[1]);
-                }
+                                    String s = selections.get(position);
+                                    String[] patterns = s.split("@");
+                                    pv1.requestValue.setText(patterns[0]);
+                                    pv2.requestValue.setText(patterns[1]);
+                                }
 
-                @Override
-                public void onNothingSelected(AdapterView<?> parent) {
-                }
-            });
+                                @Override
+                                public void onNothingSelected(AdapterView<?> parent) {}
+                            });
 
-            spinner.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, fragment.getPxByDp(40)));
+            spinner.setLayoutParams(
+                    new LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT, fragment.getPxByDp(40)));
 
             container.addView(spinner);
             container.invalidate();

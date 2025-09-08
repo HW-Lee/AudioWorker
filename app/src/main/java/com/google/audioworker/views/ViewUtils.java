@@ -12,11 +12,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public class ViewUtils {
-    static public Spinner getSimpleSpinner(@NonNull Context ctx, Collection<? extends String> values) {
+    public static Spinner getSimpleSpinner(
+            @NonNull Context ctx, Collection<? extends String> values) {
         return getSimpleSpinner(ctx, values, null);
     }
 
-    static public Spinner getSimpleSpinner(@NonNull Context ctx, Collection<? extends String> values, AdapterView.OnItemSelectedListener l) {
+    public static Spinner getSimpleSpinner(
+            @NonNull Context ctx,
+            Collection<? extends String> values,
+            AdapterView.OnItemSelectedListener l) {
         Spinner spinner = new Spinner(ctx);
         spinner.setAdapter(getSimpleAdapter(ctx, values));
         spinner.setOnItemSelectedListener(l);
@@ -24,13 +28,19 @@ public class ViewUtils {
         return spinner;
     }
 
-    static public ArrayAdapter<String> getSimpleAdapter(@NonNull Context ctx, Collection<? extends String> values) {
-        return new ArrayAdapter<>(ctx, android.R.layout.simple_list_item_1, android.R.id.text1, new ArrayList<>(values));
+    public static ArrayAdapter<String> getSimpleAdapter(
+            @NonNull Context ctx, Collection<? extends String> values) {
+        return new ArrayAdapter<>(
+                ctx,
+                android.R.layout.simple_list_item_1,
+                android.R.id.text1,
+                new ArrayList<>(values));
     }
 
-    static public View getHorizontalBorder(@NonNull Context ctx, int borderWidth) {
+    public static View getHorizontalBorder(@NonNull Context ctx, int borderWidth) {
         View border = new View(ctx);
-        border.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, borderWidth));
+        border.setLayoutParams(
+                new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, borderWidth));
         return border;
     }
 }

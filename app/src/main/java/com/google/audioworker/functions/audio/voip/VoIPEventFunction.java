@@ -4,7 +4,7 @@ import com.google.audioworker.functions.audio.record.RecordEventFunction;
 import com.google.audioworker.utils.Constants;
 
 public class VoIPEventFunction extends VoIPFunction {
-    private final static String TAG = Constants.packageTag("VoIPEventFunction");
+    private static final String TAG = Constants.packageTag("VoIPEventFunction");
 
     private RecordEventFunction mReference = new RecordEventFunction();
 

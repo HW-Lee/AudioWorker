@@ -7,10 +7,10 @@ import com.google.audioworker.utils.Constants;
 import java.util.Arrays;
 
 public class SinusoidalGenerator {
-    private final static String TAG = Constants.packageTag("SinusoidalGenerator");
+    private static final String TAG = Constants.packageTag("SinusoidalGenerator");
     private double phaseOffset;
 
-    static public class ModelInfo {
+    public static class ModelInfo {
         public double analogMagnitude;
         public double analogFrequency;
 
@@ -39,7 +39,8 @@ public class SinusoidalGenerator {
         render(dest, signalInfo, samplingFreq, ModelInfo.INTERP_LINEAR);
     }
 
-    public void render(double[] dest, SparseArray<ModelInfo> signalInfo, double samplingFreq, int interp) {
+    public void render(
+            double[] dest, SparseArray<ModelInfo> signalInfo, double samplingFreq, int interp) {
         if (signalInfo.size() == 0) {
             Arrays.fill(dest, 0);
             return;
@@ -48,52 +49,55 @@ public class SinusoidalGenerator {
         for (int i = 0; i < dest.length; i++) {
             ModelInfo info = interpInfo(signalInfo, i, interp);
             dest[i] = info.analogMagnitude * Math.cos(phaseOffset);
-            phaseOffset += (2*Math.PI * info.analogFrequency) / samplingFreq;
+            phaseOffset += (2 * Math.PI * info.analogFrequency) / samplingFreq;
         }
     }
 
     private ModelInfo interpInfo(SparseArray<ModelInfo> signalInfo, int idx, int interp) {
         switch (interp) {
-            case ModelInfo.INTERP_LINEAR: {
-                int from = idx;
-                for (int j = signalInfo.size()-1; j >= 0; j--) {
-                    if (idx == signalInfo.keyAt(j))
-                        return signalInfo.get(idx);
-                    if (idx > signalInfo.keyAt(j)) {
-                        from = signalInfo.keyAt(j);
-                        break;
+            case ModelInfo.INTERP_LINEAR:
+                {
+                    int from = idx;
+                    for (int j = signalInfo.size() - 1; j >= 0; j--) {
+                        if (idx == signalInfo.keyAt(j)) return signalInfo.get(idx);
+                        if (idx > signalInfo.keyAt(j)) {
+                            from = signalInfo.keyAt(j);
+                            break;
+                        }
                     }
-                }
-                int to = from;
-                for (int j = signalInfo.indexOfKey(from); j < signalInfo.size(); j++) {
-                    if (idx == signalInfo.keyAt(j))
-                        return signalInfo.get(idx);
-                    if (idx < signalInfo.keyAt(j)) {
-                        to = signalInfo.keyAt(j);
-                        break;
+                    int to = from;
+                    for (int j = signalInfo.indexOfKey(from); j < signalInfo.size(); j++) {
+                        if (idx == signalInfo.keyAt(j)) return signalInfo.get(idx);
+                        if (idx < signalInfo.keyAt(j)) {
+                            to = signalInfo.keyAt(j);
+                            break;
+                        }
                     }
-                }
-                if (from == to) {
-                    return signalInfo.get(from);
-                }
-                ModelInfo info1 = signalInfo.get(from);
-                ModelInfo info2 = signalInfo.get(to);
-                ModelInfo info = new ModelInfo();
-                double weight = (double) (idx - from) / (to - from);
-                info.analogFrequency = info1.analogFrequency + (info2.analogFrequency - info1.analogFrequency) * weight;
-                info.analogMagnitude = info1.analogMagnitude + (info2.analogMagnitude - info1.analogMagnitude) * weight;
+                    if (from == to) {
+                        return signalInfo.get(from);
+                    }
+                    ModelInfo info1 = signalInfo.get(from);
+                    ModelInfo info2 = signalInfo.get(to);
+                    ModelInfo info = new ModelInfo();
+                    double weight = (double) (idx - from) / (to - from);
+                    info.analogFrequency =
+                            info1.analogFrequency
+                                    + (info2.analogFrequency - info1.analogFrequency) * weight;
+                    info.analogMagnitude =
+                            info1.analogMagnitude
+                                    + (info2.analogMagnitude - info1.analogMagnitude) * weight;
 
-                return info;
-            }
-            case ModelInfo.INTERP_STEP:
-            default: {
-                ModelInfo info = new ModelInfo();
-                for (int i = signalInfo.size()-1; i >= 0; i--) {
-                    if (idx >= signalInfo.keyAt(i))
-                        return signalInfo.get(signalInfo.keyAt(i));
+                    return info;
                 }
-                return info;
-            }
+            case ModelInfo.INTERP_STEP:
+            default:
+                {
+                    ModelInfo info = new ModelInfo();
+                    for (int i = signalInfo.size() - 1; i >= 0; i--) {
+                        if (idx >= signalInfo.keyAt(i)) return signalInfo.get(signalInfo.keyAt(i));
+                    }
+                    return info;
+                }
         }
     }
 }

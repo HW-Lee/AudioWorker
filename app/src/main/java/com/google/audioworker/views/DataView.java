@@ -13,12 +13,9 @@ import com.google.audioworker.utils.Constants;
 import java.util.ArrayList;
 import java.util.Collection;
 
-/**
- * Created by HWLee on 28/10/2017.
- */
-
+/** Created by HWLee on 28/10/2017. */
 public class DataView extends View {
-    static final private String TAG = Constants.packageTag("DataView");
+    private static final String TAG = Constants.packageTag("DataView");
 
     private int mBgColor;
     private Paint mGridPaint;
@@ -26,7 +23,8 @@ public class DataView extends View {
     private int mGridSlotsY;
 
     private final ArrayList<Paint> mDataPaints = new ArrayList<>();
-    private final ArrayList<ArrayList<Double>> mDataBuffer = new ArrayList<>(0);;
+    private final ArrayList<ArrayList<Double>> mDataBuffer = new ArrayList<>(0);
+    ;
 
     public DataView(Context context) {
         super(context);
@@ -43,7 +41,8 @@ public class DataView extends View {
         init();
     }
 
-    public DataView(Context context, @Nullable AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+    public DataView(
+            Context context, @Nullable AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         init();
     }
@@ -74,8 +73,7 @@ public class DataView extends View {
                 mDataPaints.get(idx).setColor(color);
                 return;
             }
-            if (idx != mDataPaints.size())
-                return;
+            if (idx != mDataPaints.size()) return;
 
             Paint paint = new Paint();
             paint.setStrokeWidth(5.0f);
@@ -113,7 +111,7 @@ public class DataView extends View {
     }
 
     private float convertToViewPosition(double dataY, int height) {
-        return height/2.0f * (1 - (float) dataY);
+        return height / 2.0f * (1 - (float) dataY);
     }
 
     @Override
@@ -124,20 +122,20 @@ public class DataView extends View {
         int viewWidth = this.getMeasuredWidth();
 
         canvas.drawColor(mBgColor);
-        mGridPaint.setStrokeWidth(mGridPaint.getStrokeWidth()*2);
-        canvas.drawLine(0, viewHeight/2.0f, viewWidth, viewHeight/2.0f, mGridPaint);
-        mGridPaint.setStrokeWidth(mGridPaint.getStrokeWidth()/2);
+        mGridPaint.setStrokeWidth(mGridPaint.getStrokeWidth() * 2);
+        canvas.drawLine(0, viewHeight / 2.0f, viewWidth, viewHeight / 2.0f, mGridPaint);
+        mGridPaint.setStrokeWidth(mGridPaint.getStrokeWidth() / 2);
 
         if (mGridSlotsX > 0) {
             for (int i = 1; i < mGridSlotsX; i++) {
-                float x = (float) viewWidth/mGridSlotsX * i;
+                float x = (float) viewWidth / mGridSlotsX * i;
                 canvas.drawLine(x, 0, x, viewHeight, mGridPaint);
             }
         }
 
         if (mGridSlotsY > 0) {
             for (int i = 1; i < mGridSlotsY; i++) {
-                float y = (float) viewHeight/mGridSlotsY * i;
+                float y = (float) viewHeight / mGridSlotsY * i;
                 canvas.drawLine(0, y, viewWidth, y, mGridPaint);
             }
         }
@@ -149,8 +147,7 @@ public class DataView extends View {
                 }
                 ArrayList<Double> data = mDataBuffer.get(j);
                 Paint paint = mDataPaints.get(j);
-                if (data == null || paint == null)
-                    continue;
+                if (data == null || paint == null) continue;
 
                 for (int i = 0; i < data.size() - 1; i++) {
                     float startX = (float) viewWidth / data.size() * i;

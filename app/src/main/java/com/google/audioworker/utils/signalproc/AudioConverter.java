@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AudioConverter {
-    private final static String TAG = Constants.packageTag("AudioConverter");
+    private static final String TAG = Constants.packageTag("AudioConverter");
 
     private Context mContext;
     private String mSource;
@@ -27,11 +27,13 @@ public class AudioConverter {
 
     public interface LoadListener {
         void onSuccess();
+
         void onFailure(Exception e);
     }
 
     public interface ConvertListener {
         void onSuccess(String msg);
+
         void onFailure(Exception e);
     }
 
@@ -97,8 +99,7 @@ public class AudioConverter {
         }
 
         public AudioConverter buildWith(AudioConverter converter) {
-            if (converter == null)
-                return new AudioConverter(context, source, destination);
+            if (converter == null) return new AudioConverter(context, source, destination);
 
             converter.mContext = context;
             converter.mSource = source;
@@ -119,55 +120,52 @@ public class AudioConverter {
     }
 
     public boolean load(final LoadListener l, final boolean blocking) {
-        if (isLoaded)
-            return true;
+        if (isLoaded) return true;
 
         final AtomicBoolean done = new AtomicBoolean(false);
         final AtomicBoolean success = new AtomicBoolean(true);
         try {
-            FFmpeg.getInstance(mContext).loadBinary(new FFmpegLoadBinaryResponseHandler() {
-                @Override
-                public void onFailure() {
-                    Log.w(TAG, "load failed");
-                    success.set(false);
-                    done.set(true);
-                    if (blocking) {
-                        synchronized (AudioConverter.this) {
-                            AudioConverter.this.notify();
-                        }
-                    } else if (l != null) {
-                        l.onFailure(new Exception("Failed to loaded FFmpeg lib"));
-                    }
-                }
+            FFmpeg.getInstance(mContext)
+                    .loadBinary(
+                            new FFmpegLoadBinaryResponseHandler() {
+                                @Override
+                                public void onFailure() {
+                                    Log.w(TAG, "load failed");
+                                    success.set(false);
+                                    done.set(true);
+                                    if (blocking) {
+                                        synchronized (AudioConverter.this) {
+                                            AudioConverter.this.notify();
+                                        }
+                                    } else if (l != null) {
+                                        l.onFailure(new Exception("Failed to loaded FFmpeg lib"));
+                                    }
+                                }
 
-                @Override
-                public void onSuccess() {
-                    done.set(true);
-                    success.set(true);
-                    isLoaded = true;
-                    if (blocking) {
-                        synchronized (AudioConverter.this) {
-                            AudioConverter.this.notify();
-                        }
-                    } else if (l != null) {
-                        l.onSuccess();
-                    }
-                }
+                                @Override
+                                public void onSuccess() {
+                                    done.set(true);
+                                    success.set(true);
+                                    isLoaded = true;
+                                    if (blocking) {
+                                        synchronized (AudioConverter.this) {
+                                            AudioConverter.this.notify();
+                                        }
+                                    } else if (l != null) {
+                                        l.onSuccess();
+                                    }
+                                }
 
-                @Override
-                public void onStart() {
-                }
+                                @Override
+                                public void onStart() {}
 
-                @Override
-                public void onFinish() {
-                }
-            });
+                                @Override
+                                public void onFinish() {}
+                            });
         } catch (FFmpegNotSupportedException e) {
             e.printStackTrace();
-            if (blocking)
-                return false;
-            if (l != null)
-                l.onFailure(e);
+            if (blocking) return false;
+            if (l != null) l.onFailure(e);
         }
 
         while (blocking && !done.get()) {
@@ -219,52 +217,50 @@ public class AudioConverter {
         final AtomicBoolean success = new AtomicBoolean(true);
 
         try {
-            FFmpeg.getInstance(mContext).execute(cmd.toArray(new String[0]), new FFmpegExecuteResponseHandler() {
-                @Override
-                public void onSuccess(String message) {
-                    done.set(true);
-                    success.set(true);
-                    if (blocking) {
-                        synchronized (AudioConverter.this) {
-                            AudioConverter.this.notify();
-                        }
-                    } else if (l != null) {
-                        l.onSuccess(message);
-                    }
-                }
+            FFmpeg.getInstance(mContext)
+                    .execute(
+                            cmd.toArray(new String[0]),
+                            new FFmpegExecuteResponseHandler() {
+                                @Override
+                                public void onSuccess(String message) {
+                                    done.set(true);
+                                    success.set(true);
+                                    if (blocking) {
+                                        synchronized (AudioConverter.this) {
+                                            AudioConverter.this.notify();
+                                        }
+                                    } else if (l != null) {
+                                        l.onSuccess(message);
+                                    }
+                                }
 
-                @Override
-                public void onProgress(String message) {
-                }
+                                @Override
+                                public void onProgress(String message) {}
 
-                @Override
-                public void onFailure(String message) {
-                    Log.d(TAG, "onFailure(" + message + ")");
-                    done.set(true);
-                    success.set(false);
-                    if (blocking) {
-                        synchronized (AudioConverter.this) {
-                            AudioConverter.this.notify();
-                        }
-                    } else if (l != null) {
-                        l.onFailure(new IOException(message));
-                    }
-                }
+                                @Override
+                                public void onFailure(String message) {
+                                    Log.d(TAG, "onFailure(" + message + ")");
+                                    done.set(true);
+                                    success.set(false);
+                                    if (blocking) {
+                                        synchronized (AudioConverter.this) {
+                                            AudioConverter.this.notify();
+                                        }
+                                    } else if (l != null) {
+                                        l.onFailure(new IOException(message));
+                                    }
+                                }
 
-                @Override
-                public void onStart() {
-                }
+                                @Override
+                                public void onStart() {}
 
-                @Override
-                public void onFinish() {
-                }
-            });
+                                @Override
+                                public void onFinish() {}
+                            });
         } catch (FFmpegCommandAlreadyRunningException e) {
             e.printStackTrace();
-            if (blocking)
-                return false;
-            if (l != null)
-                l.onFailure(e);
+            if (blocking) return false;
+            if (l != null) l.onFailure(e);
         }
 
         while (blocking && !done.get()) {

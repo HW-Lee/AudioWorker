@@ -3,19 +3,15 @@ package com.google.audioworker.functions.audio.playback;
 import com.google.audioworker.utils.Constants;
 
 public class PlaybackInfoFunction extends PlaybackFunction {
-    private final static String TAG = Constants.packageTag("PlaybackInfoFunction");
+    private static final String TAG = Constants.packageTag("PlaybackInfoFunction");
 
-    private final static String ATTR_FILENAME = "filename";
+    private static final String ATTR_FILENAME = "filename";
 
-    private final static String[] ATTRS = {
-            ATTR_FILENAME
-    };
+    private static final String[] ATTRS = {ATTR_FILENAME};
 
     private Parameter<String> PARAM_FILENAME = new Parameter<>(ATTR_FILENAME, false, "");
 
-    private Parameter[] PARAMS = {
-            PARAM_FILENAME
-    };
+    private Parameter[] PARAMS = {PARAM_FILENAME};
 
     @Override
     public String[] getAttributes() {
@@ -41,8 +37,7 @@ public class PlaybackInfoFunction extends PlaybackFunction {
 
     @Override
     public void setParameter(String attr, Object value) {
-        if (isValueAccepted(attr, value))
-            PARAM_FILENAME.setValue(value);
+        if (isValueAccepted(attr, value)) PARAM_FILENAME.setValue(value);
     }
 
     public String getFileName() {

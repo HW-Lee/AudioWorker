@@ -14,13 +14,17 @@ import java.util.List;
 public abstract class WorkerFunction {
     public interface Parameterizable {
         WorkerFunction.Parameter[] getParameters();
+
         String[] getAttributes();
+
         void setParameter(String attr, Object value);
+
         boolean isValueAccepted(String attr, Object value);
     }
 
-    abstract public JSONObject toJson();
-    abstract public boolean isValid();
+    public abstract JSONObject toJson();
+
+    public abstract boolean isValid();
 
     protected String mCommandId;
     protected final ArrayList<Ack> mAcks = new ArrayList<>();
@@ -85,13 +89,12 @@ public abstract class WorkerFunction {
 
         public Object[] getReturns() {
             ArrayList<Object> returns = new ArrayList<>();
-            JSONArray jsonReturns = (JSONArray) getProperty(Constants.MessageSpecification.COMMAND_ACK_RETURN);
-            if (jsonReturns == null)
-                return new Object[0];
+            JSONArray jsonReturns =
+                    (JSONArray) getProperty(Constants.MessageSpecification.COMMAND_ACK_RETURN);
+            if (jsonReturns == null) return new Object[0];
             try {
                 for (int i = 0; i < jsonReturns.length(); i++) {
-                    if (jsonReturns.get(i) != null)
-                        returns.add(jsonReturns.get(i));
+                    if (jsonReturns.get(i) != null) returns.add(jsonReturns.get(i));
                 }
 
                 return returns.toArray();
@@ -99,7 +102,6 @@ public abstract class WorkerFunction {
                 e.printStackTrace();
                 return new Object[0];
             }
-
         }
 
         public String getTarget() {
@@ -131,7 +133,7 @@ public abstract class WorkerFunction {
             }
         }
 
-        static public Ack parseAck(String ackString) {
+        public static Ack parseAck(String ackString) {
             try {
                 return new Ack(ackString);
             } catch (JSONException e) {
@@ -141,7 +143,7 @@ public abstract class WorkerFunction {
             return null;
         }
 
-        static public Ack ackToCommand(JSONObject command) {
+        public static Ack ackToCommand(JSONObject command) {
             Ack ack = new Ack();
             String command_id = "N/A";
             try {
@@ -163,11 +165,10 @@ public abstract class WorkerFunction {
             return ack;
         }
 
-        static public Ack ackToFunction(WorkerFunction function) {
+        public static Ack ackToFunction(WorkerFunction function) {
             Ack ack = new Ack();
             String command_id = "N/A";
-            if (function.getCommandId() != null)
-                command_id = function.getCommandId();
+            if (function.getCommandId() != null) command_id = function.getCommandId();
 
             try {
                 ack.put(Constants.MessageSpecification.COMMAND_ACK_TARGET, command_id);
@@ -218,22 +219,17 @@ public abstract class WorkerFunction {
 
         @SuppressWarnings("unchecked")
         public void setValue(Object value) {
-            if (value == null)
-                return;
-            
+            if (value == null) return;
+
             this.set = true;
             if ((value instanceof Float || value instanceof Integer)
                     && (this.value instanceof Float || this.value instanceof Integer)) {
                 float v;
-                if (value instanceof Integer)
-                    v = (int) value;
-                else
-                    v = (float) value;
+                if (value instanceof Integer) v = (int) value;
+                else v = (float) value;
 
-                if (this.value instanceof Float)
-                    this.value = (T) Float.valueOf(v);
-                else
-                    this.value = (T) Integer.valueOf((int) v);
+                if (this.value instanceof Float) this.value = (T) Float.valueOf(v);
+                else this.value = (T) Integer.valueOf((int) v);
 
                 return;
             }

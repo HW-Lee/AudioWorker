@@ -55,8 +55,7 @@ public class CircularArray<T> implements List<T> {
     @Override
     public boolean contains(@Nullable Object o) {
         for (Object each : raw) {
-            if (each.equals(o))
-                return true;
+            if (each.equals(o)) return true;
         }
         return false;
     }
@@ -71,8 +70,7 @@ public class CircularArray<T> implements List<T> {
     @Override
     public Object[] toArray() {
         Object[] arr = new Object[len];
-        for (int i = 0; i < len; i++)
-            arr[i] = get(i);
+        for (int i = 0; i < len; i++) arr[i] = get(i);
 
         return arr;
     }
@@ -80,8 +78,7 @@ public class CircularArray<T> implements List<T> {
     @SuppressWarnings("unchecked")
     @Override
     public <T1> T1[] toArray(@Nullable T1[] a) {
-        if (a == null)
-            return null;
+        if (a == null) return null;
 
         ArrayList<T1> arr = new ArrayList<>();
         for (int i = 0; i < len; i++) {
@@ -98,8 +95,7 @@ public class CircularArray<T> implements List<T> {
 
     @Override
     public boolean add(T t) {
-        if (size == 0)
-            return true;
+        if (size == 0) return true;
 
         raw[(head + len) % size] = t;
         if (len < size) {
@@ -165,8 +161,7 @@ public class CircularArray<T> implements List<T> {
     @SuppressWarnings("unchecked")
     @Override
     public T get(int index) {
-        if (index >= len)
-            return null;
+        if (index >= len) return null;
 
         try {
             return (T) raw[(head + index) % size];
@@ -178,8 +173,7 @@ public class CircularArray<T> implements List<T> {
 
     @Override
     public T set(int index, T element) {
-        if (index >= len)
-            return null;
+        if (index >= len) return null;
 
         raw[(head + index) % size] = element;
         return element;
@@ -192,13 +186,12 @@ public class CircularArray<T> implements List<T> {
 
     @Override
     public T remove(int index) {
-        if (index >= len)
-            return null;
+        if (index >= len) return null;
 
         T e = get(index);
 
-        for (int i = index; i < len-1; i++) {
-            raw[(head + i) % size] = raw[(head + i+1) % size];
+        for (int i = index; i < len - 1; i++) {
+            raw[(head + i) % size] = raw[(head + i + 1) % size];
         }
         len--;
         return e;
@@ -207,8 +200,7 @@ public class CircularArray<T> implements List<T> {
     @Override
     public int indexOf(@Nullable Object o) {
         for (int i = 0; i < len; i++) {
-            if (get(i).equals(o))
-                return i;
+            if (get(i).equals(o)) return i;
         }
 
         return -1;
@@ -235,8 +227,7 @@ public class CircularArray<T> implements List<T> {
     @Override
     public List<T> subList(int fromIndex, int toIndex) {
         ArrayList<T> list = new ArrayList<>();
-        for (int i = fromIndex; i < toIndex; i++)
-            list.add(get(i));
+        for (int i = fromIndex; i < toIndex; i++) list.add(get(i));
 
         return list;
     }

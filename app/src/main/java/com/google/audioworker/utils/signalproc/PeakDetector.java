@@ -6,15 +6,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public class PeakDetector {
-    private final static String TAG = Constants.packageTag("PeakDetector");
+    private static final String TAG = Constants.packageTag("PeakDetector");
 
     public static class QuadraticFeature {
         public double[] coeffs;
         public double[] y;
 
         public QuadraticFeature(double[] feature, Config config) {
-            if (feature.length != 3 + config.numPoints)
-                return;
+            if (feature.length != 3 + config.numPoints) return;
 
             coeffs = new double[3];
             y = new double[config.numPoints];
@@ -25,8 +24,7 @@ public class PeakDetector {
 
         public double dataDensity() {
             double normsq = 0;
-            for (double v : y)
-                normsq += (v * v);
+            for (double v : y) normsq += (v * v);
             normsq /= y.length;
 
             return Math.sqrt(normsq);
@@ -34,8 +32,7 @@ public class PeakDetector {
 
         public double dataVariance() {
             double mean = 0;
-            for (double v : y)
-                mean += v;
+            for (double v : y) mean += v;
             mean /= y.length;
 
             return Math.pow(dataDensity(), 2) - Math.pow(mean, 2);
@@ -80,8 +77,7 @@ public class PeakDetector {
             }
 
             public Builder addTargetFreq(double target) {
-                if (this.targetFreqs.contains(target))
-                    return this;
+                if (this.targetFreqs.contains(target)) return this;
 
                 this.targetFreqs.add(target);
                 return this;
@@ -89,8 +85,7 @@ public class PeakDetector {
 
             public Builder addTargetFreqs(Collection<? extends Double> targets) {
                 Builder b = this;
-                for (Double v : targets)
-                    b = b.addTargetFreq(v);
+                for (Double v : targets) b = b.addTargetFreq(v);
 
                 return b;
             }
@@ -119,7 +114,7 @@ public class PeakDetector {
         System.loadLibrary("native-peak-detector");
     }
 
-    static public ArrayList<double[]> extractFeature(double[] data, Config config) {
+    public static ArrayList<double[]> extractFeature(double[] data, Config config) {
         int ncols = config.targetFreqs.length;
         int nrows = 3 + config.numPoints;
 
@@ -128,7 +123,9 @@ public class PeakDetector {
             targetIndices[i] = (int) Math.round(config.targetFreqs[i] / config.fstep);
         }
 
-        double[] nativeFeatures = PeakDetector.extractQuadFeature(data, targetIndices, config.minNormFactor, config.numPoints, config.step);
+        double[] nativeFeatures =
+                PeakDetector.extractQuadFeature(
+                        data, targetIndices, config.minNormFactor, config.numPoints, config.step);
         ArrayList<double[]> features = new ArrayList<>(ncols);
 
         for (int i = 0; i < ncols; i++) {
@@ -141,6 +138,8 @@ public class PeakDetector {
         return features;
     }
 
-    native static public String getVersion();
-    native static private double[] extractQuadFeature(double[] data, int[] targetIndices, double minNormFactor, int numPoints, int step);
+    public static native String getVersion();
+
+    private static native double[] extractQuadFeature(
+            double[] data, int[] targetIndices, double minNormFactor, int numPoints, int step);
 }

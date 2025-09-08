@@ -60,8 +60,7 @@ public class BufferLogger extends LoggerBase<LoggerBase.LogUnit> {
 
     public void dumpToSystemLog() {
         synchronized (mLogBuffer) {
-            for (String log : mLogBuffer)
-                Log.d(TAG, log);
+            for (String log : mLogBuffer) Log.d(TAG, log);
         }
     }
 }

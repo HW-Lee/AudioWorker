@@ -20,8 +20,9 @@ import com.google.audioworker.views.WorkerFunctionView;
 import java.util.ArrayList;
 import java.util.Collection;
 
-public class AudioPlaybackFragment extends AudioRxSupportFragment implements ControllerBase.ControllerStateListener {
-    private final static String TAG = Constants.packageTag("AudioPlaybackFragment");
+public class AudioPlaybackFragment extends AudioRxSupportFragment
+        implements ControllerBase.ControllerStateListener {
+    private static final String TAG = Constants.packageTag("AudioPlaybackFragment");
 
     private WorkerFunctionView mWorkerFunctionView;
     private LinearLayout mRxAuxViewContainer;
@@ -33,7 +34,8 @@ public class AudioPlaybackFragment extends AudioRxSupportFragment implements Con
     }
 
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(
+            @NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         return inflater.inflate(R.layout.audio_playback_fragment, container, false);
     }
 
@@ -51,16 +53,14 @@ public class AudioPlaybackFragment extends AudioRxSupportFragment implements Con
     public void onDestroy() {
         super.onDestroy();
 
-        if (mActivityRef.get() == null)
-            return;
+        if (mActivityRef.get() == null) return;
 
         mActivityRef.get().getMainController().unregisterStateListener(this);
     }
 
     @Override
     public void initRxSupport() {
-        if (mActivityRef.get() == null)
-            return;
+        if (mActivityRef.get() == null) return;
 
         mWorkerFunctionView = mActivityRef.get().findViewById(R.id.playback_func_attr_container);
         mRxAuxViewContainer = mActivityRef.get().findViewById(R.id.playback_aux_view_container);
@@ -128,28 +128,38 @@ public class AudioPlaybackFragment extends AudioRxSupportFragment implements Con
     public void onFunctionAckReceived(WorkerFunction.Ack ack) {
         super.onFunctionAckReceived(ack);
 
-        if (mActivityRef.get() == null)
-            return;
+        if (mActivityRef.get() == null) return;
 
-        final ControllerBase controller = mActivityRef.get().getMainController().getSubControllerByName(getControllerName());
+        final ControllerBase controller =
+                mActivityRef.get().getMainController().getSubControllerByName(getControllerName());
         final TextView statusView = mActivityRef.get().findViewById(R.id.playback_status);
-        if (statusView == null)
-            return;
+        if (statusView == null) return;
 
-        if (controller instanceof AudioController.RxSupport && ((AudioController.RxSupport) controller).isRxRunning()) {
-            mActivityRef.get().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    statusView.setText("Status: running (" + ((AudioController.RxSupport) controller).getNumRxRunning() + " tracks)");
-                }
-            });
+        if (controller instanceof AudioController.RxSupport
+                && ((AudioController.RxSupport) controller).isRxRunning()) {
+            mActivityRef
+                    .get()
+                    .runOnUiThread(
+                            new Runnable() {
+                                @Override
+                                public void run() {
+                                    statusView.setText(
+                                            "Status: running ("
+                                                    + ((AudioController.RxSupport) controller)
+                                                            .getNumRxRunning()
+                                                    + " tracks)");
+                                }
+                            });
         } else {
-            mActivityRef.get().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    statusView.setText("Status: idle");
-                }
-            });
+            mActivityRef
+                    .get()
+                    .runOnUiThread(
+                            new Runnable() {
+                                @Override
+                                public void run() {
+                                    statusView.setText("Status: idle");
+                                }
+                            });
         }
     }
 

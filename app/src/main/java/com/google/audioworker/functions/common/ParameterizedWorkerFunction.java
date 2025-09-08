@@ -9,22 +9,21 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Collection;
 
-public abstract class ParameterizedWorkerFunction extends WorkerFunction implements WorkerFunction.Parameterizable {
-    public final static String KEY_CLASS_NAME = "class";
-    public final static String KEY_HAS_ACK = "has-ack";
-    public final static String KEY_ACK = "ack";
-    public final static String KEY_PARAMS = "params";
-    public final static String KEY_UNDEFINED_REQUIRED = "required-not-defined";
-    public final static String KEY_COMMAND_ID = Constants.MessageSpecification.COMMAND_ID;
+public abstract class ParameterizedWorkerFunction extends WorkerFunction
+        implements WorkerFunction.Parameterizable {
+    public static final String KEY_CLASS_NAME = "class";
+    public static final String KEY_HAS_ACK = "has-ack";
+    public static final String KEY_ACK = "ack";
+    public static final String KEY_PARAMS = "params";
+    public static final String KEY_UNDEFINED_REQUIRED = "required-not-defined";
+    public static final String KEY_COMMAND_ID = Constants.MessageSpecification.COMMAND_ID;
 
     @Override
     public boolean isValid() {
-        if (getRequiredNotDefinedAttributes().size() > 0)
-            return false;
+        if (getRequiredNotDefinedAttributes().size() > 0) return false;
 
         for (Parameter parameter : getParameters()) {
-            if (!isValueAccepted(parameter.getAttribute(), parameter.getValue()))
-                return false;
+            if (!isValueAccepted(parameter.getAttribute(), parameter.getValue())) return false;
         }
 
         return true;
@@ -50,8 +49,7 @@ public abstract class ParameterizedWorkerFunction extends WorkerFunction impleme
         if (isExecuted()) {
             JSONArray arr = new JSONArray();
             synchronized (mAcks) {
-                for (Ack ack : mAcks)
-                    arr.put(ack.toString());
+                for (Ack ack : mAcks) arr.put(ack.toString());
             }
             save_put(info, KEY_ACK, arr);
         }

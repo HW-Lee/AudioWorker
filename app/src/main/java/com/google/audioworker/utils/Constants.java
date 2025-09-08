@@ -2,7 +2,6 @@ package com.google.audioworker.utils;
 
 import android.Manifest;
 import android.content.Intent;
-import android.content.Context;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.MediaRecorder;

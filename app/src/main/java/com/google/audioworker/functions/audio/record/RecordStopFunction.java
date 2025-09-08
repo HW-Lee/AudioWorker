@@ -3,10 +3,12 @@ package com.google.audioworker.functions.audio.record;
 import com.google.audioworker.utils.Constants;
 
 public class RecordStopFunction extends RecordFunction {
-    private final static String TAG = Constants.packageTag("RecordStopFunction");
+    private static final String TAG = Constants.packageTag("RecordStopFunction");
 
     @Override
-    public Parameter[] getParameters() {return super.getParameters();}
+    public Parameter[] getParameters() {
+        return super.getParameters();
+    }
 
     @Override
     public boolean isValueAccepted(String attr, Object value) {

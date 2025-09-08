@@ -5,9 +5,10 @@ import android.view.View;
 
 import com.google.audioworker.functions.audio.record.RecordStartFunction;
 
-
-public abstract class VisualizableDetector extends DetectorBase implements DetectorBase.Visualizable {
-    abstract public <T extends View & DetectionListener & DetectorBindable> void bindDetectorView(T v);
+public abstract class VisualizableDetector extends DetectorBase
+        implements DetectorBase.Visualizable {
+    public abstract <T extends View & DetectionListener & DetectorBindable> void bindDetectorView(
+            T v);
 
     public interface DetectorBindable {
         Handler getDetectorViewHandler();

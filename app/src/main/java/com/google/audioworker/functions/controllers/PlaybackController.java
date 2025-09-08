@@ -417,7 +417,8 @@ public class PlaybackController extends AudioController.AudioRxController {
 
             double[] signal = new double[frameCount];
             ArrayList<SinusoidalGenerator> signalGenerators = new ArrayList<>(numChannels);
-            ArrayList<SparseArray<SinusoidalGenerator.ModelInfo>> infos = new ArrayList<>(numChannels);
+            ArrayList<SparseArray<SinusoidalGenerator.ModelInfo>> infos =
+                    new ArrayList<>(numChannels);
             for (int i = 0; i < numChannels; i++) {
                 signalGenerators.add(new SinusoidalGenerator());
                 infos.add(new SparseArray<SinusoidalGenerator.ModelInfo>());
@@ -430,7 +431,11 @@ public class PlaybackController extends AudioController.AudioRxController {
             byte[] byteBuffer32 = (bitWidth == 32) ? new byte[intBuffer.length * 4] : null;
 
             exitPending = false;
-            Log.d(TAG, "playFromAudioTrack: start running (id: " + mStartFunction.getPlaybackId() + ")");
+            Log.d(
+                    TAG,
+                    "playFromAudioTrack: start running (id: "
+                            + mStartFunction.getPlaybackId()
+                            + ")");
             returnAck(mStartFunction, 0);
             mController.broadcastStateChange(mController);
 
@@ -440,7 +445,9 @@ public class PlaybackController extends AudioController.AudioRxController {
                     double freq = freqs.get(freqs.size() > c ? c : freqs.size() - 1);
                     SparseArray<SinusoidalGenerator.ModelInfo> info = infos.get(c);
                     SinusoidalGenerator signalGenerator = signalGenerators.get(c);
-                    info.put(0, new SinusoidalGenerator.ModelInfo(mStartFunction.getAmplitude(), freq));
+                    info.put(
+                            0,
+                            new SinusoidalGenerator.ModelInfo(mStartFunction.getAmplitude(), freq));
                     signalGenerator.render(signal, info, mStartFunction.getSamplingFreq());
 
                     switch (bitWidth) {
@@ -454,7 +461,8 @@ public class PlaybackController extends AudioController.AudioRxController {
                             break;
                         case 32:
                             for (int i = 0; i < frameCount; i++)
-                                intBuffer[i * numChannels + c] = (int) (signal[i] * Integer.MAX_VALUE);
+                                intBuffer[i * numChannels + c] =
+                                        (int) (signal[i] * Integer.MAX_VALUE);
                             break;
                     }
                 }
@@ -467,7 +475,10 @@ public class PlaybackController extends AudioController.AudioRxController {
                         mTrack.write(shortBuffer, 0, shortBuffer.length);
                         break;
                     case 32:
-                        ByteBuffer.wrap(byteBuffer32).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer().put(intBuffer);
+                        ByteBuffer.wrap(byteBuffer32)
+                                .order(ByteOrder.LITTLE_ENDIAN)
+                                .asIntBuffer()
+                                .put(intBuffer);
                         mTrack.write(byteBuffer32, 0, byteBuffer32.length);
                         break;
                 }

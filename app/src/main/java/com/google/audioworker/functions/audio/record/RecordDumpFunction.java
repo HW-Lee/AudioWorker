@@ -1,22 +1,19 @@
 package com.google.audioworker.functions.audio.record;
 
-import java.util.Arrays;
 import com.google.audioworker.utils.Constants;
 
+import java.util.Arrays;
+
 public class RecordDumpFunction extends RecordFunction {
-    private final static String TAG = Constants.packageTag("RecordDumpFunction");
+    private static final String TAG = Constants.packageTag("RecordDumpFunction");
 
-    private final static String ATTR_FILENAME = "filename";
+    private static final String ATTR_FILENAME = "filename";
 
-    private final static String[] ATTRS = {
-            ATTR_FILENAME
-    };
+    private static final String[] ATTRS = {ATTR_FILENAME};
 
     private Parameter<String> PARAM_FILENAME = new Parameter<>(ATTR_FILENAME, true, null);
 
-    private Parameter[] PARAMS = {
-            PARAM_FILENAME
-    };
+    private Parameter[] PARAMS = {PARAM_FILENAME};
 
     private Parameter[] mParams;
     private String[] mAttrs;

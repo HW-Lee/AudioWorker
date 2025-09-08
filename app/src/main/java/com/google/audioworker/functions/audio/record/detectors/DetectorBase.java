@@ -14,34 +14,48 @@ import java.util.ArrayList;
 import java.util.List;
 
 public abstract class DetectorBase {
-    public static abstract class Target {
+    public abstract static class Target {
         protected int id;
+
         public void setId(int id) {
             this.id = id;
         }
+
         public int getId() {
             return this.id;
         }
 
-        abstract public JSONObject toJson();
+        public abstract JSONObject toJson();
     }
+
     public interface Visualizable {
-        <T extends View & DetectionListener> T getVisualizedView(Context ctx, String token, DetectorBase detector);
+        <T extends View & DetectionListener> T getVisualizedView(
+                Context ctx, String token, DetectorBase detector);
     }
+
     public interface DetectionListener {
         void onTargetDetected(DetectorBase detector, SparseArray<? extends Target> targets);
     }
 
-    abstract public Target getTargetById(int id);
-    abstract public void registerTarget(Target target);
-    abstract public void feed(List<? extends Double>[] data);
-    abstract public boolean parseParameters(String params);
-    abstract public boolean setDetectorParameters(String params);
-    abstract public JSONObject getDetectorParameters();
-    abstract public String getHandle();
-    abstract public String getInfo();
-    abstract public void notifySettingChanged();
-    abstract public void release();
+    public abstract Target getTargetById(int id);
+
+    public abstract void registerTarget(Target target);
+
+    public abstract void feed(List<? extends Double>[] data);
+
+    public abstract boolean parseParameters(String params);
+
+    public abstract boolean setDetectorParameters(String params);
+
+    public abstract JSONObject getDetectorParameters();
+
+    public abstract String getHandle();
+
+    public abstract String getInfo();
+
+    public abstract void notifySettingChanged();
+
+    public abstract void release();
 
     protected final ArrayList<WeakReference<DetectionListener>> mListeners = new ArrayList<>();
     protected boolean isValid = true;
@@ -52,8 +66,7 @@ public abstract class DetectorBase {
     }
 
     public DetectorBase(DetectionListener l, RecordStartFunction function, String params) {
-        if (l == null)
-            throw new IllegalArgumentException("The listener cannot be null");
+        if (l == null) throw new IllegalArgumentException("The listener cannot be null");
 
         _function = function;
 
@@ -74,8 +87,7 @@ public abstract class DetectorBase {
     }
 
     public void registerDetectionListener(DetectionListener l) {
-        if (l == null)
-            return;
+        if (l == null) return;
 
         synchronized (mListeners) {
             ArrayList<WeakReference<DetectionListener>> removes = new ArrayList<>();
@@ -108,8 +120,7 @@ public abstract class DetectorBase {
 
     protected void broadcastTargetDetected(SparseArray<? extends Target> targets) {
         for (WeakReference<DetectionListener> ref : mListeners) {
-            if (ref.get() != null)
-                ref.get().onTargetDetected(this, targets);
+            if (ref.get() != null) ref.get().onTargetDetected(this, targets);
         }
     }
 
@@ -117,26 +128,37 @@ public abstract class DetectorBase {
         return isValid;
     }
 
-    static public DetectorBase getDetectorByClassName(String className) {
+    public static DetectorBase getDetectorByClassName(String className) {
         return getDetectorByClassName(className, null);
     }
 
-    static public DetectorBase getDetectorByClassName(String className, RecordStartFunction function) {
-        return getDetectorByClassName(className, new DetectorBase.DetectionListener() {
-            @Override
-            public void onTargetDetected(DetectorBase detector, SparseArray<? extends Target> targets) {
-            }
-        }, function, null);
+    public static DetectorBase getDetectorByClassName(
+            String className, RecordStartFunction function) {
+        return getDetectorByClassName(
+                className,
+                new DetectorBase.DetectionListener() {
+                    @Override
+                    public void onTargetDetected(
+                            DetectorBase detector, SparseArray<? extends Target> targets) {}
+                },
+                function,
+                null);
     }
 
-    static public DetectorBase getDetectorByClassName(String className, DetectionListener l, RecordStartFunction function, String params) {
-        Class[] types = {DetectorBase.DetectionListener.class, RecordStartFunction.class, String.class};
+    public static DetectorBase getDetectorByClassName(
+            String className, DetectionListener l, RecordStartFunction function, String params) {
+        Class[] types = {
+            DetectorBase.DetectionListener.class, RecordStartFunction.class, String.class
+        };
         try {
-            Object obj = Class.forName(className).getConstructor(types).newInstance(l, function, params);
-            if (obj instanceof DetectorBase)
-                return (DetectorBase) obj;
-        } catch (ClassNotFoundException | NoSuchMethodException |
-                IllegalAccessException | java.lang.InstantiationException | InvocationTargetException e) {
+            Object obj =
+                    Class.forName(className).getConstructor(types).newInstance(l, function, params);
+            if (obj instanceof DetectorBase) return (DetectorBase) obj;
+        } catch (ClassNotFoundException
+                | NoSuchMethodException
+                | IllegalAccessException
+                | java.lang.InstantiationException
+                | InvocationTargetException e) {
             e.printStackTrace();
         }
 

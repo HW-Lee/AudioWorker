@@ -18,7 +18,7 @@ public abstract class LoggerBase<T> extends Thread {
 
     protected final ArrayList<LogEntry<T>> logEntris;
 
-    abstract protected boolean saveLog(List<String> logs);
+    protected abstract boolean saveLog(List<String> logs);
 
     public static class LogUnit {
         private String tag;
@@ -41,7 +41,9 @@ public abstract class LoggerBase<T> extends Thread {
         private T content;
 
         LogEntry(T c) {
-            createAt = new SimpleDateFormat(Constants.Logging.TIME_FORMAT, Constants.Logging.LOCALE).format(Calendar.getInstance().getTime());
+            createAt =
+                    new SimpleDateFormat(Constants.Logging.TIME_FORMAT, Constants.Logging.LOCALE)
+                            .format(Calendar.getInstance().getTime());
             content = c;
         }
 
@@ -79,13 +81,12 @@ public abstract class LoggerBase<T> extends Thread {
     }
 
     @Override
-    final public void run() {
+    public final void run() {
         exitPending.set(false);
         while (!exitPending.get()) {
             ArrayList<String> logs = new ArrayList<>();
             synchronized (logEntris) {
-                for (LogEntry<T> entry : logEntris)
-                    logs.add(entry.toString());
+                for (LogEntry<T> entry : logEntris) logs.add(entry.toString());
 
                 if (logs.size() > 0 && saveLog(logs)) {
                     logEntris.clear();

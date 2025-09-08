@@ -20,8 +20,9 @@ import com.google.audioworker.utils.Constants;
 import org.json.JSONException;
 
 public class MainActivity extends AppCompatActivity
-        implements CommandHelper.BroadcastHandler.FunctionReceivedListener, WorkerFunction.WorkerFunctionListener {
-    private final static String TAG = Constants.packageTag("MainActivity");
+        implements CommandHelper.BroadcastHandler.FunctionReceivedListener,
+                WorkerFunction.WorkerFunctionListener {
+    private static final String TAG = Constants.packageTag("MainActivity");
 
     private FragmentTabHost mTabHost;
 
@@ -43,7 +44,6 @@ public class MainActivity extends AppCompatActivity
         super.onResume();
     }
 
-
     @Override
     protected void onPause() {
         super.onPause();
@@ -58,7 +58,8 @@ public class MainActivity extends AppCompatActivity
 
     private void initPermissionCheck() {
         for (String permission : Constants.PERMISSIONS_REQUIRED) {
-            if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+            if (ContextCompat.checkSelfPermission(this, permission)
+                    != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, Constants.PERMISSIONS_REQUIRED, 1);
                 break;
             }
@@ -70,22 +71,30 @@ public class MainActivity extends AppCompatActivity
         mTabHost.setup(this, getSupportFragmentManager(), R.id.fragment_container);
 
         for (Constants.Fragments.FragmentInfo info : Constants.Fragments.FRAGMENT_INFOS) {
-            mTabHost.addTab(mTabHost.newTabSpec(info.spec).setIndicator(info.label, null), info.classTarget, null);
+            mTabHost.addTab(
+                    mTabHost.newTabSpec(info.spec).setIndicator(info.label, null),
+                    info.classTarget,
+                    null);
         }
 
-        getSupportFragmentManager().registerFragmentLifecycleCallbacks(new FragmentManager.FragmentLifecycleCallbacks() {
-            @Override
-            public void onFragmentStarted(@NonNull FragmentManager fm, @NonNull Fragment f) {
-                super.onFragmentStarted(fm, f);
-                handleFragment();
-            }
+        getSupportFragmentManager()
+                .registerFragmentLifecycleCallbacks(
+                        new FragmentManager.FragmentLifecycleCallbacks() {
+                            @Override
+                            public void onFragmentStarted(
+                                    @NonNull FragmentManager fm, @NonNull Fragment f) {
+                                super.onFragmentStarted(fm, f);
+                                handleFragment();
+                            }
 
-            @Override
-            public void onFragmentResumed(@NonNull FragmentManager fm, @NonNull Fragment f) {
-                super.onFragmentResumed(fm, f);
-                handleFragment();
-            }
-        }, true);
+                            @Override
+                            public void onFragmentResumed(
+                                    @NonNull FragmentManager fm, @NonNull Fragment f) {
+                                super.onFragmentResumed(fm, f);
+                                handleFragment();
+                            }
+                        },
+                        true);
     }
 
     private void initControllers() {
@@ -122,6 +131,5 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    private void handleFragment() {
-    }
+    private void handleFragment() {}
 }

@@ -21,8 +21,9 @@ import com.google.audioworker.views.WorkerFunctionView;
 import java.util.ArrayList;
 import java.util.Collection;
 
-public class AudioRecordFragment extends AudioTxSupportFragment implements ControllerBase.ControllerStateListener {
-    private final static String TAG = Constants.packageTag("AudioRecordFragment");
+public class AudioRecordFragment extends AudioTxSupportFragment
+        implements ControllerBase.ControllerStateListener {
+    private static final String TAG = Constants.packageTag("AudioRecordFragment");
 
     private DataView mSignalView;
     private LinearLayout mAuxViewContainer;
@@ -30,7 +31,8 @@ public class AudioRecordFragment extends AudioTxSupportFragment implements Contr
     private WorkerFunctionView mWorkerFunctionView;
 
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(
+            @NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         return inflater.inflate(R.layout.audio_record_fragment, container, false);
     }
 
@@ -38,16 +40,14 @@ public class AudioRecordFragment extends AudioTxSupportFragment implements Contr
     public void onDestroy() {
         super.onDestroy();
 
-        if (mActivityRef.get() == null)
-            return;
+        if (mActivityRef.get() == null) return;
 
         mActivityRef.get().getMainController().unregisterStateListener(this);
     }
 
     @Override
     public void initTxSupport() {
-        if (mActivityRef.get() == null)
-            return;
+        if (mActivityRef.get() == null) return;
 
         mSignalView = mActivityRef.get().findViewById(R.id.record_signal);
         mSignalView.setDataPaint(1, Color.RED);
@@ -127,29 +127,35 @@ public class AudioRecordFragment extends AudioTxSupportFragment implements Contr
     public void onFunctionAckReceived(WorkerFunction.Ack ack) {
         super.onFunctionAckReceived(ack);
 
-        if (mActivityRef.get() == null)
-            return;
+        if (mActivityRef.get() == null) return;
 
-        ControllerBase controller = mActivityRef.get().getMainController().getSubControllerByName(getControllerName());
+        ControllerBase controller =
+                mActivityRef.get().getMainController().getSubControllerByName(getControllerName());
         final TextView v = mActivityRef.get().findViewById(R.id.record_status);
-        if (v == null)
-            return;
+        if (v == null) return;
 
-        if (controller instanceof AudioController.TxSupport && ((AudioController.TxSupport) controller).isTxRunning()) {
-            mActivityRef.get().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    v.setText("Status: running");
-                }
-            });
+        if (controller instanceof AudioController.TxSupport
+                && ((AudioController.TxSupport) controller).isTxRunning()) {
+            mActivityRef
+                    .get()
+                    .runOnUiThread(
+                            new Runnable() {
+                                @Override
+                                public void run() {
+                                    v.setText("Status: running");
+                                }
+                            });
         } else {
-            mActivityRef.get().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    v.setText("Status: running");
-                    getTxDataView().reset();
-                }
-            });
+            mActivityRef
+                    .get()
+                    .runOnUiThread(
+                            new Runnable() {
+                                @Override
+                                public void run() {
+                                    v.setText("Status: running");
+                                    getTxDataView().reset();
+                                }
+                            });
         }
     }
 

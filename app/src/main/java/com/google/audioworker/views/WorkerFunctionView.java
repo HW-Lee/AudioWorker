@@ -31,7 +31,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 
 public class WorkerFunctionView extends LinearLayout {
-    private final static String TAG = Constants.packageTag("WorkerFunctionView");
+    private static final String TAG = Constants.packageTag("WorkerFunctionView");
 
     private ControllerBase mController;
 
@@ -45,7 +45,9 @@ public class WorkerFunctionView extends LinearLayout {
 
     public interface ActionSelectedListener {
         void onActionSelected(String action, HashMap<String, ParameterView> views);
+
         void onFunctionSent(WorkerFunction function);
+
         void onFunctionAckReceived(WorkerFunction.Ack ack);
     }
 
@@ -72,24 +74,26 @@ public class WorkerFunctionView extends LinearLayout {
         setSupportedIntentActions(action, null);
     }
 
-    public void setSupportedIntentActions(Collection<? extends String> actions, ActionSelectedListener l) {
+    public void setSupportedIntentActions(
+            Collection<? extends String> actions, ActionSelectedListener l) {
         final ArrayList<String> selections = new ArrayList<>();
         selections.add("");
         selections.addAll(actions);
         mListener = l;
         mSpinner.setAdapter(ViewUtils.getSimpleAdapter(getContext(), selections));
 
-        mSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                mSelectedAction = position > 0 ? selections.get(position) : null;
-                updateParameterView();
-            }
+        mSpinner.setOnItemSelectedListener(
+                new AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(
+                            AdapterView<?> parent, View view, int position, long id) {
+                        mSelectedAction = position > 0 ? selections.get(position) : null;
+                        updateParameterView();
+                    }
 
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-            }
-        });
+                    @Override
+                    public void onNothingSelected(AdapterView<?> parent) {}
+                });
 
         ((ArrayAdapter) mSpinner.getAdapter()).notifyDataSetChanged();
     }
@@ -103,11 +107,13 @@ public class WorkerFunctionView extends LinearLayout {
 
         mParameterViewContainer = new LinearLayout(getContext());
         mParameterViewContainer.setOrientation(LinearLayout.VERTICAL);
-        mParameterViewContainer.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+        mParameterViewContainer.setLayoutParams(
+                new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 
         mParameterViews = new HashMap<>();
         mSendFunctionBtn = new Button(getContext());
-        mSendFunctionBtn.setLayoutParams(new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, getPxByDp(50)));
+        mSendFunctionBtn.setLayoutParams(
+                new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, getPxByDp(50)));
         mSendFunctionBtn.setText("Send Function");
         mSendFunctionBtn.setEnabled(true);
 
@@ -116,7 +122,9 @@ public class WorkerFunctionView extends LinearLayout {
     }
 
     private int getPxByDp(float dp) {
-        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, getResources().getDisplayMetrics());
+        return (int)
+                TypedValue.applyDimension(
+                        TypedValue.COMPLEX_UNIT_DIP, dp, getResources().getDisplayMetrics());
     }
 
     public void updateParameterView() {
@@ -125,59 +133,60 @@ public class WorkerFunctionView extends LinearLayout {
         mParameterViews.clear();
 
         if (mSelectedAction == null) {
-            if (mListener != null)
-                mListener.onActionSelected(mSelectedAction, mParameterViews);
+            if (mListener != null) mListener.onActionSelected(mSelectedAction, mParameterViews);
             return;
         }
 
         WorkerFunction function = CommandHelper.getFunction(new Intent(mSelectedAction));
         if (function == null) {
-            if (mListener != null)
-                mListener.onActionSelected(mSelectedAction, mParameterViews);
+            if (mListener != null) mListener.onActionSelected(mSelectedAction, mParameterViews);
             return;
         }
 
         ArrayList<WorkerFunction.Parameter> parameters = new ArrayList<>();
         if (function instanceof WorkerFunction.Parameterizable) {
-            Collections.addAll(parameters, ((WorkerFunction.Parameterizable) function).getParameters());
+            Collections.addAll(
+                    parameters, ((WorkerFunction.Parameterizable) function).getParameters());
         }
-        Collections.sort(parameters, new Comparator<WorkerFunction.Parameter>() {
-            @Override
-            public int compare(WorkerFunction.Parameter p1, WorkerFunction.Parameter p2) {
-                if (p1.isRequired() == p2.isRequired())
-                    return 0;
-                if (p1.isRequired())
-                    return -1;
-                return 1;
-            }
-        });
+        Collections.sort(
+                parameters,
+                new Comparator<WorkerFunction.Parameter>() {
+                    @Override
+                    public int compare(WorkerFunction.Parameter p1, WorkerFunction.Parameter p2) {
+                        if (p1.isRequired() == p2.isRequired()) return 0;
+                        if (p1.isRequired()) return -1;
+                        return 1;
+                    }
+                });
 
         for (WorkerFunction.Parameter p : parameters) {
             ParameterView v = new ParameterView(getContext(), p);
             v.attrLabel.setPadding(getPxByDp(1), getPxByDp(1), getPxByDp(1), getPxByDp(1));
-            v.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+            v.setLayoutParams(
+                    new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
             mParameterViewContainer.addView(v);
             mParameterViews.put(p.getAttribute(), v);
         }
 
-        mSendFunctionBtn.setText(mController.hasFunctionBeingExecuted() ? "Sending..." : "Send Function");
+        mSendFunctionBtn.setText(
+                mController.hasFunctionBeingExecuted() ? "Sending..." : "Send Function");
         mSendFunctionBtn.setEnabled(!mController.hasFunctionBeingExecuted());
-        mSendFunctionBtn.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (isEnabled()) {
-                    mSendFunctionBtn.setText("Sending...");
-                    mSendFunctionBtn.setEnabled(false);
-                    sendFunction();
-                }
-            }
-        });
+        mSendFunctionBtn.setOnClickListener(
+                new OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if (isEnabled()) {
+                            mSendFunctionBtn.setText("Sending...");
+                            mSendFunctionBtn.setEnabled(false);
+                            sendFunction();
+                        }
+                    }
+                });
         mParameterViewContainer.addView(mSendFunctionBtn);
 
         mParameterViewContainer.invalidate();
 
-        if (mListener != null)
-            mListener.onActionSelected(mSelectedAction, mParameterViews);
+        if (mListener != null) mListener.onActionSelected(mSelectedAction, mParameterViews);
     }
 
     private void sendFunction() {
@@ -194,10 +203,10 @@ public class WorkerFunctionView extends LinearLayout {
 
         if (function instanceof WorkerFunction.Parameterizable) {
             for (ParameterView pv : mParameterViews.values()) {
-                if (pv.getRequestValue().toString().equals(""))
-                    continue;
+                if (pv.getRequestValue().toString().equals("")) continue;
 
-                ((WorkerFunction.Parameterizable) function).setParameter(pv.getAttributeLabel(), pv.getRequestValue());
+                ((WorkerFunction.Parameterizable) function)
+                        .setParameter(pv.getAttributeLabel(), pv.getRequestValue());
             }
         }
 
@@ -205,24 +214,25 @@ public class WorkerFunctionView extends LinearLayout {
         function.setCommandId(TAG + "-" + timestamp);
         Toast.makeText(getContext(), "Send function: " + function, Toast.LENGTH_LONG).show();
         mListenedFunctionId = function.getCommandId();
-        mController.execute(function, new WorkerFunction.WorkerFunctionListener() {
-            @Override
-            public void onAckReceived(final WorkerFunction.Ack ack) {
-                if (mListener != null)
-                    mListener.onFunctionAckReceived(ack);
-                if (!ack.getTarget().equals(mListenedFunctionId))
-                    return;
-
-                ((Activity) getContext()).runOnUiThread(new Runnable() {
+        mController.execute(
+                function,
+                new WorkerFunction.WorkerFunctionListener() {
                     @Override
-                    public void run() {
-                        showAck(ack);
+                    public void onAckReceived(final WorkerFunction.Ack ack) {
+                        if (mListener != null) mListener.onFunctionAckReceived(ack);
+                        if (!ack.getTarget().equals(mListenedFunctionId)) return;
+
+                        ((Activity) getContext())
+                                .runOnUiThread(
+                                        new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                showAck(ack);
+                                            }
+                                        });
                     }
                 });
-            }
-        });
-        if (mListener != null)
-            mListener.onFunctionSent(function);
+        if (mListener != null) mListener.onFunctionSent(function);
     }
 
     private void showAck(WorkerFunction.Ack ack) {
@@ -266,8 +276,7 @@ public class WorkerFunctionView extends LinearLayout {
             if (!parameter.isRequired()) {
                 if (parameter.getValue() != null)
                     defaultValue.setText(parameter.getValue().toString());
-                else
-                    defaultValue.setText("NULL");
+                else defaultValue.setText("NULL");
             } else {
                 defaultValue.setText("Required");
             }

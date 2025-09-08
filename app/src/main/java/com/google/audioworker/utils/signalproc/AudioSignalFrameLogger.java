@@ -17,10 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 
-/**
- * Created by hw_lee on 2018/3/9.
- */
-
+/** Created by hw_lee on 2018/3/9. */
 public class AudioSignalFrameLogger {
     private static final String TAG = Constants.packageTag("AudioSignalFrameLogger");
     private static final String DUMP_STREAM_NAME = "stream.bin";
@@ -38,7 +35,9 @@ public class AudioSignalFrameLogger {
             mName = name;
             mFs = fs;
             mValues = Arrays.copyOf(value, value.length);
-            createAt = new SimpleDateFormat(Constants.Logging.TIME_FORMAT, Constants.Logging.LOCALE).format(Calendar.getInstance().getTime());
+            createAt =
+                    new SimpleDateFormat(Constants.Logging.TIME_FORMAT, Constants.Logging.LOCALE)
+                            .format(Calendar.getInstance().getTime());
         }
 
         public String getCreateAt() {

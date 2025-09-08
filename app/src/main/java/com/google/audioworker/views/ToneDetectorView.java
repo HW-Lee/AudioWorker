@@ -28,8 +28,9 @@ import org.json.JSONObject;
 import java.lang.ref.WeakReference;
 import java.util.Iterator;
 
-public class ToneDetectorView extends LinearLayout implements DetectorBase.DetectionListener, VisualizableDetector.DetectorBindable {
-    private final static String TAG = Constants.packageTag("ToneDetectorView");
+public class ToneDetectorView extends LinearLayout
+        implements DetectorBase.DetectionListener, VisualizableDetector.DetectorBindable {
+    private static final String TAG = Constants.packageTag("ToneDetectorView");
 
     private SparseArray<View> mIsDetectedOrNotViews;
     private SparseBooleanArray mIsDetectedOrNot;
@@ -62,9 +63,9 @@ public class ToneDetectorView extends LinearLayout implements DetectorBase.Detec
         return mHandler;
     }
 
-    static public ToneDetectorView createView(Context ctx, String token, VisualizableDetector detector) {
-        if (ctx == null)
-            return null;
+    public static ToneDetectorView createView(
+            Context ctx, String token, VisualizableDetector detector) {
+        if (ctx == null) return null;
 
         Log.d(TAG, "createView called");
 
@@ -75,12 +76,13 @@ public class ToneDetectorView extends LinearLayout implements DetectorBase.Detec
                 Iterator<String> iterator = jsonDetector.keys();
                 while (iterator.hasNext()) {
                     String key = iterator.next();
-                    if (key.equals(ToneDetector.INFO_KEY_UNIT) || key.equals(ToneDetector.INFO_KEY_TARGETS))
-                        continue;
+                    if (key.equals(ToneDetector.INFO_KEY_UNIT)
+                            || key.equals(ToneDetector.INFO_KEY_TARGETS)) continue;
 
                     LinearLayout container = new LinearLayout(ctx);
                     container.setOrientation(HORIZONTAL);
-                    container.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+                    container.setLayoutParams(
+                            new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 
                     LayoutParams params;
 
@@ -107,8 +109,12 @@ public class ToneDetectorView extends LinearLayout implements DetectorBase.Detec
                     unitView.setLayoutParams(params);
                     unitView.setTextSize(16);
                     unitView.setGravity(Gravity.CENTER);
-                    if (jsonDetector.has(ToneDetector.INFO_KEY_UNIT) && jsonDetector.getJSONObject(ToneDetector.INFO_KEY_UNIT).has(key)) {
-                        unitView.setText(jsonDetector.getJSONObject(ToneDetector.INFO_KEY_UNIT).getString(key));
+                    if (jsonDetector.has(ToneDetector.INFO_KEY_UNIT)
+                            && jsonDetector.getJSONObject(ToneDetector.INFO_KEY_UNIT).has(key)) {
+                        unitView.setText(
+                                jsonDetector
+                                        .getJSONObject(ToneDetector.INFO_KEY_UNIT)
+                                        .getString(key));
                     }
 
                     container.addView(tv);
@@ -133,9 +139,9 @@ public class ToneDetectorView extends LinearLayout implements DetectorBase.Detec
                 tv.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, view.getPxByDp(40)));
                 tv.setTextSize(16);
                 tv.setGravity(Gravity.CENTER_VERTICAL);
-                if (jsonDetector.has(ToneDetector.INFO_KEY_TARGETS) &&
-                        jsonDetector.getJSONArray(ToneDetector.INFO_KEY_TARGETS) != null &&
-                            jsonDetector.getJSONArray(ToneDetector.INFO_KEY_TARGETS).length() > 0) {
+                if (jsonDetector.has(ToneDetector.INFO_KEY_TARGETS)
+                        && jsonDetector.getJSONArray(ToneDetector.INFO_KEY_TARGETS) != null
+                        && jsonDetector.getJSONArray(ToneDetector.INFO_KEY_TARGETS).length() > 0) {
                     jsonTargets = jsonDetector.getJSONArray(ToneDetector.INFO_KEY_TARGETS);
                     tv.setText("Targets (" + jsonTargets.length() + ")");
                 } else {
@@ -149,7 +155,8 @@ public class ToneDetectorView extends LinearLayout implements DetectorBase.Detec
             for (int i = 0; i < jsonTargets.length(); i++) {
                 LinearLayout parameterContainer = new LinearLayout(ctx);
                 parameterContainer.setOrientation(VERTICAL);
-                parameterContainer.setLayoutParams(new LayoutParams(0, LayoutParams.WRAP_CONTENT, 7));
+                parameterContainer.setLayoutParams(
+                        new LayoutParams(0, LayoutParams.WRAP_CONTENT, 7));
                 JSONObject jsonTarget = jsonTargets.getJSONObject(i);
                 if (jsonTarget != null) {
                     Iterator<String> iterator = jsonTarget.keys();
@@ -158,7 +165,9 @@ public class ToneDetectorView extends LinearLayout implements DetectorBase.Detec
 
                         LinearLayout container = new LinearLayout(ctx);
                         container.setOrientation(HORIZONTAL);
-                        container.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+                        container.setLayoutParams(
+                                new LayoutParams(
+                                        LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 
                         {
                             TextView tv = new TextView(ctx);
@@ -197,7 +206,8 @@ public class ToneDetectorView extends LinearLayout implements DetectorBase.Detec
 
                 LinearLayout container = new LinearLayout(ctx);
                 container.setOrientation(HORIZONTAL);
-                container.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+                container.setLayoutParams(
+                        new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
                 container.addView(parameterContainer);
 
                 {
@@ -218,7 +228,8 @@ public class ToneDetectorView extends LinearLayout implements DetectorBase.Detec
             }
 
             detector.bindDetectorView(view);
-            view.setPadding(view.getPxByDp(6), view.getPxByDp(6), view.getPxByDp(6), view.getPxByDp(6));
+            view.setPadding(
+                    view.getPxByDp(6), view.getPxByDp(6), view.getPxByDp(6), view.getPxByDp(6));
             return view;
         } catch (JSONException e) {
             e.printStackTrace();
@@ -227,7 +238,9 @@ public class ToneDetectorView extends LinearLayout implements DetectorBase.Detec
     }
 
     private int getPxByDp(float dp) {
-        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, getResources().getDisplayMetrics());
+        return (int)
+                TypedValue.applyDimension(
+                        TypedValue.COMPLEX_UNIT_DIP, dp, getResources().getDisplayMetrics());
     }
 
     private View getBorder() {
@@ -238,23 +251,22 @@ public class ToneDetectorView extends LinearLayout implements DetectorBase.Detec
     }
 
     private void setDetected(int id, boolean detected) {
-        if (mIsDetectedOrNotViews.get(id) == null || mIsDetectedOrNot.get(id) == detected)
-            return;
+        if (mIsDetectedOrNotViews.get(id) == null || mIsDetectedOrNot.get(id) == detected) return;
 
         Log.d(TAG, "View[" + id + "] is changed to " + detected + ".");
         mIsDetectedOrNot.put(id, detected);
-        if (detected)
-            mIsDetectedOrNotViews.get(id).setBackgroundColor(Color.argb(255, 0, 255, 0));
-        else
-            mIsDetectedOrNotViews.get(id).setBackgroundColor(Color.argb(100, 0, 0, 0));
+        if (detected) mIsDetectedOrNotViews.get(id).setBackgroundColor(Color.argb(255, 0, 255, 0));
+        else mIsDetectedOrNotViews.get(id).setBackgroundColor(Color.argb(100, 0, 0, 0));
     }
 
     @Override
-    public void onTargetDetected(DetectorBase detector, SparseArray<? extends DetectorBase.Target> targets) {
+    public void onTargetDetected(
+            DetectorBase detector, SparseArray<? extends DetectorBase.Target> targets) {
         mHandler.onTargetDetected(detector, targets);
     }
 
-    private static class ToneDetectorViewHandler extends Handler implements DetectorBase.DetectionListener {
+    private static class ToneDetectorViewHandler extends Handler
+            implements DetectorBase.DetectionListener {
         private WeakReference<ToneDetectorView> mRef;
 
         ToneDetectorViewHandler(ToneDetectorView v) {
@@ -262,18 +274,17 @@ public class ToneDetectorView extends LinearLayout implements DetectorBase.Detec
         }
 
         @Override
-        public void onTargetDetected(DetectorBase detector, SparseArray<? extends DetectorBase.Target> targets) {
+        public void onTargetDetected(
+                DetectorBase detector, SparseArray<? extends DetectorBase.Target> targets) {
             SparseBooleanArray results = new SparseBooleanArray();
-            for (int i = 0; i < targets.size(); i++)
-                results.put(targets.keyAt(i), true);
+            for (int i = 0; i < targets.size(); i++) results.put(targets.keyAt(i), true);
 
             sendMessage(obtainMessage(0, results));
         }
 
         @Override
         public void handleMessage(Message msg) {
-            if (mRef.get() == null || !(msg.obj instanceof SparseBooleanArray))
-                return;
+            if (mRef.get() == null || !(msg.obj instanceof SparseBooleanArray)) return;
 
             SparseBooleanArray results = (SparseBooleanArray) msg.obj;
             for (int i = 0; i < mRef.get().mIsDetectedOrNotViews.size(); i++) {

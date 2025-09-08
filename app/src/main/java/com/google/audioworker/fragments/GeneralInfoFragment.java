@@ -9,7 +9,7 @@ import android.view.ViewGroup;
 import com.google.audioworker.utils.Constants;
 
 public class GeneralInfoFragment extends WorkerFragment {
-    private final static String TAG = Constants.packageTag("GeneralInfoFragment");
+    private static final String TAG = Constants.packageTag("GeneralInfoFragment");
 
     @Override
     public void onAttach(Context ctx) {
@@ -17,7 +17,8 @@ public class GeneralInfoFragment extends WorkerFragment {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(
+            LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         return null;
     }
 
