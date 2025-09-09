@@ -12,8 +12,8 @@ android {
                 cppFlags "-std=c++11"
             }
         }
-        versionName '47d7dac'
-        versionNameSuffix '-python-audio-autotest-v1.6'
+        versionName 'e15de78'
+        versionNameSuffix '-python-audio-autotest-v1.6.1'
     }
     buildTypes {
         release {
