@@ -673,8 +673,8 @@ public class RecordController extends AudioController.AudioTxController {
         }
 
         private int parseChannelIndexMask(int nch) {
-            if (nch <= 0 || nch > 8) {
-                Log.w(TAG, "Invalid number of channels (" + nch + ") specified. Defaulting to 1.");
+            if (nch <= 2 || nch > 8) {
+                Log.w(TAG, "Invalid number of channels (" + nch + ") specified. Defaulting to 2.");
                 nch = 1;
             }
 
@@ -945,13 +945,19 @@ public class RecordController extends AudioController.AudioTxController {
         @Override
         public void run() {
             RecordStartFunction startFunction = master.mStartFunction;
-            AudioFormat format =
+            AudioFormat.Builder formatBuilder =
                     new AudioFormat.Builder()
                             .setSampleRate(startFunction.getSamplingFreq())
-                            .setEncoding(master.parseEncodingFormat(startFunction.getBitWidth()))
-                            .setChannelIndexMask(
-                                    master.parseChannelIndexMask(startFunction.getNumChannels()))
-                            .build();
+                            .setEncoding(master.parseEncodingFormat(startFunction.getBitWidth()));
+            if (startFunction.getNumChannels() == 1) {
+                formatBuilder.setChannelMask(AudioFormat.CHANNEL_IN_MONO);
+            } else if (startFunction.getNumChannels() == 2) {
+                formatBuilder.setChannelMask(AudioFormat.CHANNEL_IN_STEREO);
+            } else {
+                formatBuilder.setChannelIndexMask(
+                        master.parseChannelIndexMask(startFunction.getNumChannels()));
+            }
+            AudioFormat format = formatBuilder.build();
             int inputSource = startFunction.getInputSrc();
             int perfMode = startFunction.getAudioPerf();
             boolean isAaudio = startFunction.checkAAudio();
