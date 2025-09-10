@@ -3,9 +3,12 @@ package com.google.audioworker.fragments;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.CallSuper;
+import android.view.View;
 
+import com.google.audioworker.activities.MainActivity;
 import com.google.audioworker.functions.audio.record.RecordStartFunction;
 import com.google.audioworker.functions.common.WorkerFunction;
+import com.google.audioworker.functions.controllers.MainController;
 import com.google.audioworker.functions.controllers.RecordController;
 import com.google.audioworker.utils.Constants;
 import com.google.audioworker.views.WorkerFunctionView;
@@ -18,7 +21,8 @@ public abstract class AudioRxTxSupportFragment extends WorkerFragment
                 AudioFragment.TxSupport,
                 AudioFragment.WorkerFunctionAuxSupport,
                 WorkerFunctionView.ActionSelectedListener,
-                RecordController.RecordRunnable.RecordDataListener {
+                RecordController.RecordRunnable.RecordDataListener,
+                MainActivity.ControllerReadyListener {
     private static final String TAG = Constants.packageTag("AudioRxTxSupportFragment");
 
     protected final AudioRxSupportFragment.Factory.Bundle mRxBundle =
@@ -35,14 +39,21 @@ public abstract class AudioRxTxSupportFragment extends WorkerFragment
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        init();
     }
 
     @CallSuper
     @Override
     public void onResume() {
         super.onResume();
+    }
+
+    @Override
+    public void onControllerReady(MainController mainController) {
         init();
+        View container = getContainerView();
+        if (container != null) {
+            container.setVisibility(View.VISIBLE);
+        }
     }
 
     private void init() {

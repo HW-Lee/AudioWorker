@@ -29,6 +29,12 @@ public class AudioPlaybackFragment extends AudioRxSupportFragment
     private LinearLayout mRxInfoContainer;
 
     @Override
+    protected View getContainerView() {
+        if (getView() == null) return null;
+        return getView().findViewById(R.id.playback_content_container);
+    }
+
+    @Override
     public void onAttach(Context ctx) {
         super.onAttach(ctx);
     }

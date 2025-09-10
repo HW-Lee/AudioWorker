@@ -35,6 +35,12 @@ public class AudioVoIPFragment extends AudioRxTxSupportFragment
     private LinearLayout mRxInfoContainer;
 
     @Override
+    protected View getContainerView() {
+        if (getView() == null) return null;
+        return getView().findViewById(R.id.voip_content_container);
+    }
+
+    @Override
     public void onAttach(Context ctx) {
         super.onAttach(ctx);
     }

@@ -15,11 +15,13 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.google.audioworker.R;
+import com.google.audioworker.activities.MainActivity;
 import com.google.audioworker.functions.audio.playback.PlaybackFunction;
 import com.google.audioworker.functions.audio.playback.PlaybackStartFunction;
 import com.google.audioworker.functions.common.ParameterizedWorkerFunction;
 import com.google.audioworker.functions.common.WorkerFunction;
 import com.google.audioworker.functions.controllers.ControllerBase;
+import com.google.audioworker.functions.controllers.MainController;
 import com.google.audioworker.utils.Constants;
 import com.google.audioworker.views.ViewUtils;
 import com.google.audioworker.views.WorkerFunctionView;
@@ -34,7 +36,8 @@ import java.util.Iterator;
 public abstract class AudioRxSupportFragment extends WorkerFragment
         implements AudioFragment.RxSupport,
                 AudioFragment.WorkerFunctionAuxSupport,
-                WorkerFunctionView.ActionSelectedListener {
+                WorkerFunctionView.ActionSelectedListener,
+                MainActivity.ControllerReadyListener {
     private static final String TAG = Constants.packageTag("AudioRxSupportFragment");
 
     private final Factory.Bundle mBundle = new Factory.Bundle();
@@ -48,14 +51,21 @@ public abstract class AudioRxSupportFragment extends WorkerFragment
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        Factory.init(this, mBundle);
     }
 
     @CallSuper
     @Override
     public void onResume() {
         super.onResume();
+    }
+
+    @Override
+    public void onControllerReady(MainController mainController) {
         Factory.init(this, mBundle);
+        View container = getContainerView();
+        if (container != null) {
+            container.setVisibility(View.VISIBLE);
+        }
     }
 
     @CallSuper

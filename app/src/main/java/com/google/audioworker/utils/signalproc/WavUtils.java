@@ -79,14 +79,14 @@ public class WavUtils {
                 output,
                 config.samplingRate
                         * (config.bitPerSample / 8)
-                        * config.numChannels); // byte rate: SampleRate * NumChannels *
-                                               // BitsPerSample/8
+                        // byte rate: SampleRate * NumChannels * BitsPerSample/8
+                        * config.numChannels);
         writeShort(
                 output,
                 (short)
                         ((config.bitPerSample / 8)
-                                * config.numChannels)); // block align: NumChannels *
-                                                        // BitsPerSample/8
+                                // block align: NumChannels * BitsPerSample/8
+                                * config.numChannels));
         writeShort(output, (short) config.bitPerSample); // bits per sample
         writeString(output, "data"); // subchunk 2 id
         writeInt(output, config.dataLength); // subchunk 2 size
@@ -114,14 +114,14 @@ public class WavUtils {
                 output,
                 config.samplingRate
                         * (config.bitPerSample / 8)
-                        * config.numChannels); // byte rate: SampleRate * NumChannels *
-                                               // BitsPerSample/8
+                        // byte rate: SampleRate * NumChannels * BitsPerSample/8
+                        * config.numChannels);
         writeShort(
                 output,
                 (short)
                         ((config.bitPerSample / 8)
-                                * config.numChannels)); // block align: NumChannels *
-                                                        // BitsPerSample/8
+                                // block align: NumChannels * BitsPerSample/8
+                                * config.numChannels));
         writeShort(output, (short) config.bitPerSample); // bits per sample
         writeString(output, "data"); // subchunk 2 id
         writeInt(output, rawData.length); // subchunk 2 size

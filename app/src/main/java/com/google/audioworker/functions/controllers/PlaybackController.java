@@ -77,16 +77,7 @@ public class PlaybackController extends AudioController.AudioRxController {
     @Override
     public void destroy() {
         super.destroy();
-
-        for (SparseArray<PlaybackRunnable> tasks : mRunningPlaybackTasks.values()) {
-            for (int i = 0; i < tasks.size(); i++) {
-                PlaybackRunnable task = tasks.get(i);
-                if (task != null) {
-                    task.tryStop();
-                    tasks.delete(i);
-                }
-            }
-        }
+        stopAllPlayback();
         mPoolExecuter.shutdown();
         mPoolExecuter = null;
     }
@@ -219,6 +210,20 @@ public class PlaybackController extends AudioController.AudioRxController {
         }
 
         return cnt;
+    }
+
+    public void stopAllPlayback() {
+        Log.d(TAG, "stopAllPlayback() is called");
+        for (SparseArray<PlaybackRunnable> tasks : mRunningPlaybackTasks.values()) {
+            for (int i = 0; i < tasks.size(); i++) {
+                int key = tasks.keyAt(i);
+                PlaybackRunnable task = tasks.get(key);
+                if (task != null && !task.hasDone()) {
+                    task.tryStop();
+                }
+            }
+            tasks.clear();
+        }
     }
 
     public static class PlaybackRunnable implements Runnable {

@@ -61,6 +61,12 @@ public class AudioFragment extends WorkerFragment {
     }
 
     @Override
+    protected View getContainerView() {
+        if (getView() == null) return null;
+        return getView().findViewById(R.id.audio_tab_host);
+    }
+
+    @Override
     public void onAttach(Context ctx) {
         super.onAttach(ctx);
     }

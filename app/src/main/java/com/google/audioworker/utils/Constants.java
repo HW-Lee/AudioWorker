@@ -32,6 +32,9 @@ public class Constants {
 
         // Telephony
         Manifest.permission.READ_PHONE_STATE,
+
+        // Audio functions running when switching apps
+        Manifest.permission.FOREGROUND_SERVICE,
     };
 
     public static String packageTag(String tag) {

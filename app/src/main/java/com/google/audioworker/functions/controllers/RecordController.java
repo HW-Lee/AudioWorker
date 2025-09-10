@@ -121,14 +121,7 @@ public class RecordController extends AudioController.AudioTxController {
     @Override
     public void destroy() {
         super.destroy();
-
-        for (RecordRunnable task : mMainRunningTasks) {
-            if (task != null && !task.hasDone()) {
-                task.tryStop();
-                task = null;
-            }
-        }
-
+        stopAllRecord();
         mPoolExecuter.shutdown();
         mPoolExecuter = null;
         mDetectors.clear();
@@ -522,6 +515,16 @@ public class RecordController extends AudioController.AudioTxController {
         l.onTargetDetected(detector, targets);
     }
 
+    public void stopAllRecord() {
+        Log.d(TAG, "stopAllRecord() is called");
+        for (int i = 0; i < RecordTask.MAX_NUM; i++) {
+            if (isTxRunning(i)) {
+                mMainRunningTasks[i].tryStop();
+                mMainRunningTasks[i] = null;
+            }
+        }
+    }
+
     public static class RecordSharedBuffer {
         private byte[] raw;
         private boolean hasRefreshed;
@@ -772,7 +775,7 @@ public class RecordController extends AudioController.AudioTxController {
                     Log.w(
                             TAG,
                             "Timed out for the thread waiting the buffer from the framework."
-                                + " (buffer size: "
+                                    + " (buffer size: "
                                     + minBuffsizeMillis
                                     + " ms, timeout: "
                                     + (minBuffsizeMillis

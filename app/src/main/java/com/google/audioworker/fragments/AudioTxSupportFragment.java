@@ -16,6 +16,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.google.audioworker.R;
+import com.google.audioworker.activities.MainActivity;
 import com.google.audioworker.functions.audio.record.RecordDetectFunction;
 import com.google.audioworker.functions.audio.record.RecordStartFunction;
 import com.google.audioworker.functions.audio.record.detectors.DetectorBase;
@@ -23,6 +24,7 @@ import com.google.audioworker.functions.common.ParameterizedWorkerFunction;
 import com.google.audioworker.functions.common.WorkerFunction;
 import com.google.audioworker.functions.controllers.AudioController;
 import com.google.audioworker.functions.controllers.ControllerBase;
+import com.google.audioworker.functions.controllers.MainController;
 import com.google.audioworker.functions.controllers.RecordController;
 import com.google.audioworker.utils.Constants;
 import com.google.audioworker.views.ViewUtils;
@@ -40,7 +42,8 @@ public abstract class AudioTxSupportFragment extends WorkerFragment
         implements RecordController.RecordRunnable.RecordDataListener,
                 AudioFragment.TxSupport,
                 AudioFragment.WorkerFunctionAuxSupport,
-                WorkerFunctionView.ActionSelectedListener {
+                WorkerFunctionView.ActionSelectedListener,
+                MainActivity.ControllerReadyListener {
     private static final String TAG = Constants.packageTag("AudioTxSupportFragment");
 
     private final Factory.Bundle mBundle = new Factory.Bundle();
@@ -54,14 +57,21 @@ public abstract class AudioTxSupportFragment extends WorkerFragment
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        Factory.init(this, mBundle);
     }
 
     @CallSuper
     @Override
     public void onResume() {
         super.onResume();
+    }
+
+    @Override
+    public void onControllerReady(MainController mainController) {
         Factory.init(this, mBundle);
+        View container = getContainerView();
+        if (container != null) {
+            container.setVisibility(View.VISIBLE);
+        }
     }
 
     @CallSuper

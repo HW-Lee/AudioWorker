@@ -83,6 +83,7 @@ public class VoIPController extends AudioController.AudioRxTxController {
     @Override
     public void destroy() {
         super.destroy();
+        stopVoIP();
         mPoolExecuter.shutdown();
         mPoolExecuter = null;
         mDetectors.clear();
@@ -509,6 +510,18 @@ public class VoIPController extends AudioController.AudioRxTxController {
 
     public boolean isVoIPRunning() {
         return isRxRunning() && isTxRunning();
+    }
+
+    public void stopVoIP() {
+        Log.d(TAG, "stopVoIP() is called");
+        if (isRxRunning()) {
+            mRxRunnable.tryStop();
+            mRxRunnable = null;
+        }
+        if (isTxRunning()) {
+            mTxRunnable.tryStop();
+            mTxRunnable = null;
+        }
     }
 
     @Override

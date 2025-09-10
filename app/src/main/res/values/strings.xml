@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">AudioWorker (v1.5.12)</string>
+    <string name="app_name">AudioWorker</string>
+    <string name="app_name_with_version">AudioWorker (%1$s)</string>
 </resources>

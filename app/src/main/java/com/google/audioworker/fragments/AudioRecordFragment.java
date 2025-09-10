@@ -31,6 +31,12 @@ public class AudioRecordFragment extends AudioTxSupportFragment
     private WorkerFunctionView mWorkerFunctionView;
 
     @Override
+    protected View getContainerView() {
+        if (getView() == null) return null;
+        return getView().findViewById(R.id.record_content_container);
+    }
+
+    @Override
     public View onCreateView(
             @NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         return inflater.inflate(R.layout.audio_record_fragment, container, false);

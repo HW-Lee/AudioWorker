@@ -12,6 +12,11 @@ public class GeneralInfoFragment extends WorkerFragment {
     private static final String TAG = Constants.packageTag("GeneralInfoFragment");
 
     @Override
+    protected View getContainerView() {
+        return getView();
+    }
+
+    @Override
     public void onAttach(Context ctx) {
         super.onAttach(ctx);
     }
