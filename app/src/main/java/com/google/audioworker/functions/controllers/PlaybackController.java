@@ -255,20 +255,56 @@ public class PlaybackController extends AudioController.AudioRxController {
             mAttributes = attributes;
 
             if (mAttributes == null) {
+                int usage = mStartFunction.getUsage();
+                int contentType = mStartFunction.getContentType();
+                if (mStartFunction.isHapticPlayback()
+                        && !mStartFunction
+                                .getPlaybackFile()
+                                .equals(Constants.PlaybackDefaultConfig.FILE_NAME)) {
+                    usage =
+                            (usage == Constants.PlaybackDefaultConfig.NOT_GIVEN)
+                                    ? Constants.PlaybackDefaultConfig.HAPTIC_USAGE
+                                    : usage;
+                    contentType =
+                            (contentType == Constants.PlaybackDefaultConfig.NOT_GIVEN)
+                                    ? Constants.PlaybackDefaultConfig.HAPTIC_CONTENT_TYPE
+                                    : contentType;
+                    mAttributes =
+                            new AudioAttributes.Builder()
+                                    .setUsage(usage)
+                                    .setContentType(contentType)
+                                    .setHapticChannelsMuted(false)
+                                    .build();
+                } else {
+                    if (mStartFunction.isHapticPlayback()) {
+                        Log.w(
+                                TAG,
+                                "Haptic playback only supports file playback, fallback to default"
+                                        + " playback.");
+                        mStartFunction.setHapticPlayback(false);
+                    }
+                    usage =
+                            (usage == Constants.PlaybackDefaultConfig.NOT_GIVEN)
+                                    ? Constants.PlaybackDefaultConfig.USAGE
+                                    : usage;
+                    contentType =
+                            (contentType == Constants.PlaybackDefaultConfig.NOT_GIVEN)
+                                    ? Constants.PlaybackDefaultConfig.CONTENT_TYPE
+                                    : contentType;
+                    mAttributes =
+                            new AudioAttributes.Builder()
+                                    .setUsage(usage)
+                                    .setContentType(contentType)
+                                    .build();
+                }
+
+                mStartFunction.setUsage(usage);
+                mStartFunction.setContentType(contentType);
                 Log.d(
                         TAG,
                         String.format(
-                                "initiate the attribute by, content type: %d, usage: %d, stream:"
-                                        + " %d.",
-                                mStartFunction.getContentType(),
-                                mStartFunction.getUsage(),
-                                mStartFunction.getStreamType()));
-                mAttributes =
-                        new AudioAttributes.Builder()
-                                .setContentType(mStartFunction.getContentType())
-                                .setUsage(mStartFunction.getUsage())
-                                .setLegacyStreamType(mStartFunction.getStreamType())
-                                .build();
+                                "initiate the attribute by, content type: %d, usage: %d",
+                                contentType, usage));
             }
         }
 
@@ -276,10 +312,9 @@ public class PlaybackController extends AudioController.AudioRxController {
             switch (bits) {
                 case 8:
                     return AudioFormat.ENCODING_PCM_8BIT;
-                case 16:
-                    return AudioFormat.ENCODING_PCM_16BIT;
                 case 32:
                     return AudioFormat.ENCODING_PCM_32BIT;
+                case 16:
                 default:
                     return AudioFormat.ENCODING_PCM_16BIT;
             }
@@ -287,6 +322,18 @@ public class PlaybackController extends AudioController.AudioRxController {
 
         private int parseChannelMask(int nch) {
             switch (nch) {
+                case 8:
+                    return AudioFormat.CHANNEL_OUT_7POINT1_SURROUND;
+                case 7:
+                    return AudioFormat.CHANNEL_OUT_5POINT1 | AudioFormat.CHANNEL_OUT_BACK_CENTER;
+                case 6:
+                    return AudioFormat.CHANNEL_OUT_5POINT1;
+                case 5:
+                    return AudioFormat.CHANNEL_OUT_QUAD | AudioFormat.CHANNEL_OUT_FRONT_CENTER;
+                case 4:
+                    return AudioFormat.CHANNEL_OUT_QUAD;
+                case 3:
+                    return AudioFormat.CHANNEL_OUT_STEREO | AudioFormat.CHANNEL_OUT_FRONT_CENTER;
                 case 2:
                     return AudioFormat.CHANNEL_OUT_STEREO;
                 case 1:
@@ -303,9 +350,9 @@ public class PlaybackController extends AudioController.AudioRxController {
             return mStartFunction;
         }
 
-        public WorkerFunction setSignalConfig(float amp, String freqs) {
+        public WorkerFunction setSignalConfig(String amp, String freqs) {
             if (mStartFunction != null) {
-                mStartFunction.setAmplitude(amp);
+                mStartFunction.setAmplitudes(amp);
                 mStartFunction.setTargetFrequencies(freqs);
             }
             return mStartFunction;
@@ -372,16 +419,18 @@ public class PlaybackController extends AudioController.AudioRxController {
         }
 
         private void playFromAudioTrack() {
+            final int nch = mStartFunction.getNumChannels();
+            int channelMask = parseChannelMask(nch);
             AudioFormat format =
                     new AudioFormat.Builder()
                             .setSampleRate(mStartFunction.getSamplingFreq())
                             .setEncoding(parseEncodingFormat(mStartFunction.getBitWidth()))
-                            .setChannelMask(parseChannelMask(mStartFunction.getNumChannels()))
+                            .setChannelMask(channelMask)
                             .build();
             int minBuffsize =
                     AudioTrack.getMinBufferSize(
                             mStartFunction.getSamplingFreq(),
-                            parseChannelMask(mStartFunction.getNumChannels()),
+                            channelMask,
                             parseEncodingFormat(mStartFunction.getBitWidth()));
 
             int performanceMode = mStartFunction.getPerformanceMode();
@@ -445,14 +494,14 @@ public class PlaybackController extends AudioController.AudioRxController {
             mController.broadcastStateChange(mController);
 
             ArrayList<Double> freqs = mStartFunction.getTargetFrequencies();
+            ArrayList<Float> amps = mStartFunction.getAmplitudes();
             while (!exitPending) {
                 for (int c = 0; c < numChannels; c++) {
                     double freq = freqs.get(freqs.size() > c ? c : freqs.size() - 1);
+                    float amp = amps.get(amps.size() > c ? c : amps.size() - 1);
                     SparseArray<SinusoidalGenerator.ModelInfo> info = infos.get(c);
                     SinusoidalGenerator signalGenerator = signalGenerators.get(c);
-                    info.put(
-                            0,
-                            new SinusoidalGenerator.ModelInfo(mStartFunction.getAmplitude(), freq));
+                    info.put(0, new SinusoidalGenerator.ModelInfo(amp, freq));
                     signalGenerator.render(signal, info, mStartFunction.getSamplingFreq());
 
                     switch (bitWidth) {
@@ -639,8 +688,8 @@ public class PlaybackController extends AudioController.AudioRxController {
                     signalGenerators.add(new SinusoidalGenerator());
                     infos.add(new SparseArray<SinusoidalGenerator.ModelInfo>());
                 }
-                double amp = mStartFunction.getAmplitude();
                 ArrayList<Double> freqs = mStartFunction.getTargetFrequencies();
+                ArrayList<Float> amps = mStartFunction.getAmplitudes();
 
                 for (int dummy = 0;
                         dummy < Constants.Controllers.Config.Playback.TONE_FILE_DURATION_SECONDS;
@@ -653,6 +702,7 @@ public class PlaybackController extends AudioController.AudioRxController {
                                 for (int c = 0; c < mStartFunction.getNumChannels(); c++) {
                                     double freq =
                                             freqs.get(freqs.size() > c ? c : freqs.size() - 1);
+                                    float amp = amps.get(amps.size() > c ? c : amps.size() - 1);
                                     SparseArray<SinusoidalGenerator.ModelInfo> info = infos.get(c);
                                     SinusoidalGenerator signalGenerator = signalGenerators.get(c);
                                     info.put(0, new SinusoidalGenerator.ModelInfo(amp, freq));
@@ -674,6 +724,7 @@ public class PlaybackController extends AudioController.AudioRxController {
                                 for (int c = 0; c < mStartFunction.getNumChannels(); c++) {
                                     double freq =
                                             freqs.get(freqs.size() > c ? c : freqs.size() - 1);
+                                    float amp = amps.get(amps.size() > c ? c : amps.size() - 1);
                                     SparseArray<SinusoidalGenerator.ModelInfo> info = infos.get(c);
                                     SinusoidalGenerator signalGenerator = signalGenerators.get(c);
                                     info.put(0, new SinusoidalGenerator.ModelInfo(amp, freq));
@@ -700,6 +751,7 @@ public class PlaybackController extends AudioController.AudioRxController {
                                 for (int c = 0; c < mStartFunction.getNumChannels(); c++) {
                                     double freq =
                                             freqs.get(freqs.size() > c ? c : freqs.size() - 1);
+                                    float amp = amps.get(amps.size() > c ? c : amps.size() - 1);
                                     SparseArray<SinusoidalGenerator.ModelInfo> info = infos.get(c);
                                     SinusoidalGenerator signalGenerator = signalGenerators.get(c);
                                     info.put(0, new SinusoidalGenerator.ModelInfo(amp, freq));

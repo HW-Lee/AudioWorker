@@ -3,7 +3,6 @@ package com.google.audioworker.utils;
 import android.Manifest;
 import android.content.Intent;
 import android.media.AudioAttributes;
-import android.media.AudioManager;
 import android.media.MediaRecorder;
 import android.os.Environment;
 
@@ -28,6 +27,7 @@ public class Constants {
         Manifest.permission.MODIFY_AUDIO_SETTINGS,
         Manifest.permission.READ_EXTERNAL_STORAGE,
         Manifest.permission.RECORD_AUDIO,
+        Manifest.permission.VIBRATE,
         Manifest.permission.MANAGE_EXTERNAL_STORAGE,
 
         // Telephony
@@ -271,15 +271,18 @@ public class Constants {
     }
 
     public static class PlaybackDefaultConfig {
+        public static final int NOT_GIVEN = -1;
         public static final float AMPLITUDE = 0.6f;
         public static final int SAMPLING_FREQ = 44100;
         public static final int NUM_CHANNELS = 2;
         public static final int BIT_PER_SAMPLE = 16;
         public static final String FILE_NAME = "null";
-        public static final int STREAM_TYPE = AudioManager.STREAM_MUSIC;
         public static final int USAGE = AudioAttributes.USAGE_MEDIA;
         public static final int CONTENT_TYPE = AudioAttributes.CONTENT_TYPE_MUSIC;
         public static final int PERF_MODE = -1;
+        public static final boolean HAPTIC_PLAYBACK = false;
+        public static final int HAPTIC_USAGE = AudioAttributes.USAGE_ASSISTANCE_SONIFICATION;
+        public static final int HAPTIC_CONTENT_TYPE = AudioAttributes.CONTENT_TYPE_SONIFICATION;
     }
 
     public static class RecordDefaultConfig {

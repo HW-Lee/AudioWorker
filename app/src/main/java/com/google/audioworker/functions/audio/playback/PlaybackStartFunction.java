@@ -1,7 +1,6 @@
 package com.google.audioworker.functions.audio.playback;
 
 import android.media.AudioAttributes;
-import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.util.Log;
 
@@ -22,10 +21,10 @@ public class PlaybackStartFunction extends PlaybackFunction {
     public static final String ATTR_NCH = "num-channels";
     public static final String ATTR_BPS = "pcm-bit-width";
     public static final String ATTR_FILE = "file";
-    public static final String ATTR_STREAM_TYPE = "stream-type";
     public static final String ATTR_USAGE = "usage";
     public static final String ATTR_CONTENT_TYPE = "content-type";
     public static final String ATTR_PERF_MODE = "performance-mode";
+    public static final String ATTR_HAPTIC_PLAYBACK = "haptic-playback";
     private static final String[] ATTRS = {
         ATTR_TYPE,
         ATTR_TARGET_FREQS,
@@ -36,10 +35,10 @@ public class PlaybackStartFunction extends PlaybackFunction {
         ATTR_NCH,
         ATTR_BPS,
         ATTR_FILE,
-        ATTR_STREAM_TYPE,
         ATTR_USAGE,
         ATTR_CONTENT_TYPE,
-        ATTR_PERF_MODE
+        ATTR_PERF_MODE,
+        ATTR_HAPTIC_PLAYBACK
     };
 
     private Parameter<String> PARAM_TYPE = new AudioFunction.Parameter<>(ATTR_TYPE, true, null);
@@ -49,9 +48,11 @@ public class PlaybackStartFunction extends PlaybackFunction {
             new AudioFunction.Parameter<>(ATTR_PLAYBACK_ID, true, -1);
     private Parameter<Boolean> PARAM_PLAYBACK_USE_LL =
             new Parameter<>(ATTR_PLAYBACK_USE_LL, false, false);
-    private Parameter<Float> PARAM_AMPLITUDE =
+    private Parameter<String> PARAM_AMPLITUDE =
             new AudioFunction.Parameter<>(
-                    ATTR_AMPLITUDE, false, Constants.PlaybackDefaultConfig.AMPLITUDE);
+                    ATTR_AMPLITUDE,
+                    false,
+                    String.valueOf(Constants.PlaybackDefaultConfig.AMPLITUDE));
     private Parameter<Integer> PARAM_FS =
             new AudioFunction.Parameter<>(
                     ATTR_FS, false, Constants.PlaybackDefaultConfig.SAMPLING_FREQ);
@@ -64,17 +65,18 @@ public class PlaybackStartFunction extends PlaybackFunction {
     private Parameter<String> PARAM_FILE =
             new AudioFunction.Parameter<>(
                     ATTR_FILE, false, Constants.PlaybackDefaultConfig.FILE_NAME);
-    private Parameter<Integer> PARAM_STREAM_TYPE =
-            new AudioFunction.Parameter<>(
-                    ATTR_STREAM_TYPE, false, Constants.PlaybackDefaultConfig.STREAM_TYPE);
     private Parameter<Integer> PARAM_USAGE =
-            new AudioFunction.Parameter<>(ATTR_USAGE, false, Constants.PlaybackDefaultConfig.USAGE);
+            new AudioFunction.Parameter<>(
+                    ATTR_USAGE, false, Constants.PlaybackDefaultConfig.NOT_GIVEN);
     private Parameter<Integer> PARAM_CONTENT_TYPE =
             new AudioFunction.Parameter<>(
-                    ATTR_CONTENT_TYPE, false, Constants.PlaybackDefaultConfig.CONTENT_TYPE);
+                    ATTR_CONTENT_TYPE, false, Constants.PlaybackDefaultConfig.NOT_GIVEN);
     private Parameter<Integer> PARAM_PERF_MODE =
             new AudioFunction.Parameter<>(
                     ATTR_PERF_MODE, false, Constants.PlaybackDefaultConfig.PERF_MODE);
+    private Parameter<Boolean> PARAM_HAPTIC_PLAYBACK =
+            new Parameter<>(
+                    ATTR_HAPTIC_PLAYBACK, false, Constants.PlaybackDefaultConfig.HAPTIC_PLAYBACK);
 
     private Parameter[] PARAMS = {
         PARAM_TYPE,
@@ -86,10 +88,10 @@ public class PlaybackStartFunction extends PlaybackFunction {
         PARAM_NCH,
         PARAM_BPS,
         PARAM_FILE,
-        PARAM_STREAM_TYPE,
         PARAM_USAGE,
         PARAM_CONTENT_TYPE,
-        PARAM_PERF_MODE
+        PARAM_PERF_MODE,
+        PARAM_HAPTIC_PLAYBACK
     };
 
     @Override
@@ -115,7 +117,7 @@ public class PlaybackStartFunction extends PlaybackFunction {
                 case ATTR_PLAYBACK_USE_LL:
                     return true;
                 case ATTR_AMPLITUDE:
-                    return checkAmplitude(Float.valueOf(value.toString()));
+                    return checkAmplitude(value.toString());
                 case ATTR_FS:
                     return checkSamplingFreq((int) value);
                 case ATTR_NCH:
@@ -124,14 +126,14 @@ public class PlaybackStartFunction extends PlaybackFunction {
                     return checkBitPerSample((int) value);
                 case ATTR_FILE:
                     return checkFileName((String) value);
-                case ATTR_STREAM_TYPE:
-                    return checkStreamType((int) value);
                 case ATTR_USAGE:
                     return checkUsage((int) value);
                 case ATTR_CONTENT_TYPE:
                     return checkContentType((int) value);
                 case ATTR_PERF_MODE:
                     return checkPerformanceMode((int) value);
+                case ATTR_HAPTIC_PLAYBACK:
+                    return true;
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -148,10 +150,14 @@ public class PlaybackStartFunction extends PlaybackFunction {
                     PARAM_TARGET_FREQS.setValue(value.toString());
                     return;
                 case ATTR_AMPLITUDE:
-                    PARAM_AMPLITUDE.setValue(Float.valueOf(value.toString()));
+                    PARAM_AMPLITUDE.setValue(value.toString());
                     return;
                 case ATTR_PLAYBACK_USE_LL:
                     PARAM_PLAYBACK_USE_LL.setValue(
+                            "true".equals(value.toString()) | "1".equals(value.toString()));
+                    return;
+                case ATTR_HAPTIC_PLAYBACK:
+                    PARAM_HAPTIC_PLAYBACK.setValue(
                             "true".equals(value.toString()) | "1".equals(value.toString()));
                     return;
                 case ATTR_FILE:
@@ -196,8 +202,19 @@ public class PlaybackStartFunction extends PlaybackFunction {
         return id >= 0;
     }
 
-    private boolean checkAmplitude(float amp) {
-        return amp >= 0.0 && amp <= 1.0;
+    private boolean checkAmplitude(String amps) {
+        String[] ampStrs = amps.split(",");
+        if (ampStrs.length == 0) return false;
+
+        for (String ampStr : ampStrs) {
+            try {
+                float amp = Float.parseFloat(ampStr);
+                if (amp < 0.0 || amp > 1.0) return false;
+            } catch (NumberFormatException e) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private boolean checkSamplingFreq(int freq) {
@@ -246,6 +263,7 @@ public class PlaybackStartFunction extends PlaybackFunction {
         switch (getPlaybackType()) {
             case TASK_NONOFFLOAD:
                 return fileName.endsWith(".wav")
+                        || fileName.endsWith(".ogg")
                         || Constants.PlaybackDefaultConfig.FILE_NAME.equals(fileName);
 
             case TASK_OFFLOAD:
@@ -260,6 +278,7 @@ public class PlaybackStartFunction extends PlaybackFunction {
 
     private boolean checkContentType(int contentType) {
         switch (contentType) {
+            case Constants.PlaybackDefaultConfig.NOT_GIVEN:
             case AudioAttributes.CONTENT_TYPE_UNKNOWN:
             case AudioAttributes.CONTENT_TYPE_SPEECH:
             case AudioAttributes.CONTENT_TYPE_MUSIC:
@@ -273,6 +292,7 @@ public class PlaybackStartFunction extends PlaybackFunction {
 
     private boolean checkUsage(int usage) {
         switch (usage) {
+            case Constants.PlaybackDefaultConfig.NOT_GIVEN:
             case AudioAttributes.USAGE_UNKNOWN:
             case AudioAttributes.USAGE_MEDIA:
             case AudioAttributes.USAGE_VOICE_COMMUNICATION:
@@ -288,22 +308,6 @@ public class PlaybackStartFunction extends PlaybackFunction {
             case AudioAttributes.USAGE_ASSISTANT:
                 return true;
         }
-        return false;
-    }
-
-    private boolean checkStreamType(int streamType) {
-        switch (streamType) {
-            case AudioManager.STREAM_VOICE_CALL:
-            case AudioManager.STREAM_SYSTEM:
-            case AudioManager.STREAM_RING:
-            case AudioManager.STREAM_MUSIC:
-            case AudioManager.STREAM_ALARM:
-            case AudioManager.STREAM_NOTIFICATION:
-            case AudioManager.STREAM_DTMF:
-            case AudioManager.STREAM_ACCESSIBILITY:
-                return true;
-        }
-
         return false;
     }
 
@@ -341,8 +345,17 @@ public class PlaybackStartFunction extends PlaybackFunction {
         return PARAM_PLAYBACK_ID.getValue();
     }
 
+    public ArrayList<Float> getAmplitudes() {
+        ArrayList<Float> amps = new ArrayList<>();
+        String ampsStr = PARAM_AMPLITUDE.getValue();
+        for (String ampStr : ampsStr.split(",")) {
+            amps.add(Float.parseFloat(ampStr));
+        }
+        return amps;
+    }
+
     public float getAmplitude() {
-        return PARAM_AMPLITUDE.getValue();
+        return getAmplitudes().get(0);
     }
 
     public int getSamplingFreq() {
@@ -377,16 +390,20 @@ public class PlaybackStartFunction extends PlaybackFunction {
         return PARAM_PERF_MODE.getValue();
     }
 
-    public int getStreamType() {
-        return PARAM_STREAM_TYPE.getValue();
+    public boolean isHapticPlayback() {
+        return PARAM_HAPTIC_PLAYBACK.getValue();
     }
 
     public void setPlaybackType(String type) {
         setParameter(ATTR_TYPE, type);
     }
 
+    public void setAmplitudes(String amps) {
+        setParameter(ATTR_AMPLITUDE, amps);
+    }
+
     public void setAmplitude(float amp) {
-        setParameter(ATTR_AMPLITUDE, amp);
+        setParameter(ATTR_AMPLITUDE, String.valueOf(amp));
     }
 
     public void setTargetFrequency(float freq) {
@@ -421,10 +438,6 @@ public class PlaybackStartFunction extends PlaybackFunction {
         setParameter(ATTR_FILE, file);
     }
 
-    public void setStreamType(int streamType) {
-        setParameter(ATTR_STREAM_TYPE, streamType);
-    }
-
     public void setContentType(int contentType) {
         setParameter(ATTR_CONTENT_TYPE, contentType);
     }
@@ -435,5 +448,9 @@ public class PlaybackStartFunction extends PlaybackFunction {
 
     public void setPerformanceMode(int perfMode) {
         setParameter(ATTR_PERF_MODE, perfMode);
+    }
+
+    public void setHapticPlayback(boolean isHaptic) {
+        setParameter(ATTR_HAPTIC_PLAYBACK, isHaptic);
     }
 }
