@@ -12,7 +12,7 @@ android {
                 cppFlags "-std=c++11"
             }
         }
-        versionName '79cab8a-python-audio-autotest-v1.6.2'
+        versionName '4329037-python-audio-autotest-v1.6.4'
     }
     buildTypes {
         release {
