@@ -5,6 +5,8 @@ import android.media.AudioDeviceInfo;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
+import android.media.audiofx.AcousticEchoCanceler;
+import android.media.audiofx.NoiseSuppressor;
 import android.os.Build.VERSION_CODES;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
@@ -1033,6 +1035,28 @@ public class RecordController extends AudioController.AudioTxController {
                 record.startRecording();
             }
 
+            AcousticEchoCanceler aec = null;
+            if (startFunction.isEchoCancellationEnabled()) {
+                if (AcousticEchoCanceler.isAvailable()) {
+                    aec = AcousticEchoCanceler.create(record.getAudioSessionId());
+                    if (aec != null) {
+                        aec.setEnabled(true);
+                        Log.d(TAG, "AcousticEchoCanceler enabled");
+                    }
+                }
+            }
+
+            NoiseSuppressor ns = null;
+            if (startFunction.isNoiseSuppressionEnabled()) {
+                if (NoiseSuppressor.isAvailable()) {
+                    ns = NoiseSuppressor.create(record.getAudioSessionId());
+                    if (ns != null) {
+                        ns.setEnabled(true);
+                        Log.d(TAG, "NoiseSuppressor enabled");
+                    }
+                }
+            }
+
             byte[] buffer = new byte[master.sharedBuffer.raw.length];
 
             Log.d(TAG, "RecordInternalRunnable: start running");
@@ -1054,6 +1078,13 @@ public class RecordController extends AudioController.AudioTxController {
             } else {
                 record.stop();
                 record.release();
+            }
+
+            if (aec != null) {
+                aec.release();
+            }
+            if (ns != null) {
+                ns.release();
             }
 
             if (master.mController instanceof RecordController

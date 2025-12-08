@@ -19,6 +19,8 @@ public class RecordStartFunction extends RecordFunction {
     private static final String ATTR_INPUT_SRC = "input-src";
     private static final String ATTR_AUDIO_API = "audio-api";
     private static final String ATTR_AUDIO_PERF = "audio-perf";
+    private static final String ATTR_ENABLE_NS = "enable-ns";
+    private static final String ATTR_ENABLE_AEC = "enable-aec";
 
     private static final String[] ATTRS = {
         ATTR_FS,
@@ -28,7 +30,9 @@ public class RecordStartFunction extends RecordFunction {
         ATTR_BTSCO_ON,
         ATTR_INPUT_SRC,
         ATTR_AUDIO_API,
-        ATTR_AUDIO_PERF
+        ATTR_AUDIO_PERF,
+        ATTR_ENABLE_NS,
+        ATTR_ENABLE_AEC
     };
 
     private Parameter<Integer> PARAM_FS =
@@ -49,6 +53,8 @@ public class RecordStartFunction extends RecordFunction {
             new Parameter<>(ATTR_AUDIO_API, false, Constants.RecordDefaultConfig.AUDIO_API);
     private Parameter<Integer> PARAM_AUDIO_PERF =
             new Parameter<>(ATTR_AUDIO_PERF, false, Constants.RecordDefaultConfig.AUDIO_PERF);
+    private Parameter<Boolean> PARAM_ENABLE_NS = new Parameter<>(ATTR_ENABLE_NS, false, false);
+    private Parameter<Boolean> PARAM_ENABLE_AEC = new Parameter<>(ATTR_ENABLE_AEC, false, false);
     private Parameter[] PARAMS = {
         PARAM_FS,
         PARAM_NCH,
@@ -57,7 +63,9 @@ public class RecordStartFunction extends RecordFunction {
         PARAM_BTSCO_ON,
         PARAM_INPUT_SRC,
         PARAM_AUDIO_API,
-        PARAM_AUDIO_PERF
+        PARAM_AUDIO_PERF,
+        PARAM_ENABLE_NS,
+        PARAM_ENABLE_AEC
     };
 
     private Parameter[] mParams;
@@ -98,6 +106,8 @@ public class RecordStartFunction extends RecordFunction {
                 case ATTR_AUDIO_PERF:
                     return checkAudioPerf((int) value);
                 case ATTR_BTSCO_ON:
+                case ATTR_ENABLE_NS:
+                case ATTR_ENABLE_AEC:
                     return true;
             }
         } catch (Exception e) {
@@ -117,6 +127,8 @@ public class RecordStartFunction extends RecordFunction {
 
             switch (attr) {
                 case ATTR_BTSCO_ON:
+                case ATTR_ENABLE_NS:
+                case ATTR_ENABLE_AEC:
                     PARAMS[idx].setValue(
                             "true".equals(value.toString()) | "1".equals(value.toString()));
                     return;
@@ -278,5 +290,13 @@ public class RecordStartFunction extends RecordFunction {
 
     public boolean usingExtApi() {
         return getAudioAPI() == AudioApi.AAUDIO || getAudioAPI() == AudioApi.OPENSLES;
+    }
+
+    public boolean isNoiseSuppressionEnabled() {
+        return PARAM_ENABLE_NS.getValue();
+    }
+
+    public boolean isEchoCancellationEnabled() {
+        return PARAM_ENABLE_AEC.getValue();
     }
 }
