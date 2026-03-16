@@ -538,6 +538,9 @@ public class PlaybackController extends AudioController.AudioRxController {
                 }
             }
 
+            mTrack.stop();
+            mTrack.release();
+            mTrack = null;
             mController.broadcastStateChange(mController);
         }
 
